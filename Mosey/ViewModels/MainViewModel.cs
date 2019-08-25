@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows.Input;
+using Mosey.Common;
 using Mosey.Models;
 using IronPython.Hosting;
 
@@ -7,7 +8,7 @@ namespace Mosey.ViewModels
 {
     public class MainViewModel : ViewModelBase
     {
-        private IntervalTimer scanLag;
+        private IntervalTimer scanLagTimer;
         public int ScanDelay
         {
             get
@@ -48,7 +49,7 @@ namespace Mosey.ViewModels
         {
             get
             {
-                return scanLag.RepetitionsCount;
+                return scanLagTimer.RepetitionsCount;
             }
         }
 
@@ -83,13 +84,37 @@ namespace Mosey.ViewModels
             }
         }
 
+        private ICommand _PauseScanCommand;
+        public ICommand PauseScanCommand
+        {
+            get
+            {
+                if (_PauseScanCommand == null)
+                    _PauseScanCommand = new RelayCommand(o => scanLagTimer.Pause(), o => true);
+
+                return _PauseScanCommand;
+            }
+        }
+
+        private ICommand _ResumeScanCommand;
+        public ICommand ResumeScanCommand
+        {
+            get
+            {
+                if (_ResumeScanCommand == null)
+                    _ResumeScanCommand = new RelayCommand(o => scanLagTimer.Resume(), o => true);
+
+                return _ResumeScanCommand;
+            }
+        }
+
         private ICommand _StopScanCommand;
         public ICommand StopScanCommand
         {
             get
             {
                 if (_StopScanCommand == null)
-                    _StopScanCommand = new RelayCommand(o => scanLag.Stop(), o => true);
+                    _StopScanCommand = new RelayCommand(o => scanLagTimer.Stop(), o => true);
 
                 return _StopScanCommand;
             }
@@ -99,9 +124,9 @@ namespace Mosey.ViewModels
 
         public void StartScan()
         {
-            //scanLag.Start(ScanDelay, ScanInterval, ScanRepetitions);
-            //Block thread until finished signal is recieved
-            //scanLag.ScanComplete.WaitOne();
+            scanLagTimer = new IntervalTimer(TimeSpan.FromMinutes(ScanDelay), TimeSpan.FromMinutes(ScanInterval), ScanRepetitions);
+            // Block thread until finished signal is recieved
+            scanLagTimer.TimerComplete.WaitOne();
         }
 
         void ScanLagAnalysis()
