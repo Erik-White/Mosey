@@ -10,6 +10,7 @@ namespace Mosey.Models
         public readonly TimeSpan Interval;
         public readonly int Repetitions;
         public int RepetitionsCount { get; private set; }
+        public bool Enabled { get { return stopWatch.IsRunning; } }
         public bool Paused { get; private set; }
         public event EventHandler Tick;
         public AutoResetEvent TimerComplete = new AutoResetEvent(false);
