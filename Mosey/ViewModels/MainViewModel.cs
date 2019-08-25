@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Windows.Input;
-using Mosey.Common;
 using Mosey.Models;
 using IronPython.Hosting;
 
