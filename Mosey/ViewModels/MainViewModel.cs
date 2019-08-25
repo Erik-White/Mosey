@@ -9,6 +9,7 @@ namespace Mosey.ViewModels
     public class MainViewModel : ViewModelBase
     {
         private IntervalTimer scanLagTimer;
+
         public int ScanDelay
         {
             get
@@ -45,12 +46,17 @@ namespace Mosey.ViewModels
                 RaisePropertyChanged("ScanRepetitions");
             }
         }
-        public int ScanRepetitionCount
+        public int ScanRepetitionsCount
         {
             get
             {
                 return scanLagTimer.RepetitionsCount;
             }
+        }
+
+        public MainViewModel()
+        {
+            scanLagTimer.Tick += scanLagTimer_Tick;
         }
 
         /*
@@ -127,6 +133,14 @@ namespace Mosey.ViewModels
             scanLagTimer = new IntervalTimer(TimeSpan.FromMinutes(ScanDelay), TimeSpan.FromMinutes(ScanInterval), ScanRepetitions);
             // Block thread until finished signal is recieved
             scanLagTimer.TimerComplete.WaitOne();
+            // Run ScanLagAnalysis if required
+        }
+
+        private void scanLagTimer_Tick(object sender, EventArgs e)
+        {
+            // Update progress
+            RaisePropertyChanged("ScanRepetitionsCount");
+            // Call scanner API
         }
 
         void ScanLagAnalysis()

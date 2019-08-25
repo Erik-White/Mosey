@@ -7,7 +7,7 @@ namespace Mosey
         static void Main(string[] args)
         {
             Console.WriteLine("Program start");
-
+            ScanTest scan = new ScanTest();
         }
     }
 }
