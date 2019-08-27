@@ -169,6 +169,7 @@ namespace Mosey.ViewModels
             // Update progress
             RaisePropertyChanged("ScanRepetitionsCount");
             System.Diagnostics.Debug.WriteLine("scan number: {0}", ScanRepetitionsCount);
+            System.Diagnostics.Debug.WriteLine("isscanrunning = {0}", IsScanRunning);
             // Call scanner API
         }
 
@@ -176,6 +177,7 @@ namespace Mosey.ViewModels
         {
             RaisePropertyChanged("IsScanRunning");
             System.Diagnostics.Debug.WriteLine("Scanning complete");
+            System.Diagnostics.Debug.WriteLine("isscanrunning = {0}", IsScanRunning);
         }
 
         void ScanLagAnalysis()
