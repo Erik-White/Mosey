@@ -39,7 +39,10 @@ namespace Mosey.Models
             Delay = delay;
             Interval = interval;
             Repetitions = repetitions;
-            stopWatch.Start();
+            if (timer != null)
+            {
+                Stop();
+            }
             timer = new Timer(TimerInterval, null, delay, interval);
         }
 

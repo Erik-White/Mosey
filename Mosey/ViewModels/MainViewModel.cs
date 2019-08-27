@@ -168,13 +168,14 @@ namespace Mosey.ViewModels
         {
             // Update progress
             RaisePropertyChanged("ScanRepetitionsCount");
+            System.Diagnostics.Debug.WriteLine("scan number: {0}", ScanRepetitionsCount);
             // Call scanner API
         }
 
         private void scanLagTimer_Complete(object sender, EventArgs e)
         {
             RaisePropertyChanged("IsScanRunning");
-            Console.WriteLine("Scanning complete");
+            System.Diagnostics.Debug.WriteLine("Scanning complete");
         }
 
         void ScanLagAnalysis()
