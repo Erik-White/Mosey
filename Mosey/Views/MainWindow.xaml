@@ -24,14 +24,15 @@
             <TextBlock Text="RepetitionsCount:" />
             <TextBlock Text="{Binding Path=ScanRepetitionsCount}" />
             <Label Content="Scan lag interval time (seconds):" />
-            <TextBox Text="{Binding Path=ScanInterval, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <Controls:NumericUpDown Value="{Binding Path=ScanInterval, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Label Content="Scan lag repetitions:" />
-            <TextBox Text="{Binding Path=ScanRepetitions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <Controls:NumericUpDown Value="{Binding Path=ScanRepetitions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Label Content="{Binding Path=ScanRepetitions}" />
             <Button Command="{Binding Path=StartScanCommand}" Content="Start scan" />
             <Button Command="{Binding Path=PauseScanCommand}" Content="Pause scan" />
             <Button Command="{Binding Path=ResumeScanCommand}" Content="Resume scan" />
             <Button Command="{Binding Path=StopScanCommand}" Content="Stop scan" />
+            <Controls:ProgressRing IsActive="{Binding Path=IsScanRunning}" />
         </DockPanel>
     </Border>
 </Controls:MetroWindow>

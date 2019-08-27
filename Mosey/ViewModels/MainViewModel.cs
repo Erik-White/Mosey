@@ -157,6 +157,8 @@ namespace Mosey.ViewModels
             //Use seconds instead of minutes for testing functionality
             scanLagTimer = new IntervalTimer(TimeSpan.FromSeconds(ScanDelay), TimeSpan.FromSeconds(ScanInterval), ScanRepetitions);
             scanLagTimer.Tick += scanLagTimer_Tick;
+            scanLagTimer.Complete += scanLagTimer_Complete;
+            RaisePropertyChanged("IsScanRunning");
             // Block thread until finished signal is recieved
             //scanLagTimer.TimerComplete.WaitOne();
             // Run ScanLagAnalysis if required
@@ -165,9 +167,14 @@ namespace Mosey.ViewModels
         private void scanLagTimer_Tick(object sender, EventArgs e)
         {
             // Update progress
-            Console.WriteLine("{0}", scanLagTimer.RepetitionsCount);
             RaisePropertyChanged("ScanRepetitionsCount");
             // Call scanner API
+        }
+
+        private void scanLagTimer_Complete(object sender, EventArgs e)
+        {
+            RaisePropertyChanged("IsScanRunning");
+            Console.WriteLine("Scanning complete");
         }
 
         void ScanLagAnalysis()

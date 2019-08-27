@@ -13,10 +13,10 @@ namespace Mosey.Models
         public bool Enabled { get { return stopWatch.IsRunning; } }
         public bool Paused { get; private set; }
         public event EventHandler Tick;
-        public AutoResetEvent TimerComplete = new AutoResetEvent(false);
-        private Stopwatch stopWatch = new Stopwatch();
+        public event EventHandler Complete;
         private Timer timer;
         private TimeSpan intervalRemaining;
+        private Stopwatch stopWatch = new Stopwatch();
 
         /// <summary>
         /// Provides a timer with callback event. Allows for pausing between intervals
@@ -44,6 +44,15 @@ namespace Mosey.Models
         }
 
         /// <summary>
+        /// Raises an event when the timer has run to completion
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnComplete(EventArgs e)
+        {
+            Complete?.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>
         /// Timer callback method. Continues the timer until the maximum repetitions is reached
         /// </summary>
         /// <param name="state"></param>
@@ -68,9 +77,12 @@ namespace Mosey.Models
         public void Stop()
         {
             RepetitionsCount = 0;
-            timer.Dispose();
+            if (timer != null)
+            {
+                timer.Dispose();
+            }
             stopWatch.Reset();
-            TimerComplete.Set();
+            OnComplete(EventArgs.Empty);
         }
 
         /// <summary>
@@ -78,7 +90,7 @@ namespace Mosey.Models
         /// </summary>
         public void Pause()
         {
-            if (!Paused && stopWatch.IsRunning)
+            if (timer != null && !Paused && stopWatch.IsRunning)
             {
                 // Pause the stopwatch and calculate the time remaining until the next callback is due
                 stopWatch.Stop();
@@ -100,18 +112,21 @@ namespace Mosey.Models
         /// </summary>
         public void Resume()
         {
-            if (intervalRemaining > TimeSpan.Zero)
+            if (timer != null)
             {
-                timer.Change(intervalRemaining, intervalRemaining);
-                intervalRemaining = TimeSpan.Zero;
-                stopWatch.Start();
+                if (intervalRemaining > TimeSpan.Zero)
+                {
+                    timer.Change(intervalRemaining, intervalRemaining);
+                    intervalRemaining = TimeSpan.Zero;
+                    stopWatch.Start();
+                }
+                else
+                {
+                    stopWatch.Restart();
+                    timer.Change(Interval, Interval);
+                }
+                Paused = false;
             }
-            else
-            {
-                stopWatch.Restart();
-                timer.Change(Interval, Interval);
-            }
-            Paused = false;
         }
     }
 }
