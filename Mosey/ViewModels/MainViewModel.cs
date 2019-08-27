@@ -80,8 +80,8 @@ namespace Mosey.ViewModels
 
         public MainViewModel()
         {
-            scanLagTimer.Tick += scanLagTimer_Tick;
-            scanLagTimer.Complete += scanLagTimer_Complete;
+            scanLagTimer.Tick += ScanLagTimer_Tick;
+            scanLagTimer.Complete += ScanLagTimer_Complete;
         }
 
         /*
@@ -164,21 +164,18 @@ namespace Mosey.ViewModels
             //ScanLagAnalysis();
         }
 
-        private void scanLagTimer_Tick(object sender, EventArgs e)
+        private void ScanLagTimer_Tick(object sender, EventArgs e)
         {
             // Update progress
             RaisePropertyChanged("ScanRepetitionsCount");
-            System.Diagnostics.Debug.WriteLine("scan number: {0}", ScanRepetitionsCount);
-            System.Diagnostics.Debug.WriteLine("isscanrunning = {0}", IsScanRunning);
+
             // Call scanner API
         }
 
-        private void scanLagTimer_Complete(object sender, EventArgs e)
+        private void ScanLagTimer_Complete(object sender, EventArgs e)
         {
             RaisePropertyChanged("ScanRepetitionsCount");
             RaisePropertyChanged("IsScanRunning");
-            System.Diagnostics.Debug.WriteLine("Scanning complete");
-            System.Diagnostics.Debug.WriteLine("isscanrunning = {0}", IsScanRunning);
         }
 
         void ScanLagAnalysis()
