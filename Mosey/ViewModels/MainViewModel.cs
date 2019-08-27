@@ -8,7 +8,7 @@ namespace Mosey.ViewModels
 {
     public class MainViewModel : ViewModelBase
     {
-        private IntervalTimer scanLagTimer;
+        private IntervalTimer scanLagTimer = new IntervalTimer();
 
         private int _ScanDelay;
         public int ScanDelay
@@ -107,7 +107,7 @@ namespace Mosey.ViewModels
             get
             {
                 if (_StartScanCommand == null)
-                    _StartScanCommand = new RelayCommand(o => StartScan(), o => !IsScanRunning);
+                    _StartScanCommand = new RelayCommand(o => StartScan(), o => !IsScanRunning && !scanLagTimer.Paused);
 
                 return _StartScanCommand;
             }
@@ -131,7 +131,7 @@ namespace Mosey.ViewModels
             get
             {
                 if (_ResumeScanCommand == null)
-                    _ResumeScanCommand = new RelayCommand(o => scanLagTimer.Resume(), o => true);
+                    _ResumeScanCommand = new RelayCommand(o => scanLagTimer.Resume(), o => scanLagTimer.Paused);
 
                 return _ResumeScanCommand;
             }
@@ -155,7 +155,7 @@ namespace Mosey.ViewModels
         {
             //scanLagTimer = new IntervalTimer(TimeSpan.FromMinutes(ScanDelay), TimeSpan.FromMinutes(ScanInterval), ScanRepetitions);
             //Use seconds instead of minutes for testing functionality
-            scanLagTimer = new IntervalTimer(TimeSpan.FromSeconds(ScanDelay), TimeSpan.FromSeconds(ScanInterval), ScanRepetitions);
+            scanLagTimer.Start(TimeSpan.FromSeconds(ScanDelay), TimeSpan.FromSeconds(ScanInterval), ScanRepetitions);
             scanLagTimer.Tick += scanLagTimer_Tick;
             scanLagTimer.Complete += scanLagTimer_Complete;
             RaisePropertyChanged("IsScanRunning");

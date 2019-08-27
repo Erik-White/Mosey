@@ -6,9 +6,9 @@ namespace Mosey.Models
 {
     public class IntervalTimer
     {
-        public readonly TimeSpan Delay;
-        public readonly TimeSpan Interval;
-        public readonly int Repetitions;
+        public TimeSpan Delay { get; private set; }
+        public TimeSpan Interval { get; private set; }
+        public int Repetitions { get; private set; }
         public int RepetitionsCount { get; private set; }
         public bool Enabled { get { return stopWatch.IsRunning; } }
         public bool Paused { get; private set; }
@@ -18,14 +18,23 @@ namespace Mosey.Models
         private TimeSpan intervalRemaining;
         private Stopwatch stopWatch = new Stopwatch();
 
+        public IntervalTimer()
+        {
+        }
+
+        public IntervalTimer(TimeSpan delay, TimeSpan interval, int repetitions)
+        {
+            Start(delay, interval, repetitions);
+        }
+
         /// <summary>
-        /// Provides a timer with callback event. Allows for pausing between intervals
+        /// Starts a timer with callback event. Allows for pausing between intervals
         /// If delay is zero then the first callback will begin immediately
         /// </summary>
         /// <param name="delay">The delay before starting the first scan</param>
         /// <param name="interval">The time between each scan</param>
         /// <param name="repetitions">The number of scan intervals to complete</param>
-        public IntervalTimer(TimeSpan delay, TimeSpan interval, int repetitions)
+        public void Start(TimeSpan delay, TimeSpan interval, int repetitions)
         {
             Delay = delay;
             Interval = interval;
