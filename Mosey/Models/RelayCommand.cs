@@ -60,8 +60,10 @@ namespace Mosey.Models
             // Need to add PresentationCore reference
             //add { CommandManager.RequerySuggested += value; }
             //remove { CommandManager.RequerySuggested -= value; }
-            add { }
-            remove { }
+            //add { }
+            //remove { }
+            add { CommandManager.RequerySuggested += value; }
+            remove { CommandManager.RequerySuggested -= value; }
         }
 
         public void Execute(object parameters)

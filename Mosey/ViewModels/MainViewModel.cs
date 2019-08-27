@@ -63,6 +63,20 @@ namespace Mosey.ViewModels
                 }
             }
         }
+        public bool IsScanRunning
+        {
+            get
+            {
+                if(scanLagTimer != null)
+                {
+                    return scanLagTimer.Enabled;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
 
         public MainViewModel()
         {
@@ -93,7 +107,7 @@ namespace Mosey.ViewModels
             get
             {
                 if (_StartScanCommand == null)
-                    _StartScanCommand = new RelayCommand(o => StartScan(), o => true);
+                    _StartScanCommand = new RelayCommand(o => StartScan(), o => !IsScanRunning);
 
                 return _StartScanCommand;
             }
@@ -105,7 +119,7 @@ namespace Mosey.ViewModels
             get
             {
                 if (_PauseScanCommand == null)
-                    _PauseScanCommand = new RelayCommand(o => scanLagTimer.Pause(), o => true);
+                    _PauseScanCommand = new RelayCommand(o => scanLagTimer.Pause(), o => IsScanRunning && !scanLagTimer.Paused);
 
                 return _PauseScanCommand;
             }
@@ -129,7 +143,7 @@ namespace Mosey.ViewModels
             get
             {
                 if (_StopScanCommand == null)
-                    _StopScanCommand = new RelayCommand(o => scanLagTimer.Stop(), o => true);
+                    _StopScanCommand = new RelayCommand(o => scanLagTimer.Stop(), o => IsScanRunning);
 
                 return _StopScanCommand;
             }
@@ -144,7 +158,7 @@ namespace Mosey.ViewModels
             scanLagTimer = new IntervalTimer(TimeSpan.FromSeconds(ScanDelay), TimeSpan.FromSeconds(ScanInterval), ScanRepetitions);
             scanLagTimer.Tick += scanLagTimer_Tick;
             // Block thread until finished signal is recieved
-            scanLagTimer.TimerComplete.WaitOne();
+            //scanLagTimer.TimerComplete.WaitOne();
             // Run ScanLagAnalysis if required
         }
 

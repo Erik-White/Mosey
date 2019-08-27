@@ -22,6 +22,8 @@
             <TextBox Text="{Binding Path=ScanRepetitions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Label Content="{Binding Path=ScanRepetitions}" />
             <Button Command="{Binding Path=StartScanCommand}" Content="Start scan" />
+            <Button Command="{Binding Path=PauseScanCommand}" Content="Pause scan" />
+            <Button Command="{Binding Path=ResumeScanCommand}" Content="Resume scan" />
             <Button Command="{Binding Path=StopScanCommand}" Content="Stop scan" />
         </DockPanel>
     </Border>
