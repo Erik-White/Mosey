@@ -10,7 +10,7 @@ namespace Mosey.Models
         public TimeSpan Interval { get; private set; }
         public int Repetitions { get; private set; }
         public int RepetitionsCount { get; private set; }
-        public bool Enabled { get { return (RepetitionsCount > 0); } }
+        public bool Enabled { get { return (timer != null); } }
         public bool Paused { get; private set; }
         public event EventHandler Tick;
         public event EventHandler Complete;
@@ -93,8 +93,10 @@ namespace Mosey.Models
             if (timer != null)
             {
                 timer.Dispose();
+                timer = null;
             }
             stopWatch.Reset();
+            Paused = false;
             OnComplete(EventArgs.Empty);
         }
 

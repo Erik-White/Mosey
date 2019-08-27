@@ -80,6 +80,8 @@ namespace Mosey.ViewModels
 
         public MainViewModel()
         {
+            scanLagTimer.Tick += scanLagTimer_Tick;
+            scanLagTimer.Complete += scanLagTimer_Complete;
         }
 
         /*
@@ -156,12 +158,10 @@ namespace Mosey.ViewModels
             //scanLagTimer = new IntervalTimer(TimeSpan.FromMinutes(ScanDelay), TimeSpan.FromMinutes(ScanInterval), ScanRepetitions);
             //Use seconds instead of minutes for testing functionality
             scanLagTimer.Start(TimeSpan.FromSeconds(ScanDelay), TimeSpan.FromSeconds(ScanInterval), ScanRepetitions);
-            scanLagTimer.Tick += scanLagTimer_Tick;
-            scanLagTimer.Complete += scanLagTimer_Complete;
             RaisePropertyChanged("IsScanRunning");
-            // Block thread until finished signal is recieved
-            //scanLagTimer.TimerComplete.WaitOne();
+
             // Run ScanLagAnalysis if required
+            //ScanLagAnalysis();
         }
 
         private void scanLagTimer_Tick(object sender, EventArgs e)
@@ -175,6 +175,7 @@ namespace Mosey.ViewModels
 
         private void scanLagTimer_Complete(object sender, EventArgs e)
         {
+            RaisePropertyChanged("ScanRepetitionsCount");
             RaisePropertyChanged("IsScanRunning");
             System.Diagnostics.Debug.WriteLine("Scanning complete");
             System.Diagnostics.Debug.WriteLine("isscanrunning = {0}", IsScanRunning);
