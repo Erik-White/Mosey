@@ -50,13 +50,19 @@ namespace Mosey.ViewModels
         {
             get
             {
-                return scanLagTimer.RepetitionsCount;
+                if (scanLagTimer != null)
+                {
+                    return scanLagTimer.RepetitionsCount;
+                }
+                else
+                {
+                    return 0;
+                }
             }
         }
 
         public MainViewModel()
         {
-            scanLagTimer.Tick += scanLagTimer_Tick;
         }
 
         /*
@@ -131,6 +137,7 @@ namespace Mosey.ViewModels
         public void StartScan()
         {
             scanLagTimer = new IntervalTimer(TimeSpan.FromMinutes(ScanDelay), TimeSpan.FromMinutes(ScanInterval), ScanRepetitions);
+            scanLagTimer.Tick += scanLagTimer_Tick;
             // Block thread until finished signal is recieved
             scanLagTimer.TimerComplete.WaitOne();
             // Run ScanLagAnalysis if required
