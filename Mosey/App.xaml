@@ -4,6 +4,24 @@
              xmlns:local="clr-namespace:Mosey"
              StartupUri="Views\MainWindow.xaml">
     <Application.Resources>
-         
+
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Application styles -->
+                <!-- Not yet implemented
+                <ResourceDictionary xmlns:Styles="Mosey.Views.Styles" Source="Views/Styles/Colors.xaml" />
+                <ResourceDictionary xmlns:Styles="Mosey.Views.Styles" Source="Views/Styles/Fonts.xaml" />
+                <ResourceDictionary xmlns:Styles="Mosey.Views.Styles" Source="Views/Styles/Base.xaml" />
+                <ResourceDictionary xmlns:Styles="Mosey.Views.Styles" Source="Views/Styles/Controls.xaml" />
+                -->
+                
+                <!-- MahApps.Metro resource dictionaries -->
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
+
+                <!-- MahApps.Metro accent and AppTheme setting -->
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Light.Blue.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -13,6 +13,6 @@ namespace Mosey
     /// </summary>
     public partial class App : Application
     {
-        ScanTest scan = new ScanTest();
+
     }
 }
