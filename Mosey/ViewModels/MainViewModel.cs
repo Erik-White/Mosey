@@ -10,39 +10,42 @@ namespace Mosey.ViewModels
     {
         private IntervalTimer scanLagTimer;
 
+        private int _ScanDelay;
         public int ScanDelay
         {
             get
             {
-                return ScanDelay;
+                return _ScanDelay;
             }
             set
             {
-                ScanDelay = value;
+                _ScanDelay = value;
                 RaisePropertyChanged("ScanDelay");
             }
         }
+        private int _ScanInterval;
         public int ScanInterval
         {
             get
             {
-                return ScanInterval;
+                return _ScanInterval;
             }
             set
             {
-                ScanInterval = value;
+                _ScanInterval = value;
                 RaisePropertyChanged("ScanInterval");
             }
         }
+        private int _ScanRepetitions;
         public int ScanRepetitions
         {
             get
             {
-                return ScanRepetitions;
+                return _ScanRepetitions;
             }
             set
             {
-                ScanRepetitions = value;
+                _ScanRepetitions = value;
                 RaisePropertyChanged("ScanRepetitions");
             }
         }
@@ -136,7 +139,9 @@ namespace Mosey.ViewModels
 
         public void StartScan()
         {
-            scanLagTimer = new IntervalTimer(TimeSpan.FromMinutes(ScanDelay), TimeSpan.FromMinutes(ScanInterval), ScanRepetitions);
+            //scanLagTimer = new IntervalTimer(TimeSpan.FromMinutes(ScanDelay), TimeSpan.FromMinutes(ScanInterval), ScanRepetitions);
+            //Use seconds instead of minutes for testing functionality
+            scanLagTimer = new IntervalTimer(TimeSpan.FromSeconds(ScanDelay), TimeSpan.FromSeconds(ScanInterval), ScanRepetitions);
             scanLagTimer.Tick += scanLagTimer_Tick;
             // Block thread until finished signal is recieved
             scanLagTimer.TimerComplete.WaitOne();
@@ -146,6 +151,7 @@ namespace Mosey.ViewModels
         private void scanLagTimer_Tick(object sender, EventArgs e)
         {
             // Update progress
+            Console.WriteLine("{0}", scanLagTimer.RepetitionsCount);
             RaisePropertyChanged("ScanRepetitionsCount");
             // Call scanner API
         }

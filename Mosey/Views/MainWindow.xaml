@@ -16,6 +16,11 @@
         <DockPanel MinHeight="100" HorizontalAlignment="Stretch" VerticalAlignment="Center" LastChildFill="False">
             <TextBlock Text="RepetitionsCount:" />
             <TextBlock Text="{Binding Path=ScanRepetitionsCount}" />
+            <Label Content="Scan lag interval time (seconds):" />
+            <TextBox Text="{Binding Path=ScanInterval, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <Label Content="Scan lag repetitions:" />
+            <TextBox Text="{Binding Path=ScanRepetitions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <Label Content="{Binding Path=ScanRepetitions}" />
             <Button Command="{Binding Path=StartScanCommand}" Content="Start scan" />
             <Button Command="{Binding Path=StopScanCommand}" Content="Stop scan" />
         </DockPanel>
