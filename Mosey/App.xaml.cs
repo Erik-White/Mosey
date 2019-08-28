@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mosey
@@ -14,5 +15,29 @@ namespace Mosey
     /// </summary>
     public partial class App : Application
     {
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+            //var container = CreateContainer();
+            //var viewModel = container.Resolve<RootViewModel>();
+
+            var serviceProvider = new ServiceCollection()
+                .AddLogging(options =>
+                {
+                    options.AddConsole();
+                    options.AddDebug();
+                })
+                //.AddSingleton<IFooService, FooService>();
+                .AddSingleton<System.ComponentModel.INotifyPropertyChanged, ViewModels.MainViewModel>()
+                .BuildServiceProvider();
+
+            var logger = serviceProvider.GetService<ILoggerFactory>()
+                .CreateLogger<App>();
+            logger.LogDebug("Starting application");
+
+            var viewModel = serviceProvider.GetService<System.ComponentModel.INotifyPropertyChanged>();
+            var window = new Views.MainWindow { DataContext = viewModel };
+            window.Show();
+        }
     }
 }

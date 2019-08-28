@@ -2,7 +2,11 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Mosey"
-             StartupUri="Views\MainWindow.xaml">
+             >
+            <!-- 
+            Startup window now called from codebehind with dependency injection
+            StartupUri="Views\MainWindow.xaml"
+            -->
     <Application.Resources>
 
         <ResourceDictionary>
