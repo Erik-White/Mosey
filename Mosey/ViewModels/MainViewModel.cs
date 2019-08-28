@@ -8,7 +8,7 @@ namespace Mosey.ViewModels
 {
     public class MainViewModel : ViewModelBase
     {
-        private IntervalTimer scanLagTimer = new IntervalTimer();
+        private IIntervalTimer scanLagTimer;
 
         private int _ScanDelay;
         public int ScanDelay
@@ -78,8 +78,9 @@ namespace Mosey.ViewModels
             }
         }
 
-        public MainViewModel()
+        public MainViewModel(IIntervalTimer intervalTimer)
         {
+            scanLagTimer = intervalTimer;
             scanLagTimer.Tick += ScanLagTimer_Tick;
             scanLagTimer.Complete += ScanLagTimer_Complete;
         }

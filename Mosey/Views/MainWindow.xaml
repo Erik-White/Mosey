@@ -16,9 +16,12 @@
         BorderThickness="0"
         GlowBrush="{DynamicResource AccentColorBrush}"
         >
+    <!--
+    Data context is set at window instantiation
     <Window.DataContext>
         <ViewModels:MainViewModel />
     </Window.DataContext>
+    -->
     <Border BorderThickness="20" BorderBrush="White" Background="WhiteSmoke">
         <DockPanel MinHeight="100" HorizontalAlignment="Stretch" VerticalAlignment="Center" LastChildFill="False">
             <TextBlock Text="RepetitionsCount:" />

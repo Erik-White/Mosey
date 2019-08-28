@@ -18,8 +18,6 @@ namespace Mosey
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-            //var container = CreateContainer();
-            //var viewModel = container.Resolve<RootViewModel>();
 
             var serviceProvider = new ServiceCollection()
                 .AddLogging(options =>
@@ -27,7 +25,7 @@ namespace Mosey
                     options.AddConsole();
                     options.AddDebug();
                 })
-                //.AddSingleton<IFooService, FooService>();
+                .AddSingleton<Mosey.Models.IIntervalTimer, Mosey.Models.IntervalTimer>()
                 .AddSingleton<System.ComponentModel.INotifyPropertyChanged, ViewModels.MainViewModel>()
                 .BuildServiceProvider();
 
