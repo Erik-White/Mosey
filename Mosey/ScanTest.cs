@@ -21,12 +21,11 @@ namespace Mosey
                     System.Diagnostics.Debug.WriteLine("Please connect your scanner to the system and also make sure its driver is installed");
                     return;
                 }
-                Console.WriteLine($"Using {firstScanner}");
-                System.Diagnostics.Debug.WriteLine("Using {0}", firstScanner);
+
+                System.Diagnostics.Debug.WriteLine("First scanner name: {0}", scanners.FirstOrDefault().Name);
 
                 using (var scannerDevice = new ScannerDevice(firstScanner))
                 {
-                    System.Diagnostics.Debug.WriteLine(scannerDevice.ToString());
                     scannerDevice.ScannerPictureSettings(config =>
                     {
                         config.ColorFormat(ColorType.Color)

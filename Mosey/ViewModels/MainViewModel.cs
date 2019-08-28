@@ -109,7 +109,7 @@ namespace Mosey.ViewModels
             get
             {
                 if (_StartScanCommand == null)
-                    _StartScanCommand = new RelayCommand(o => StartScan(), o => !IsScanRunning);
+                    _StartScanCommand = new RelayCommand(o => StartScan(), o => !IsScanRunning && !scanLagTimer.Paused);
 
                 return _StartScanCommand;
             }
