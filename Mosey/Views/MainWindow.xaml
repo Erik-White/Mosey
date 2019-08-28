@@ -24,19 +24,25 @@
     -->
     <Border BorderThickness="20" BorderBrush="White" Background="WhiteSmoke">
         <DockPanel MinHeight="100" HorizontalAlignment="Stretch" VerticalAlignment="Center" LastChildFill="False">
-            <TextBlock Text="RepetitionsCount:" />
-            <TextBlock Text="{Binding Path=ScanRepetitionsCount}" />
-            <Label Content="Scan lag interval time (seconds):" />
-            <Controls:NumericUpDown Value="{Binding Path=ScanInterval, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <Label Content="Scan lag repetitions:" />
-            <Controls:NumericUpDown Value="{Binding Path=ScanRepetitions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <Button Command="{Binding Path=StartScanCommand}" Content="Start scan" />
-            <Button Command="{Binding Path=PauseScanCommand}" Content="Pause scan" />
-            <Button Command="{Binding Path=ResumeScanCommand}" Content="Resume scan" />
-            <Button Command="{Binding Path=StopScanCommand}" Content="Stop scan" />
-            <Controls:ProgressRing IsActive="{Binding Path=IsScanRunning}" />
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="RepetitionsCount:" />
+                <TextBlock Text="{Binding Path=ScanRepetitionsCount}" />
+                <Label Content="Scan lag interval time (seconds):" />
+                <Controls:NumericUpDown Value="{Binding Path=ScanInterval, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Label Content="Scan lag repetitions:" />
+                <Controls:NumericUpDown Value="{Binding Path=ScanRepetitions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+            <StackPanel Orientation="Vertical">
+                <StackPanel Orientation="Horizontal">
+                    <Button Command="{Binding Path=StartScanCommand}" Content="Start scan" />
+                    <Button Command="{Binding Path=PauseScanCommand}" Content="Pause scan" />
+                    <Button Command="{Binding Path=ResumeScanCommand}" Content="Resume scan" />
+                    <Button Command="{Binding Path=StopScanCommand}" Content="Stop scan" />
+                </StackPanel>
+                <Controls:ProgressRing IsActive="{Binding Path=IsScanRunning}" />
 
-            <ListBox ItemsSource="{Binding Path=ScannerDevices}" />
+                <ListBox ItemsSource="{Binding Path=ScannerDevices}" DisplayMemberPath="Name" />
+            </StackPanel>
         </DockPanel>
     </Border>
 </Controls:MetroWindow>

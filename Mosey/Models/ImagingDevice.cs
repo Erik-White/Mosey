@@ -97,7 +97,8 @@ namespace Mosey.Models
 
                 foreach(ScannerSettings settings in systemScanners)
                 {
-                    using (var device = new ScannerDevice(settings))
+                    /*
+                    using (ScannerDevice device = new ScannerDevice(settings))
                     {
                         // Use the same image settings for all scanners
                         device.ScannerPictureSettings(config =>
@@ -105,10 +106,25 @@ namespace Mosey.Models
                                 .Resolution(deviceConfig.Resolution)
                                 .Brightness(deviceConfig.Brightness)
                                 .Contrast(deviceConfig.Contrast)
+                                //.StartPosition(left: 0, top: 0)
+                                //.Extent(width: 1250 * dpi, height: 1700 * dpi)
+                            );
+
+                        deviceList.Add(new ScanningDevice(device, settings);
+                    }
+                    */
+                    ScannerDevice device = new ScannerDevice(settings);
+                        // Use the same image settings for all scanners
+                        device.ScannerPictureSettings(config =>
+                            config.ColorFormat(deviceConfig.ColorType)
+                                .Resolution(deviceConfig.Resolution)
+                                .Brightness(deviceConfig.Brightness)
+                                .Contrast(deviceConfig.Contrast)
+                            //.StartPosition(left: 0, top: 0)
+                            //.Extent(width: 1250 * dpi, height: 1700 * dpi)
                             );
 
                         deviceList.Add(new ScanningDevice(device, settings));
-                    }
                 }
             }
             catch (COMException ex)
@@ -143,14 +159,26 @@ namespace Mosey.Models
             scannerSettings = settings;
         }
 
+        public void GetImage()
+        {
+            GetImage(WiaImageFormat.Jpeg);
+        }
         public void GetImage(WiaImageFormat format)
         {
-            scannerDevice.PerformScan(format);
+            if (scannerDevice != null)
+            {
+                scannerDevice.PerformScan(format);
+            }
         }
 
-        public void SaveImage(string fileName)
+        public void SaveImage(string directory, string fileName)
         {
-            scannerDevice.SaveScannedImageFiles(fileName);
+            // TODO: Get directory from user or default to appdir
+            fileName = Path.Combine(Directory.GetCurrentDirectory(), fileName);
+            foreach (var file in scannerDevice.SaveScannedImageFiles(fileName))
+            {
+                System.Diagnostics.Debug.WriteLine(file.ToString());
+            }
         }
     }
 

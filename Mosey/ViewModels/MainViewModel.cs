@@ -183,6 +183,11 @@ namespace Mosey.ViewModels
         public void Scan()
         {
             //ScanTest test = new ScanTest();
+            foreach(ScanningDevice scanner in ScannerDevices)
+            {
+                scanner.GetImage();
+                scanner.SaveImage("", "test.jpg");
+            }
         }
         public void ScanLagAnalysis()
         {
