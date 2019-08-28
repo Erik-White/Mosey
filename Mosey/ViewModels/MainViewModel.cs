@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.Windows.Input;
 using Mosey.Common;
 using Mosey.Models;
@@ -9,6 +10,7 @@ namespace Mosey.ViewModels
     public class MainViewModel : ViewModelBase
     {
         private IIntervalTimer scanLagTimer;
+        private IExternalInstance scanLagAnalysis;
 
         private int _ScanDelay;
         public int ScanDelay
@@ -78,30 +80,28 @@ namespace Mosey.ViewModels
             }
         }
 
-        public MainViewModel(IIntervalTimer intervalTimer)
-        {
-            scanLagTimer = intervalTimer;
-            scanLagTimer.Tick += ScanLagTimer_Tick;
-            scanLagTimer.Complete += ScanLagTimer_Complete;
-        }
-
-        /*
-        private ObservableCollection<Type??> _ScannerCollection;
-
-        public ObservableCollection<WasteContainer> ScannerCollection
+        private ObservableCollection<IImagingDevice> _ScannerDevices;
+        public ObservableCollection<IImagingDevice> ScannerDevices
         {
             get
             {
-                _ScannerCollection = ReturnScanners();
-                return _ScannerCollection;
+                return _ScannerDevices;
             }
             set
             {
-                _ScannerCollection = value;
-                RaisePropertyChanged("ScannerCollection");
+                _ScannerDevices = value;
+                RaisePropertyChanged("ScannerDevices");
             }
         }
-        */
+
+        public MainViewModel(IIntervalTimer intervalTimer, IImagingDevices imagingDevices)
+        {
+            scanLagTimer = intervalTimer;
+            _ScannerDevices = new ObservableCollection<IImagingDevice>(imagingDevices);
+
+            scanLagTimer.Tick += ScanLagTimer_Tick;
+            scanLagTimer.Complete += ScanLagTimer_Complete;
+        }
 
         #region Commands
         private ICommand _StartScanCommand;
@@ -182,12 +182,12 @@ namespace Mosey.ViewModels
 
         public void Scan()
         {
-            ScanTest test = new ScanTest();
+            //ScanTest test = new ScanTest();
         }
         public void ScanLagAnalysis()
         {
             // Create a new ScanLag object using IronPython
-            IExternalInstance ScanLag = new ExternalInstance(Python.CreateEngine(), "", "ScanLag");
+            IExternalInstance scanLag = new ExternalInstance(Python.CreateEngine(), "", "ScanLag");
             //ScanLag.ExecuteMethod("ScanLag", param1, param2);
         }
     }

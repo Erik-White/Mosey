@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using Mosey.Models;
 
 namespace Mosey
 {
@@ -25,7 +26,8 @@ namespace Mosey
                     options.AddConsole();
                     options.AddDebug();
                 })
-                .AddSingleton<Mosey.Models.IIntervalTimer, Mosey.Models.IntervalTimer>()
+                .AddSingleton<IIntervalTimer, IntervalTimer>()
+                .AddSingleton<IImagingDevices, ScanningDevices>()
                 .AddSingleton<System.ComponentModel.INotifyPropertyChanged, ViewModels.MainViewModel>()
                 .BuildServiceProvider();
 
@@ -33,6 +35,8 @@ namespace Mosey
                 .CreateLogger<App>();
             logger.LogDebug("Starting application");
 
+
+            // Locate MainViewModel dependencies and create new window
             var viewModel = serviceProvider.GetService<System.ComponentModel.INotifyPropertyChanged>();
             var window = new Views.MainWindow { DataContext = viewModel };
             window.Show();

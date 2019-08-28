@@ -35,6 +35,8 @@
             <Button Command="{Binding Path=ResumeScanCommand}" Content="Resume scan" />
             <Button Command="{Binding Path=StopScanCommand}" Content="Stop scan" />
             <Controls:ProgressRing IsActive="{Binding Path=IsScanRunning}" />
+
+            <ListBox ItemsSource="{Binding Path=ScannerDevices}" />
         </DockPanel>
     </Border>
 </Controls:MetroWindow>
