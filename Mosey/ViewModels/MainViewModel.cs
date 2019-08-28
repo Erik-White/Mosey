@@ -109,7 +109,7 @@ namespace Mosey.ViewModels
             get
             {
                 if (_StartScanCommand == null)
-                    _StartScanCommand = new RelayCommand(o => StartScan(), o => !IsScanRunning && !scanLagTimer.Paused);
+                    _StartScanCommand = new RelayCommand(o => StartScan(), o => !IsScanRunning);
 
                 return _StartScanCommand;
             }
@@ -155,7 +155,7 @@ namespace Mosey.ViewModels
 
         public void StartScan()
         {
-            //scanLagTimer = new IntervalTimer(TimeSpan.FromMinutes(ScanDelay), TimeSpan.FromMinutes(ScanInterval), ScanRepetitions);
+            //scanLagTimer.Start(TimeSpan.FromMinutes(ScanDelay), TimeSpan.FromMinutes(ScanInterval), ScanRepetitions);
             //Use seconds instead of minutes for testing functionality
             scanLagTimer.Start(TimeSpan.FromSeconds(ScanDelay), TimeSpan.FromSeconds(ScanInterval), ScanRepetitions);
             RaisePropertyChanged("IsScanRunning");
@@ -170,6 +170,7 @@ namespace Mosey.ViewModels
             RaisePropertyChanged("ScanRepetitionsCount");
 
             // Call scanner API
+            Scan();
         }
 
         private void ScanLagTimer_Complete(object sender, EventArgs e)
@@ -178,7 +179,11 @@ namespace Mosey.ViewModels
             RaisePropertyChanged("IsScanRunning");
         }
 
-        void ScanLagAnalysis()
+        public void Scan()
+        {
+            ScanTest test = new ScanTest();
+        }
+        public void ScanLagAnalysis()
         {
             // Create a new ScanLag object using IronPython
             IExternalInstance ScanLag = new ExternalInstance(Python.CreateEngine(), "", "ScanLag");

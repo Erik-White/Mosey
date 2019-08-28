@@ -18,12 +18,15 @@ namespace Mosey
                 if (firstScanner == null)
                 {
                     Console.WriteLine("Please connect your scanner to the system and also make sure its driver is installed.");
+                    System.Diagnostics.Debug.WriteLine("Please connect your scanner to the system and also make sure its driver is installed");
                     return;
                 }
                 Console.WriteLine($"Using {firstScanner}");
+                System.Diagnostics.Debug.WriteLine("Using {0}", firstScanner);
 
                 using (var scannerDevice = new ScannerDevice(firstScanner))
                 {
+                    System.Diagnostics.Debug.WriteLine(scannerDevice.ToString());
                     scannerDevice.ScannerPictureSettings(config =>
                     {
                         config.ColorFormat(ColorType.Color)
@@ -59,6 +62,7 @@ namespace Mosey
                     foreach (var file in scannerDevice.SaveScannedImageFiles(fileName))
                     {
                         Console.WriteLine($"Saved image file to: {file}");
+                        System.Diagnostics.Debug.WriteLine(file.ToString());
                     }
 
                     // Or you can access the scanned images bytes
@@ -67,6 +71,7 @@ namespace Mosey
                         // You can convert them to Image objects
                         // var img = Image.FromStream(new MemoryStream(fileBytes));
                         Console.WriteLine($"fileBytes len: {fileBytes.Length}");
+                        System.Diagnostics.Debug.WriteLine("filebytes len: {0}", fileBytes.Length);
                         File.WriteAllBytes(Path.Combine(Directory.GetCurrentDirectory(), "test2.jpg"), fileBytes);
                     }
                 }
@@ -76,6 +81,7 @@ namespace Mosey
                 var friendlyErrorMessage = ex.GetComErrorMessage(); // How to show a better error message to users
                 Console.WriteLine(friendlyErrorMessage);
                 Console.WriteLine(ex);
+                System.Diagnostics.Debug.WriteLine("{0}; {1}", friendlyErrorMessage, ex);
             }
         }
     }
