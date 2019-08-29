@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Mosey.Common;
 using Mosey.Models;
-using IronPython.Hosting;
 
 namespace Mosey.ViewModels
 {
@@ -102,9 +101,17 @@ namespace Mosey.ViewModels
             log = logger;
             scanLagTimer = intervalTimer;
             _ScannerDevices = new ObservableCollection<IImagingDevice>(imagingDevices);
+            SetPropertyDefaults();
 
             scanLagTimer.Tick += ScanLagTimer_Tick;
             scanLagTimer.Complete += ScanLagTimer_Complete;
+        }
+
+        private void SetPropertyDefaults()
+        {
+            _ScanDelay = Common.Configuration.GetValue<int>("Timer:Delay");
+            _ScanInterval = Common.Configuration.GetValue<int>("Timer:Interval");
+            _ScanRepetitions = Common.Configuration.GetValue<int>("Timer:Repetitions");
         }
 
         #region Commands
