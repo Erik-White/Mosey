@@ -2,7 +2,7 @@
 
 namespace Mosey.Models
 {
-    public interface IIntervalTimer
+    public interface IIntervalTimer : IDisposable
     {
         TimeSpan Delay { get; }
         TimeSpan Interval { get; }

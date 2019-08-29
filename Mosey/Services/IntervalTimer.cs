@@ -15,6 +15,7 @@ namespace Mosey.Services
         public bool Paused { get; private set; }
         public event EventHandler Tick;
         public event EventHandler Complete;
+        private bool disposed;
         private Timer timer;
         private TimeSpan intervalRemaining;
         private Stopwatch stopWatch = new Stopwatch();
@@ -143,6 +144,32 @@ namespace Mosey.Services
                 }
                 Paused = false;
             }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposed)
+            {
+                if (disposing)
+                {
+                    if (timer != null)
+                    {
+                        timer.Dispose();
+                    }
+                }
+                disposed = true;
+            }
+        }
+
+        ~IntervalTimer()
+        {
+            Dispose(false);
         }
     }
 }
