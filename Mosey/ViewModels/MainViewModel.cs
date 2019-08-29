@@ -183,7 +183,7 @@ namespace Mosey.ViewModels
         public void Scan()
         {
             //ScanTest test = new ScanTest();
-            foreach(ScanningDevice scanner in ScannerDevices)
+            foreach(IImagingDevice scanner in ScannerDevices)
             {
                 scanner.GetImage();
                 scanner.SaveImage("", "test.jpg");
@@ -192,7 +192,7 @@ namespace Mosey.ViewModels
         public void ScanLagAnalysis()
         {
             // Create a new ScanLag object using IronPython
-            IExternalInstance scanLag = new ExternalInstance(Python.CreateEngine(), "", "ScanLag");
+            //IExternalInstance scanLag = new ExternalInstance(Python.CreateEngine(), "", "ScanLag");
             //ScanLag.ExecuteMethod("ScanLag", param1, param2);
         }
     }

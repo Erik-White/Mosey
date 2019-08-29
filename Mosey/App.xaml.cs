@@ -8,6 +8,7 @@ using System.Windows;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Mosey.Models;
+using Mosey.Services;
 
 namespace Mosey
 {
