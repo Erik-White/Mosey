@@ -33,6 +33,10 @@ namespace Mosey.Services
         {
             if(devices != null)
             {
+                foreach(ScanningDevice device in devices)
+                {
+                    device.Dispose();
+                }
                 devices.Clear();
             }
             devices = SystemScanners((ScanningDeviceSettings)deviceConfig);
@@ -152,6 +156,7 @@ namespace Mosey.Services
         public bool IsAutomaticDocumentFeeder { get { return scannerSettings.IsAutomaticDocumentFeeder; } }
         public bool IsDuplex { get { return scannerSettings.IsDuplex; } }
         public bool IsFlatbed { get { return scannerSettings.IsFlatbed; } }
+        private bool disposed;
         private ScannerDevice scannerDevice;
         private ScannerSettings scannerSettings;
 
@@ -189,6 +194,31 @@ namespace Mosey.Services
                 System.Diagnostics.Debug.WriteLine(file.ToString());
             }
             */
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposed){
+                if (disposing)
+                {
+                    if(scannerDevice != null)
+                    {
+                        scannerDevice.Dispose();
+                    }
+                }
+                disposed = true;
+            }
+        }
+
+        ~ScanningDevice()
+        {
+            Dispose(false);
         }
     }
 

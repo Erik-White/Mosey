@@ -15,7 +15,7 @@ namespace Mosey.Models
 
     }
 
-    public interface IImagingDevice// : IDisposable
+    public interface IImagingDevice : IDisposable
     {
         string Name { get; }
         string ID { get; }
