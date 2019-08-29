@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Configuration;
 using Mosey.Models;
 using DNTScanner.Core;
 
@@ -224,7 +225,8 @@ namespace Mosey.Services
 
     public class ScanningDeviceSettings : IImagingDeviceSettings
     {
-        public ColorType ColorType { get; set; }
+        public ColorFormat ColorFormat { get; set; }
+        public ColorType ColorType { get { return ColorTypeFromFormat(ColorFormat); } }
         public int Resolution { get; set; }
         public int Brightness { get; set; }
         public int Contrast { get; set; }
@@ -233,9 +235,9 @@ namespace Mosey.Services
         {
             UseDefaults();
         }
-        public ScanningDeviceSettings(ColorType colorType, int resolution, int brightness, int contrast)
+        public ScanningDeviceSettings(ColorFormat colorFormat, int resolution, int brightness, int contrast)
         {
-            ColorType = colorType;
+            ColorFormat = colorFormat;
             Resolution = resolution;
             Brightness = brightness;
             Contrast = contrast;
@@ -243,11 +245,26 @@ namespace Mosey.Services
         public void UseDefaults()
         {
             // Load default stored settings
-            // TODO: Replace hard coded value with settings values
-            ColorType = ColorType.Color;
-            Resolution = 200;
-            Brightness = 1;
-            Contrast = 1;
+            Common.Configuration.Bind("Images", this);
+        }
+
+        /// <summary>
+        /// Returns a ColorType class from a ColorFormat Enum
+        /// Allows conversion of type from json settings file
+        /// </summary>
+        /// <param name="colorFormat"></param>
+        /// <returns></returns>
+        public ColorType ColorTypeFromFormat(ColorFormat colorFormat)
+        {
+            // ColorTypes properties are internal and not accessible for comparison
+            switch (colorFormat) {
+                case ColorFormat.BlackAndWhite:
+                    return ColorType.BlackAndWhite;
+                case ColorFormat.Greyscale:
+                    return ColorType.Greyscale;
+                default:
+                    return ColorType.Color;
+            }
         }
     }
 }
