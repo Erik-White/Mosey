@@ -14,23 +14,28 @@ namespace Mosey.Services
 
         public ScanningDevices()
         {
-            // Get default scanner image settings
-            // Should be returned from settings but hard coded for now
+            // Populate list of scanners using default image settings
             RefreshDevices(new ScanningDeviceSettings());
         }
 
-        public ScanningDevices(ScanningDeviceSettings deviceConfig)
+        public ScanningDevices(IImagingDeviceSettings deviceConfig)
         {
             RefreshDevices(deviceConfig);
         }
 
-        public void RefreshDevices(ScanningDeviceSettings deviceConfig)
+        public void RefreshDevices()
+        {
+            // Populate list of scanners using default image settings
+            RefreshDevices(new ScanningDeviceSettings());
+        }
+
+        public void RefreshDevices(IImagingDeviceSettings deviceConfig)
         {
             if(devices != null)
             {
                 devices.Clear();
             }
-            devices = SystemScanners(deviceConfig);
+            devices = SystemScanners((ScanningDeviceSettings)deviceConfig);
         }
 
         public void Add(ScanningDevice device)
@@ -38,12 +43,33 @@ namespace Mosey.Services
             devices.Add(device);
         }
 
-        public void EnableDevice(ScanningDevice device)
+        public void EnableDevice(IImagingDevice device)
         {
             devices.Find(x => x.ID == device.ID).Enabled = true;
         }
 
-        public IEnumerable<ScanningDevice> GetByEnabled( bool enabled)
+        public void EnableDevice(string deviceName)
+        {
+            devices.Find(x => x.Name == deviceName).Enabled = true;
+        }
+
+        public void EnableAll()
+        {
+            SetByEnabled(true);
+        }
+
+        public void DisableAll()
+        {
+            SetByEnabled(false);
+        }
+
+        private void SetByEnabled(bool enabled)
+        {
+            // Set the Enabled property on all members of the collection
+            devices.All(x => {x.Enabled = enabled; return true; });
+        }
+
+        public IEnumerable<IImagingDevice> GetByEnabled( bool enabled)
         {
             return devices.FindAll(x => x.Enabled = enabled).ToList();
         }
@@ -74,6 +100,8 @@ namespace Mosey.Services
                 foreach(ScannerSettings settings in systemScanners)
                 {
                     /*
+                     * ScannerDevices will be disposed with using
+                     * This prevents their use elsewhere
                     using (ScannerDevice device = new ScannerDevice(settings))
                     {
                         // Use the same image settings for all scanners
@@ -90,25 +118,23 @@ namespace Mosey.Services
                     }
                     */
                     ScannerDevice device = new ScannerDevice(settings);
-                        // Use the same image settings for all scanners
-                        device.ScannerPictureSettings(config =>
-                            config.ColorFormat(deviceConfig.ColorType)
-                                .Resolution(deviceConfig.Resolution)
-                                .Brightness(deviceConfig.Brightness)
-                                .Contrast(deviceConfig.Contrast)
+                    // Use the same image settings for all scanners
+                    device.ScannerPictureSettings(config =>
+                        config.ColorFormat(deviceConfig.ColorType)
+                            .Resolution(deviceConfig.Resolution)
+                            .Brightness(deviceConfig.Brightness)
+                            .Contrast(deviceConfig.Contrast)
                             //.StartPosition(left: 0, top: 0)
-                            //.Extent(width: 1250 * dpi, height: 1700 * dpi)
-                            );
+                            //.Extent(width: 1000 * dpi, height: 1000 * dpi)
+                        );
 
-                        deviceList.Add(new ScanningDevice(device, settings));
+                    // Store the device in the collection
+                    deviceList.Add(new ScanningDevice(device, settings));
                 }
             }
             catch (COMException ex)
             {
-                var friendlyErrorMessage = ex.GetComErrorMessage(); // How to show a better error message to users
-                Console.WriteLine(friendlyErrorMessage);
-                Console.WriteLine(ex);
-                System.Diagnostics.Debug.WriteLine("{0}; {1}", friendlyErrorMessage, ex);
+                Console.WriteLine(ex.GetComErrorMessage());
                 throw ex;
             }
             return deviceList;
@@ -147,14 +173,22 @@ namespace Mosey.Services
             }
         }
 
-        public void SaveImage(string directory, string fileName)
+        public void SaveImage()
+        {
+            SaveImage(Directory.GetCurrentDirectory(), "image{WIAImageFormat.Jpeg.ToString()}");
+        }
+
+        public IEnumerable<string> SaveImage(string directory, string fileName)
         {
             // TODO: Get directory from user or default to appdir
             fileName = Path.Combine(Directory.GetCurrentDirectory(), fileName);
+            return scannerDevice.SaveScannedImageFiles(fileName);
+            /*
             foreach (var file in scannerDevice.SaveScannedImageFiles(fileName))
             {
                 System.Diagnostics.Debug.WriteLine(file.ToString());
             }
+            */
         }
     }
 

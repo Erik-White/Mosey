@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
+using Microsoft.Extensions.Logging;
 using Mosey.Common;
 using Mosey.Models;
 using IronPython.Hosting;
@@ -9,6 +11,7 @@ namespace Mosey.ViewModels
 {
     public class MainViewModel : ViewModelBase
     {
+        private ILogger<MainViewModel> log;
         private IIntervalTimer scanLagTimer;
         private IExternalInstance scanLagAnalysis;
 
@@ -94,8 +97,9 @@ namespace Mosey.ViewModels
             }
         }
 
-        public MainViewModel(IIntervalTimer intervalTimer, IImagingDevices imagingDevices)
+        public MainViewModel(ILogger<MainViewModel> logger, IIntervalTimer intervalTimer, IImagingDevices imagingDevices)
         {
+            log = logger;
             scanLagTimer = intervalTimer;
             _ScannerDevices = new ObservableCollection<IImagingDevice>(imagingDevices);
 
@@ -178,15 +182,32 @@ namespace Mosey.ViewModels
         {
             RaisePropertyChanged("ScanRepetitionsCount");
             RaisePropertyChanged("IsScanRunning");
+            log.LogInformation("ScanLag timer complete");
         }
 
         public void Scan()
         {
-            //ScanTest test = new ScanTest();
-            foreach(IImagingDevice scanner in ScannerDevices)
+            string fileName = "test.jpg";
+            try
             {
-                scanner.GetImage();
-                scanner.SaveImage("", "test.jpg");
+                foreach (IImagingDevice scanner in ScannerDevices)
+                {
+                    // Retrieve image(s) to memory
+                    scanner.GetImage();
+                    log.LogDebug("Retrieved image on {scanner.Name} at {DateTime.Now}", scanner.Name, DateTime.Now);
+
+                    // Write image(s) to filesystem and retrieve a list of saved file names
+                    IEnumerable<string> savedImages = scanner.SaveImage("", fileName);
+                    foreach(string image in savedImages)
+                    {
+                        fileName = image;
+                        log.LogInformation("Saved image file {fileName) at {DateTime.Now}", fileName, DateTime.Now);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex, "Failed to scan image {fileName) at {DateTime.Now}", fileName, DateTime.Now);
             }
         }
         public void ScanLagAnalysis()

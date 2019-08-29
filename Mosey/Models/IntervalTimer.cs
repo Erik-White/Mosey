@@ -4,18 +4,17 @@ namespace Mosey.Models
 {
     public interface IIntervalTimer
     {
-        public TimeSpan Delay { get; }
-        public TimeSpan Interval { get; }
-        public int Repetitions { get; }
-        public int RepetitionsCount { get;}
-        public bool Enabled { get; }
-        public bool Paused { get; }
-        public event EventHandler Tick;
-        public event EventHandler Complete;
-
-        public void Start(TimeSpan delay, TimeSpan interval, int repetitions) { }
-        public void Stop() { }
-        public void Pause() { }
-        public void Resume() { }
+        TimeSpan Delay { get; }
+        TimeSpan Interval { get; }
+        int Repetitions { get; }
+        int RepetitionsCount { get;}
+        bool Enabled { get; }
+        bool Paused { get; }
+        event EventHandler Tick;
+        event EventHandler Complete;
+        void Start(TimeSpan delay, TimeSpan interval, int repetitions);
+        void Stop();
+        void Pause();
+        void Resume();
     }
 }

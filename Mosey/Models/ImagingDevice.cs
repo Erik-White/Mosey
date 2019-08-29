@@ -5,28 +5,30 @@ namespace Mosey.Models
 {
     public interface IImagingDevices : IEnumerable<IImagingDevice>
     {
-        public void RefreshDevices() { }
-        public void EnableDevice(IImagingDevice device) { }
-        public void EnableDevice(string deviceName) { }
-        public void EnableAll() { }
-        public void DisableAll() { }
+        void RefreshDevices();
+        void RefreshDevices(IImagingDeviceSettings deviceSettings);
+        void EnableDevice(IImagingDevice device);
+        void EnableDevice(string deviceName);
+        void EnableAll();
+        void DisableAll();
+        IEnumerable<IImagingDevice> GetByEnabled(bool enabled);
 
     }
 
     public interface IImagingDevice// : IDisposable
     {
-        public string Name { get; }
-        public string ID { get; }
-        public bool Enabled { get; set; }
-        public void GetImage() { }
-        public void SaveImage() { }
-        public void SaveImage(string directory, string fileName) { }
+        string Name { get; }
+        string ID { get; }
+        bool Enabled { get; set; }
+        void GetImage();
+        void SaveImage();
+        IEnumerable<string> SaveImage(string directory, string fileName);
     }
 
     public interface IImagingDeviceSettings
     {
-        public int Resolution { get; set; }
-        public int Brightness { get; set; }
-        public int Contrast { get; set; }
+        int Resolution { get; set; }
+        int Brightness { get; set; }
+        int Contrast { get; set; }
     }
 }
