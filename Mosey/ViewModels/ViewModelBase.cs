@@ -6,8 +6,6 @@ namespace Mosey.ViewModels
 {
     public abstract class ViewModelBase : INotifyPropertyChanged
     {
-        //protected static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
-
         #region Debugging Aides
 
         /// <summary>
