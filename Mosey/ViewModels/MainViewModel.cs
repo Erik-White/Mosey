@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows.Input;
+using System.Threading.Tasks;
+using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Mosey.Models;
@@ -10,56 +12,80 @@ namespace Mosey.ViewModels
 {
     public class MainViewModel : ViewModelBase
     {
-        private ILogger<MainViewModel> log;
-        private IIntervalTimer scanLagTimer;
-        private IExternalInstance scanLagAnalysis;
+        private ILogger<MainViewModel> _log;
+        private IIntervalTimer _scanTimer;
+        private IExternalInstance _scanAnalysis;
+        private ImageFileConfig _imageConfig;
+        private IntervalTimerConfig _scanConfig;
 
-        private int _ScanDelay;
+        #region Properties
+        public string ImageFormat
+        {
+            get
+            {
+                return _imageConfig.Format;
+            }
+            set
+            {
+                _imageConfig.Format = value;
+                RaisePropertyChanged("ImageFormat");
+            }
+        }
+
+        public List<string> ImageFormatSupported
+        {
+            get
+            {
+                return _imageConfig.SupportedFormats;
+            }
+        }
+
         public int ScanDelay
         {
             get
             {
-                return _ScanDelay;
+                return _scanConfig.Delay;
             }
             set
             {
-                _ScanDelay = value;
+                _scanConfig.Delay = value;
                 RaisePropertyChanged("ScanDelay");
             }
         }
-        private int _ScanInterval;
+
         public int ScanInterval
         {
             get
             {
-                return _ScanInterval;
+                return _scanConfig.Interval;
             }
             set
             {
-                _ScanInterval = value;
+                _scanConfig.Interval = value;
                 RaisePropertyChanged("ScanInterval");
             }
         }
-        private int _ScanRepetitions;
+
         public int ScanRepetitions
         {
             get
             {
-                return _ScanRepetitions;
+                return _scanConfig.Repetitions;
             }
             set
             {
-                _ScanRepetitions = value;
+                _scanConfig.Repetitions = value;
                 RaisePropertyChanged("ScanRepetitions");
             }
         }
+
         public int ScanRepetitionsCount
         {
             get
             {
-                if (scanLagTimer != null)
+                if (_scanTimer != null)
                 {
-                    return scanLagTimer.RepetitionsCount;
+                    return _scanTimer.RepetitionsCount;
                 }
                 else
                 {
@@ -71,9 +97,9 @@ namespace Mosey.ViewModels
         {
             get
             {
-                if(scanLagTimer != null)
+                if(_scanTimer != null)
                 {
-                    return scanLagTimer.Enabled;
+                    return _scanTimer.Enabled;
                 }
                 else
                 {
@@ -82,46 +108,60 @@ namespace Mosey.ViewModels
             }
         }
 
-        private ObservableCollection<IImagingDevice> _ScannerDevices;
-        public ObservableCollection<IImagingDevice> ScannerDevices
+        private IImagingDevices _scannerDevices;
+        public IImagingDevices ScannerDevices
         {
             get
             {
-                return _ScannerDevices;
+                return _scannerDevices;
             }
             set
             {
-                _ScannerDevices = value;
+                _scannerDevices = value;
                 RaisePropertyChanged("ScannerDevices");
             }
         }
+        #endregion Properties
 
         public MainViewModel(ILogger<MainViewModel> logger, IIntervalTimer intervalTimer, IImagingDevices imagingDevices)
         {
-            log = logger;
-            scanLagTimer = intervalTimer;
-            _ScannerDevices = new ObservableCollection<IImagingDevice>(imagingDevices);
-            SetPropertyDefaults();
+            _log = logger;
+            _scanTimer = intervalTimer;
+            _scannerDevices = imagingDevices;
+            SetPropertyConfiguration();
 
-            scanLagTimer.Tick += ScanLagTimer_Tick;
-            scanLagTimer.Complete += ScanLagTimer_Complete;
+            _scanTimer.Tick += ScanTimer_Tick;
+            _scanTimer.Complete += ScanTimer_Complete;
         }
 
-        private void SetPropertyDefaults()
+        private void SetPropertyConfiguration()
         {
-            _ScanDelay = Common.Configuration.GetValue<int>("Timer:Delay");
-            _ScanInterval = Common.Configuration.GetValue<int>("Timer:Interval");
-            _ScanRepetitions = Common.Configuration.GetValue<int>("Timer:Repetitions");
+            _scanConfig = Common.Configuration.GetSection("Timer").Get<IntervalTimerConfig>();
+            _imageConfig = Common.Configuration.GetSection("Image:File").Get<ImageFileConfig>();
+
+            ScannerDevices.EnableAll();
         }
 
         #region Commands
+        private ICommand _ManualScanCommand;
+        public ICommand ManualScanCommand
+        {
+            get
+            {
+                if (_ManualScanCommand == null)
+                    _ManualScanCommand = new RelayCommand(o => ScanAsync(), o => !IsScanRunning && !_scanTimer.Paused && _scannerDevices.DevicesReady);
+
+                return _ManualScanCommand;
+            }
+        }
+
         private ICommand _StartScanCommand;
         public ICommand StartScanCommand
         {
             get
             {
                 if (_StartScanCommand == null)
-                    _StartScanCommand = new RelayCommand(o => StartScan(), o => !IsScanRunning && !scanLagTimer.Paused);
+                    _StartScanCommand = new RelayCommand(o => StartScan(), o => !IsScanRunning && !_scanTimer.Paused);
 
                 return _StartScanCommand;
             }
@@ -133,7 +173,7 @@ namespace Mosey.ViewModels
             get
             {
                 if (_PauseScanCommand == null)
-                    _PauseScanCommand = new RelayCommand(o => scanLagTimer.Pause(), o => IsScanRunning && !scanLagTimer.Paused);
+                    _PauseScanCommand = new RelayCommand(o => _scanTimer.Pause(), o => IsScanRunning && !_scanTimer.Paused);
 
                 return _PauseScanCommand;
             }
@@ -145,21 +185,33 @@ namespace Mosey.ViewModels
             get
             {
                 if (_ResumeScanCommand == null)
-                    _ResumeScanCommand = new RelayCommand(o => scanLagTimer.Resume(), o => scanLagTimer.Paused);
+                    _ResumeScanCommand = new RelayCommand(o => _scanTimer.Resume(), o => _scanTimer.Paused);
 
                 return _ResumeScanCommand;
             }
         }
-
+         
         private ICommand _StopScanCommand;
         public ICommand StopScanCommand
         {
             get
             {
                 if (_StopScanCommand == null)
-                    _StopScanCommand = new RelayCommand(o => scanLagTimer.Stop(), o => IsScanRunning);
+                    _StopScanCommand = new RelayCommand(o => _scanTimer.Stop(), o => IsScanRunning);
 
                 return _StopScanCommand;
+            }
+        }
+
+        private ICommand _RefreshScannersCommand;
+        public ICommand RefreshScannersCommand
+        {
+            get
+            {
+                if (_RefreshScannersCommand == null)
+                    _RefreshScannersCommand = new RelayCommand(o => ScannerDevices.RefreshDevices());
+
+                return _RefreshScannersCommand;
             }
         }
         #endregion Commands
@@ -169,59 +221,106 @@ namespace Mosey.ViewModels
         {
             //scanLagTimer.Start(TimeSpan.FromMinutes(ScanDelay), TimeSpan.FromMinutes(ScanInterval), ScanRepetitions);
             //Use seconds instead of minutes for testing functionality
-            scanLagTimer.Start(TimeSpan.FromSeconds(ScanDelay), TimeSpan.FromSeconds(ScanInterval), ScanRepetitions);
+            _scanTimer.Start(TimeSpan.FromSeconds(ScanDelay), TimeSpan.FromSeconds(ScanInterval), ScanRepetitions);
             RaisePropertyChanged("IsScanRunning");
+        }
+
+        private void ScanTimer_Tick(object sender, EventArgs e)
+        {
+            // Update progress
+            RaisePropertyChanged("ScanRepetitionsCount");
+
+            ScanAsync();
+        }
+
+        private void ScanTimer_Complete(object sender, EventArgs e)
+        {
+            RaisePropertyChanged("ScanRepetitionsCount");
+            RaisePropertyChanged("IsScanRunning");
+            _log.LogInformation($"Scan timer complete at {DateTime.Now.ToString(string.Join("_", _imageConfig.DateFormat, _imageConfig.TimeFormat))} with {ScanRepetitionsCount} repetitions.");
 
             // Run ScanLagAnalysis if required
             //ScanLagAnalysis();
         }
 
-        private void ScanLagTimer_Tick(object sender, EventArgs e)
+        private async void ScanAsync()
         {
-            // Update progress
-            RaisePropertyChanged("ScanRepetitionsCount");
-
-            // Call scanner API
-            Scan();
+            // Run scanning on another thread
+            List<string> result = await Task.Run(() => Scan());
         }
 
-        private void ScanLagTimer_Complete(object sender, EventArgs e)
+        public List<string> Scan()
         {
-            RaisePropertyChanged("ScanRepetitionsCount");
-            RaisePropertyChanged("IsScanRunning");
-            log.LogInformation("ScanLag timer complete");
-        }
+            string scannerIDStr = string.Empty;
+            string saveDateTime = DateTime.Now.ToString(string.Join("_", _imageConfig.DateFormat, _imageConfig.TimeFormat));
+            string saveDirectory = _imageConfig.Path;
+            List<string> imagePaths = new List<string>();
 
-        public void Scan()
-        {
-            string fileName = "test.jpg";
+            //Default to user's Pictures directory if none is specified
+            if(string.IsNullOrWhiteSpace(saveDirectory))
+            {
+                saveDirectory = Path.Combine
+                (
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
+                    System.Reflection.Assembly.GetExecutingAssembly().GetName().Name
+                );
+            }
+
             try
             {
                 foreach (IImagingDevice scanner in ScannerDevices)
                 {
-                    // Retrieve image(s) to memory
+                    // Retrieve image(s) from scanner to memory
+                    scannerIDStr = scanner.ID.ToString();
+
+                    // Run the scanner and retrieve the image(s) to memory
                     scanner.GetImage();
-                    log.LogDebug("Retrieved image on {scanner.Name} at {DateTime.Now}", scanner.Name, DateTime.Now);
+                    _log.LogDebug($"Retrieved image on {scanner.Name} (#{scannerIDStr}) at {saveDateTime}");
+
+                    string fileName = String.Join("_", _imageConfig.Prefix, saveDateTime);
+                    string directory = Path.Combine(saveDirectory, String.Join(String.Empty, "Scanner", scannerIDStr));
+                    Directory.CreateDirectory(directory);
 
                     // Write image(s) to filesystem and retrieve a list of saved file names
-                    IEnumerable<string> savedImages = scanner.SaveImage("", fileName);
-                    foreach(string image in savedImages)
+                    IEnumerable<string> savedImages = scanner.SaveImage(fileName, directory: directory, fileFormat: ImageFormat);
+                    foreach (string image in savedImages)
                     {
-                        fileName = image;
-                        log.LogInformation("Saved image file {fileName) at {DateTime.Now}", fileName, DateTime.Now);
+                        imagePaths.Add(image);
+                        _log.LogInformation($"Saved image file {image} from scanner #{scannerIDStr} at {saveDateTime}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                log.LogError(ex, "Failed to scan image {fileName) at {DateTime.Now}", fileName, DateTime.Now);
+                _log.LogError(ex, $"Failed to scan image on scanner #{scannerIDStr} at {saveDateTime}");
+                throw;
             }
+
+            return imagePaths;
         }
-        public void ScanLagAnalysis()
+
+        public void ScanAnalysis()
         {
             // Create a new ScanLag object using IronPython
             //IExternalInstance scanLag = new ExternalInstance(Python.CreateEngine(), "", "ScanLag");
             //ScanLag.ExecuteMethod("ScanLag", param1, param2);
+            throw new NotImplementedException();
+        }
+
+        public class IntervalTimerConfig
+        {
+            public int Delay { get; set; }
+            public int Interval { get; set; }
+            public int Repetitions { get; set; }
+        }
+        public class ImageFileConfig
+        {
+            public string Path { get; set; }
+            public string Prefix { get; set; }
+            public string Format { get; set; }
+            public List<string> SupportedFormats { get; set; }
+            public string DateFormat { get; set; }
+            public string TimeFormat { get; set; }
         }
     }
 }

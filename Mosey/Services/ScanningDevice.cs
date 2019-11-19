@@ -2,21 +2,28 @@
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Mosey.Models;
 using DNTScanner.Core;
 
 namespace Mosey.Services
 {
-    public class ScanningDevices : IImagingDevices
+    public class ScanningDevices : ObservableCollection<IImagingDevice>, IImagingDevices
     {
-        public List<ScanningDevice> devices { get; private set; }
+        public bool DevicesReady
+        {
+            get
+            {
+                return this.All(x => x.Ready is true);
+            }
+        }
 
         public ScanningDevices()
         {
-            // Populate list of scanners using default image settings
-            RefreshDevices(new ScanningDeviceSettings());
+            RefreshDevices();
         }
 
         public ScanningDevices(IImagingDeviceSettings deviceConfig)
@@ -32,30 +39,38 @@ namespace Mosey.Services
 
         public void RefreshDevices(IImagingDeviceSettings deviceConfig)
         {
-            if(devices != null)
+            // Release all scanners then empty the collection
+            foreach (ScanningDevice device in this)
             {
-                foreach(ScanningDevice device in devices)
-                {
-                    device.Dispose();
-                }
-                devices.Clear();
+                device.Dispose();
             }
-            devices = SystemScanners((ScanningDeviceSettings)deviceConfig);
+            Clear();
+
+            foreach (ScanningDevice device in SystemScanners((ScanningDeviceSettings)deviceConfig))
+            {
+                AddDevice(device);
+            }
         }
 
-        public void Add(ScanningDevice device)
+        public void AddDevice(ScanningDevice device)
         {
-            devices.Add(device);
+            if (!Contains(device))
+            {
+                Add(device);
+            }
+            else
+            {
+                throw new ArgumentException("This device already exists.", device.ID.ToString());
+            }
         }
 
         public void EnableDevice(IImagingDevice device)
         {
-            devices.Find(x => x.ID == device.ID).Enabled = true;
+            this.Where(x => x.DeviceID == device.DeviceID).First().Enabled = true;
         }
-
-        public void EnableDevice(string deviceName)
+        public void EnableDevice(string deviceID)
         {
-            devices.Find(x => x.Name == deviceName).Enabled = true;
+            this.Where(x => x.DeviceID == deviceID).First().Enabled = true;
         }
 
         public void EnableAll()
@@ -71,66 +86,40 @@ namespace Mosey.Services
         private void SetByEnabled(bool enabled)
         {
             // Set the Enabled property on all members of the collection
-            devices.All(x => {x.Enabled = enabled; return true; });
+            this.All(x => { x.Enabled = enabled; return true; });
         }
 
-        public IEnumerable<IImagingDevice> GetByEnabled( bool enabled)
+        public IEnumerable<IImagingDevice> GetByEnabled(bool enabled)
         {
-            return devices.FindAll(x => x.Enabled = enabled).ToList();
+            return this.Where(x => x.Enabled = enabled).AsEnumerable();
         }
 
-        public IEnumerator<IImagingDevice> GetEnumerator()
-        {
-            return devices.GetEnumerator();
-        }
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-        private List<ScanningDevice> SystemScanners(ScanningDeviceSettings deviceConfig)
+        private IEnumerable<ScanningDevice> SystemScanners(ScanningDeviceSettings deviceConfig)
         {
             List<ScanningDevice> deviceList = new List<ScanningDevice>();
             try
             {
-                // Find the first available scanner
+                // Check that at least one scanner can be found
                 var systemScanners = SystemDevices.GetScannerDevices();
                 if (systemScanners.FirstOrDefault() == null)
                 {
-                    Console.WriteLine("Please connect your scanner to the system and also make sure its driver is installed.");
+                    Console.WriteLine("No scanner devices could be found. Please connect your scanner to the system and ensure that it's driver is installed.");
                     return deviceList;
                 }
 
-                foreach(ScannerSettings settings in systemScanners)
+                foreach (ScannerSettings settings in systemScanners)
                 {
-                    /*
-                     * ScannerDevices will be disposed with using
-                     * This prevents their use elsewhere
-                    using (ScannerDevice device = new ScannerDevice(settings))
-                    {
-                        // Use the same image settings for all scanners
-                        device.ScannerPictureSettings(config =>
-                            config.ColorFormat(deviceConfig.ColorType)
-                                .Resolution(deviceConfig.Resolution)
-                                .Brightness(deviceConfig.Brightness)
-                                .Contrast(deviceConfig.Contrast)
-                                //.StartPosition(left: 0, top: 0)
-                                //.Extent(width: 1250 * dpi, height: 1700 * dpi)
-                            );
-
-                        deviceList.Add(new ScanningDevice(device, settings);
-                    }
-                    */
-                    ScannerDevice device = new ScannerDevice(settings);
+                    // Start each scanner on its own thread
+                    // This prevents locking the UI and ensures multiple scanner can run together
+                    ScannerDevice device = Task.Run(() => new ScannerDevice(settings)).Result;
                     // Use the same image settings for all scanners
                     device.ScannerPictureSettings(config =>
                         config.ColorFormat(deviceConfig.ColorType)
                             .Resolution(deviceConfig.Resolution)
                             .Brightness(deviceConfig.Brightness)
                             .Contrast(deviceConfig.Contrast)
-                            //.StartPosition(left: 0, top: 0)
-                            //.Extent(width: 1000 * dpi, height: 1000 * dpi)
+                        //.StartPosition(left: 0, top: 0)
+                        //.Extent(width: 1000 * dpi, height: 1000 * dpi)
                         );
 
                     // Store the device in the collection
@@ -139,8 +128,8 @@ namespace Mosey.Services
             }
             catch (COMException ex)
             {
-                Console.WriteLine(ex.GetComErrorMessage());
-                throw ex;
+                // TODO: Retry if device is busy or warming up
+                throw new Exception(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
             }
             return deviceList;
         }
@@ -151,50 +140,196 @@ namespace Mosey.Services
     /// </summary>
     public class ScanningDevice : IImagingDevice
     {
-        public string Name { get { return scannerSettings.Name;  } }
-        public string ID {  get { return scannerSettings.Id;  } }
+        public string Name { get { return _scannerSettings.Name; } }
+        public int ID { get { return GetSimpleID(); } }
+        public string DeviceID { get { return _scannerSettings.Id; } }
         public bool Enabled { get; set; }
-        public bool IsAutomaticDocumentFeeder { get { return scannerSettings.IsAutomaticDocumentFeeder; } }
-        public bool IsDuplex { get { return scannerSettings.IsDuplex; } }
-        public bool IsFlatbed { get { return scannerSettings.IsFlatbed; } }
-        private bool disposed;
-        private ScannerDevice scannerDevice;
-        private ScannerSettings scannerSettings;
+        public bool Ready { get; private set; } = true;
+        public bool IsAutomaticDocumentFeeder { get { return _scannerSettings.IsAutomaticDocumentFeeder; } }
+        public bool IsDuplex { get { return _scannerSettings.IsDuplex; } }
+        public bool IsFlatbed { get { return _scannerSettings.IsFlatbed; } }
+        public enum ImageFormat
+        {
+            Bmp,
+            Png,
+            Gif,
+            Jpeg,
+            Tiff
+        }
+        private bool _disposed;
+        private ScannerDevice _scannerDevice;
+        private ScannerSettings _scannerSettings;
+        readonly int retryLimit = 30;
 
         public ScanningDevice(ScannerDevice device, ScannerSettings settings)
         {
-            scannerDevice = device;
-            scannerSettings = settings;
+            _scannerDevice = device;
+            _scannerSettings = settings;
         }
 
         public void GetImage()
         {
-            GetImage(WiaImageFormat.Jpeg);
+            GetImage(WiaImageFormat.Bmp);
         }
+
+        public void GetImage_bak(WiaImageFormat format)
+        {
+            if (_scannerDevice != null)
+            {
+                try
+                {
+                    _scannerDevice.PerformScan(format);
+                }
+                catch (System.Runtime.InteropServices.COMException ex)
+                {
+                    throw new Exception(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
+                }
+            }
+        }
+
         public void GetImage(WiaImageFormat format)
         {
-            if (scannerDevice != null)
+            int retryCount = 0;
+
+            if (_scannerDevice != null)
             {
-                scannerDevice.PerformScan(format);
+                if (!_scannerSettings.SupportedTransferFormats.ContainsKey(format.Value))
+                {
+                    throw new ArgumentException($"The image format {format} is not supported by this device.");
+                }
+
+                // Wait until the scanner is ready
+                while (retryCount < retryLimit)
+                {
+                    try
+                    {
+                        Ready = false;
+                        _scannerDevice.PerformScan(format);
+                        break;
+                    }
+                    catch (COMException ex)
+                    {
+                        // Wait until the scanner is ready if it is warming up or busy
+                        if (ex.ErrorCode == -2145320954 | ex.ErrorCode == -2145320953)
+                        {
+                            System.Threading.Thread.Sleep(1000);
+                            retryCount += 1;
+                            continue;
+                        }
+                        throw new COMException(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
+                    }
+                    finally
+                    {
+                        Ready = true;
+                    }
+                }
+            }
+        }
+
+        public async void GetImageRetry(WiaImageFormat format)
+        {
+            int retryCount = 0;
+
+            if (_scannerDevice != null)
+            {
+                // Wait until the scanner is ready
+                while (!Ready && retryCount < retryLimit)
+                {
+                    await Task.Delay(1000);
+                    retryCount += 1;
+                }
+                try
+                {
+                    _scannerDevice.PerformScan(format);
+                    await Task.Delay(4000);
+                    //System.Threading.Thread.Sleep(4000);
+                }
+                catch (COMException ex)
+                {
+                    throw new Exception(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
+                }
             }
         }
 
         public void SaveImage()
         {
-            SaveImage(Directory.GetCurrentDirectory(), "image{WIAImageFormat.Jpeg.ToString()}");
+            SaveImage("image");
         }
 
-        public IEnumerable<string> SaveImage(string directory, string fileName)
+        public IEnumerable<string> SaveImage(string fileName, string directory = "", string fileFormat = "")
         {
-            // TODO: Get directory from user or default to appdir
-            fileName = Path.Combine(Directory.GetCurrentDirectory(), fileName);
-            return scannerDevice.SaveScannedImageFiles(fileName);
-            /*
-            foreach (var file in scannerDevice.SaveScannedImageFiles(fileName))
+            // Check that the file extension is valid
+            ImageFormat imageFormat = ImageFormatFromString(fileFormat);
+
+            // Save to the user's Pictures folder if none is set
+            if (string.IsNullOrWhiteSpace(directory))
             {
-                System.Diagnostics.Debug.WriteLine(file.ToString());
+                directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(), System.Reflection.Assembly.GetExecutingAssembly().GetName().Name);
             }
-            */
+            Directory.CreateDirectory(directory);
+
+            fileName = Path.Combine(directory, fileName);
+            fileName = Path.ChangeExtension(fileName, imageFormat.ToString().ToLower());
+
+            try
+            {
+                return _scannerDevice.SaveScannedImageFiles(fileName);
+            }
+            catch (COMException ex)
+            {
+                throw new Exception(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
+            }
+        }
+
+        /// <summary>
+        /// Convert a file extension string to an ImageFormat enum.
+        /// Allows conversion of type from json settings file
+        /// </summary>
+        /// <param name="imageFormatStr"></param>
+        /// <returns>An ImageFormat enum</returns>
+        public ImageFormat ImageFormatFromString(string imageFormatStr)
+        {
+            if(Enum.TryParse(imageFormatStr, ignoreCase: true, out ImageFormat imageFormat))
+            {
+                return imageFormat;
+            }
+            else
+            {
+                throw new FileFormatException($"{imageFormatStr} is not a valid image file extension.");
+            }
+        }
+
+        private int GetDocumentHandlingStatus()
+        {
+            if(_scannerSettings.ScannerDeviceSettings.TryGetValue("Document Handling Status", out object value))
+            {
+                return (int)value;
+            }
+            return 0;
+        }
+
+        private int GetSimpleID()
+        {
+            // Get the last two characters of the device instance path
+            // Hopefully a unique integer
+            string shortID = _scannerSettings.Id.Substring(Math.Max(0, _scannerSettings.Id.Length - 2));
+
+            if (int.TryParse(shortID, out int intID))
+            {
+                return intID;
+            }
+            else
+            {
+                // Return the numeric representation of the characters instead
+                return shortID.GetHashCode();
+            }
+        }
+
+        public List<KeyValuePair<string, object>> DeviceSettings { get { return GetScannerDeviceSettings(); } }
+        public List<KeyValuePair<string, object>> GetScannerDeviceSettings()
+        {
+
+            return _scannerSettings.ScannerDeviceSettings.ToList<KeyValuePair<string, object>>();
         }
 
         public void Dispose()
@@ -205,15 +340,15 @@ namespace Mosey.Services
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposed){
+            if (!_disposed){
                 if (disposing)
                 {
-                    if(scannerDevice != null)
+                    if(_scannerDevice != null)
                     {
-                        scannerDevice.Dispose();
+                        _scannerDevice.Dispose();
                     }
                 }
-                disposed = true;
+                _disposed = true;
             }
         }
 
@@ -245,11 +380,11 @@ namespace Mosey.Services
         public void UseDefaults()
         {
             // Load default stored settings
-            Common.Configuration.Bind("Images", this);
+            Common.Configuration.Bind("Image", this);
         }
 
         /// <summary>
-        /// Returns a ColorType class from a ColorFormat Enum
+        /// Returns a ColorType class from a ColorFormat Enum.
         /// Allows conversion of type from json settings file
         /// </summary>
         /// <param name="colorFormat"></param>
