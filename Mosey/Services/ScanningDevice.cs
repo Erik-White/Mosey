@@ -112,14 +112,13 @@ namespace Mosey.Services
                     // Start each scanner on its own thread
                     // This prevents locking the UI and ensures multiple scanner can run together
                     ScannerDevice device = Task.Run(() => new ScannerDevice(settings)).Result;
+
                     // Use the same image settings for all scanners
                     device.ScannerPictureSettings(config =>
                         config.ColorFormat(deviceConfig.ColorType)
                             .Resolution(deviceConfig.Resolution)
                             .Brightness(deviceConfig.Brightness)
                             .Contrast(deviceConfig.Contrast)
-                        //.StartPosition(left: 0, top: 0)
-                        //.Extent(width: 1000 * dpi, height: 1000 * dpi)
                         );
 
                     // Store the device in the collection
@@ -145,6 +144,7 @@ namespace Mosey.Services
         public string DeviceID { get { return _scannerSettings.Id; } }
         public bool Enabled { get; set; }
         public bool Ready { get; private set; } = true;
+        public int ScanRetries { get; set; } = 30;
         public bool IsAutomaticDocumentFeeder { get { return _scannerSettings.IsAutomaticDocumentFeeder; } }
         public bool IsDuplex { get { return _scannerSettings.IsDuplex; } }
         public bool IsFlatbed { get { return _scannerSettings.IsFlatbed; } }
@@ -159,7 +159,6 @@ namespace Mosey.Services
         private bool _disposed;
         private ScannerDevice _scannerDevice;
         private ScannerSettings _scannerSettings;
-        readonly int retryLimit = 30;
 
         public ScanningDevice(ScannerDevice device, ScannerSettings settings)
         {
@@ -199,7 +198,7 @@ namespace Mosey.Services
                 }
 
                 // Wait until the scanner is ready
-                while (retryCount < retryLimit)
+                while (retryCount < ScanRetries)
                 {
                     try
                     {
@@ -222,31 +221,6 @@ namespace Mosey.Services
                     {
                         Ready = true;
                     }
-                }
-            }
-        }
-
-        public async void GetImageRetry(WiaImageFormat format)
-        {
-            int retryCount = 0;
-
-            if (_scannerDevice != null)
-            {
-                // Wait until the scanner is ready
-                while (!Ready && retryCount < retryLimit)
-                {
-                    await Task.Delay(1000);
-                    retryCount += 1;
-                }
-                try
-                {
-                    _scannerDevice.PerformScan(format);
-                    await Task.Delay(4000);
-                    //System.Threading.Thread.Sleep(4000);
-                }
-                catch (COMException ex)
-                {
-                    throw new Exception(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
                 }
             }
         }
@@ -297,15 +271,6 @@ namespace Mosey.Services
             {
                 throw new FileFormatException($"{imageFormatStr} is not a valid image file extension.");
             }
-        }
-
-        private int GetDocumentHandlingStatus()
-        {
-            if(_scannerSettings.ScannerDeviceSettings.TryGetValue("Document Handling Status", out object value))
-            {
-                return (int)value;
-            }
-            return 0;
         }
 
         private int GetSimpleID()
