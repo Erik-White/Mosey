@@ -20,6 +20,7 @@ namespace Mosey.Services
                 return this.All(x => x.Ready is true);
             }
         }
+        private bool _disposed;
 
         public ScanningDevices()
         {
@@ -131,6 +132,43 @@ namespace Mosey.Services
                 throw new Exception(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
             }
             return deviceList;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    foreach (IDisposable item in this)
+                    {
+                        if (item != null)
+                        {
+                            try
+                            {
+                                item.Dispose();
+                            }
+                            catch (Exception)
+                            {
+                                // log exception and continue
+                            }
+                        }
+                    }
+                }
+                Clear();
+                _disposed = true;
+            }
+        }
+
+        ~ScanningDevices()
+        {
+            Dispose(false);
         }
     }
 

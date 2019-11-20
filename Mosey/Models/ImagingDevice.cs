@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Mosey.Models
 {
-    public interface IImagingDevices : IEnumerable<IImagingDevice>
+    public interface IImagingDevices : IEnumerable<IImagingDevice>, IDisposable
     {
         bool DevicesReady { get; }
         void RefreshDevices();
