@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Mosey.Models;
@@ -13,7 +7,7 @@ using Mosey.Services;
 namespace Mosey
 {
     /// <summary>
-    /// Interaction logic for App.xaml
+    /// Set up dependency injection and logging for application
     /// </summary>
     public partial class App : Application
     {
@@ -27,11 +21,13 @@ namespace Mosey
                 {
                     options.AddConsole();
                     options.AddDebug();
+                    options.AddFile("app.log", append: true);
                 })
                 // Register dependencies
-                .AddSingleton<IIntervalTimer, IntervalTimer>()
+                .AddTransient<IIntervalTimer, IntervalTimer>()
                 .AddSingleton<IImagingDevices, ScanningDevices>()
                 .AddSingleton<System.ComponentModel.INotifyPropertyChanged, ViewModels.MainViewModel>()
+
                 // Finalize
                 .BuildServiceProvider();
 
@@ -43,5 +39,26 @@ namespace Mosey
             var window = new Views.MainWindow { DataContext = viewModel };
             window.Show();
         }
+        // TODO: Ensure scanner COM objects get released and disposed correctly
+        // May not be necessary if ScanningDevices is disposable
+        protected override void OnExit(ExitEventArgs e)
+        {
+            base.OnExit(e);
+        }
+
+
+        /*
+        //Dispose on unhandled exception
+        this.DispatcherUnhandledException += (sender, args) => 
+        { 
+            if (disposableViewModel != null) disposableViewModel.Dispose(); 
+        };
+
+        //Dispose on exit
+        this.Exit += (sender, args) =>
+        { 
+            if (disposableViewModel != null) disposableViewModel.Dispose();
+        };
+        */
     }
 }
