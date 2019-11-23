@@ -2,43 +2,39 @@
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.ComponentModel;
 using Microsoft.Extensions.Configuration;
 using Mosey.Models;
 using DNTScanner.Core;
 
 namespace Mosey.Services
 {
-    public class ScanningDevices : ObservableCollection<IImagingDevice>, IImagingDevices
+    public class ScanningDevices : ObservableItemsCollection<IImagingDevice>, IImagingDevices<IImagingDevice>
     {
-        public bool DevicesReady
-        {
-            get
-            {
-                return this.All(x => x.Ready is true);
-            }
-        }
+        public int ConnectRetries { get; set; } = 30;
+        public bool DevicesReady { get { return this.All(x => x.Ready is true); } }
         private bool _disposed;
 
         public ScanningDevices()
         {
-            RefreshDevices();
+            GetDevices();
         }
 
         public ScanningDevices(IImagingDeviceSettings deviceConfig)
         {
-            RefreshDevices(deviceConfig);
+            GetDevices(deviceConfig);
         }
 
-        public void RefreshDevices()
+        public void GetDevices()
         {
-            // Populate list of scanners using default image settings
-            RefreshDevices(new ScanningDeviceSettings());
+            // Populate a new collection of scanners using default image settings
+            GetDevices(new ScanningDeviceSettings());
         }
 
-        public void RefreshDevices(IImagingDeviceSettings deviceConfig)
+        public void GetDevices(IImagingDeviceSettings deviceConfig)
         {
             // Release all scanners then empty the collection
             foreach (ScanningDevice device in this)
@@ -47,9 +43,60 @@ namespace Mosey.Services
             }
             Clear();
 
+            // Populate a new collection of scanners using specified image settings
             foreach (ScanningDevice device in SystemScanners((ScanningDeviceSettings)deviceConfig))
             {
                 AddDevice(device);
+            }
+        }
+
+        public void RefreshDevices()
+        {
+            // Get a new collection of devices if none already present
+            if(Count == 0)
+            {
+                GetDevices();
+            }
+            else
+            {
+                RefreshDevices(new ScanningDeviceSettings());
+            }
+        }
+
+        public void RefreshDevices(IImagingDeviceSettings deviceConfig)
+        {
+            IEnumerable<IImagingDevice> systemScanners = SystemScanners((ScanningDeviceSettings)deviceConfig);
+            foreach (ScanningDevice device in systemScanners)
+            {
+                if (!Contains(device))
+                {
+                    // Add any new devices
+                    AddDevice(device);
+                }
+                else
+                {
+                    // If the device is already in the collection but not connected
+                    // Replace the existing device with the connected device
+                    ScanningDevice existingDevice = (ScanningDevice)this.Where(d => d.Equals(device)).First();
+                    if (!existingDevice.Connected)
+                    {
+                        bool enabledStatus = existingDevice.Enabled;
+                        existingDevice.Dispose();
+                        Remove(existingDevice);
+
+                        device.Enabled = enabledStatus;
+                        AddDevice(device);
+                    }
+                }
+            }
+            // Update device status if device(s) removed
+            IEnumerable<IImagingDevice> devicesRemoved = this.Except(systemScanners);
+            if (devicesRemoved.Count() > 0)
+            {
+                foreach(ScanningDevice device in devicesRemoved)
+                {
+                    device.Connected = false;
+                }
             }
         }
 
@@ -97,39 +144,53 @@ namespace Mosey.Services
 
         private IEnumerable<ScanningDevice> SystemScanners(ScanningDeviceSettings deviceConfig)
         {
+            int retryCount = 0;
             List<ScanningDevice> deviceList = new List<ScanningDevice>();
-            try
+
+            // Wait until the scanner is ready
+            while (retryCount < ConnectRetries)
             {
-                // Check that at least one scanner can be found
-                var systemScanners = SystemDevices.GetScannerDevices();
-                if (systemScanners.FirstOrDefault() == null)
+                try
                 {
-                    Console.WriteLine("No scanner devices could be found. Please connect your scanner to the system and ensure that it's driver is installed.");
-                    return deviceList;
-                }
+                    // Check that at least one scanner can be found
+                    var systemScanners = SystemDevices.GetScannerDevices();
+                    if (systemScanners.FirstOrDefault() == null)
+                    {
+                        Console.WriteLine("No scanner devices could be found. Please connect your scanner to the system and ensure that it's driver is installed.");
+                        return deviceList;
+                    }
 
-                foreach (ScannerSettings settings in systemScanners)
+                    foreach (ScannerSettings settings in systemScanners)
+                    {
+                        // Start each scanner on its own thread
+                        // COM objects remain bound to the thread that they were started on
+                        // This prevents locking the UI and ensures multiple scanner can run together
+                        ScannerDevice device = Task.Run(() => new ScannerDevice(settings)).Result;
+
+                        // Use the same image settings for all scanners
+                        device.ScannerPictureSettings(config =>
+                            config.ColorFormat(deviceConfig.ColorType)
+                                .Resolution(deviceConfig.Resolution)
+                                .Brightness(deviceConfig.Brightness)
+                                .Contrast(deviceConfig.Contrast)
+                            );
+
+                        // Store the device in the collection
+                        deviceList.Add(new ScanningDevice(device, settings));
+                    }
+                    break;
+                }
+                catch (COMException ex)
                 {
-                    // Start each scanner on its own thread
-                    // This prevents locking the UI and ensures multiple scanner can run together
-                    ScannerDevice device = Task.Run(() => new ScannerDevice(settings)).Result;
-
-                    // Use the same image settings for all scanners
-                    device.ScannerPictureSettings(config =>
-                        config.ColorFormat(deviceConfig.ColorType)
-                            .Resolution(deviceConfig.Resolution)
-                            .Brightness(deviceConfig.Brightness)
-                            .Contrast(deviceConfig.Contrast)
-                        );
-
-                    // Store the device in the collection
-                    deviceList.Add(new ScanningDevice(device, settings));
+                    // Wait until the scanner is ready if it is warming up or busy
+                    if (ex.ErrorCode == -2145320954 | ex.ErrorCode == -2145320953)
+                    {
+                        System.Threading.Thread.Sleep(1000);
+                        retryCount += 1;
+                        continue;
+                    }
+                    throw new Exception(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
                 }
-            }
-            catch (COMException ex)
-            {
-                // TODO: Retry if device is busy or warming up
-                throw new Exception(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
             }
             return deviceList;
         }
@@ -180,9 +241,27 @@ namespace Mosey.Services
         public string Name { get { return _scannerSettings.Name; } }
         public int ID { get { return GetSimpleID(); } }
         public string DeviceID { get { return _scannerSettings.Id; } }
-        public bool Enabled { get; set; }
-        public bool Ready { get; private set; } = true;
-        public int ScanRetries { get; set; } = 30;
+        public List<KeyValuePair<string, object>> DeviceSettings { get { return _scannerSettings.ScannerDeviceSettings.ToList<KeyValuePair<string, object>>(); } }
+        public bool Enabled
+        {
+            get { return _enabled; }
+            set { SetField(ref _enabled, value); }
+        }
+        public bool Connected
+        {
+            get { return _connected; }
+            set { SetField(ref _connected, value); }
+        }
+        public bool Ready
+        {
+            get { return _ready; }
+            set { SetField(ref _ready, value); }
+        }
+        public int ScanRetries
+        {
+            get { return _scanRetries; }
+            set { SetField(ref _scanRetries, value); }
+        }
         public bool IsAutomaticDocumentFeeder { get { return _scannerSettings.IsAutomaticDocumentFeeder; } }
         public bool IsDuplex { get { return _scannerSettings.IsDuplex; } }
         public bool IsFlatbed { get { return _scannerSettings.IsFlatbed; } }
@@ -194,6 +273,11 @@ namespace Mosey.Services
             Jpeg,
             Tiff
         }
+        public event PropertyChangedEventHandler PropertyChanged;
+        private bool _enabled;
+        private bool _connected = true;
+        private bool _ready = true;
+        private int _scanRetries = 30;
         private bool _disposed;
         private ScannerDevice _scannerDevice;
         private ScannerSettings _scannerSettings;
@@ -209,56 +293,43 @@ namespace Mosey.Services
             GetImage(WiaImageFormat.Bmp);
         }
 
-        public void GetImage_bak(WiaImageFormat format)
-        {
-            if (_scannerDevice != null)
-            {
-                try
-                {
-                    _scannerDevice.PerformScan(format);
-                }
-                catch (System.Runtime.InteropServices.COMException ex)
-                {
-                    throw new Exception(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
-                }
-            }
-        }
-
         public void GetImage(WiaImageFormat format)
         {
             int retryCount = 0;
 
-            if (_scannerDevice != null)
+            if (_scannerDevice is null || !Connected)
             {
-                if (!_scannerSettings.SupportedTransferFormats.ContainsKey(format.Value))
-                {
-                    throw new ArgumentException($"The image format {format} is not supported by this device.");
-                }
+                throw new COMException("The scanner is not connected.");
+            }
 
-                // Wait until the scanner is ready
-                while (retryCount < ScanRetries)
+            if (!_scannerSettings.SupportedTransferFormats.ContainsKey(format.Value))
+            {
+                throw new ArgumentException($"The image format {format} is not supported by this device.");
+            }
+
+            // Wait until the scanner is ready
+            while (retryCount < _scanRetries)
+            {
+                try
                 {
-                    try
+                    Ready = false;
+                    _scannerDevice.PerformScan(format);
+                    break;
+                }
+                catch (COMException ex)
+                {
+                    // Wait until the scanner is ready if it is warming up or busy
+                    if (ex.ErrorCode == -2145320954 | ex.ErrorCode == -2145320953)
                     {
-                        Ready = false;
-                        _scannerDevice.PerformScan(format);
-                        break;
+                        System.Threading.Thread.Sleep(1000);
+                        retryCount += 1;
+                        continue;
                     }
-                    catch (COMException ex)
-                    {
-                        // Wait until the scanner is ready if it is warming up or busy
-                        if (ex.ErrorCode == -2145320954 | ex.ErrorCode == -2145320953)
-                        {
-                            System.Threading.Thread.Sleep(1000);
-                            retryCount += 1;
-                            continue;
-                        }
-                        throw new COMException(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
-                    }
-                    finally
-                    {
-                        Ready = true;
-                    }
+                    throw new COMException(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
+                }
+                finally
+                {
+                    Ready = true;
                 }
             }
         }
@@ -328,11 +399,30 @@ namespace Mosey.Services
             }
         }
 
-        public List<KeyValuePair<string, object>> DeviceSettings { get { return GetScannerDeviceSettings(); } }
-        public List<KeyValuePair<string, object>> GetScannerDeviceSettings()
-        {
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-            return _scannerSettings.ScannerDeviceSettings.ToList<KeyValuePair<string, object>>();
+        protected bool SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
+        {
+            if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+            field = value;
+            OnPropertyChanged(propertyName);
+            return true;
+        }
+
+        public bool Equals(IImagingDevice other)
+        {
+            return null != other && DeviceID == other.DeviceID;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as ScanningDevice);
+        }
+
+        public override int GetHashCode()
+        {
+            return DeviceID.GetHashCode();
         }
 
         public void Dispose()
