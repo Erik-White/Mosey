@@ -16,6 +16,7 @@ namespace Mosey.ViewModels
         private IIntervalTimer _scanTimer;
         private IExternalInstance _scanAnalysis;
         private IImagingDevices<IImagingDevice> _scannerDevices;
+        private object _scannerDevicesLock = new object();
         private ImageFileConfig _imageConfig;
         private IntervalTimerConfig _scanConfig;
 
@@ -128,6 +129,8 @@ namespace Mosey.ViewModels
             _log = logger;
             _scanTimer = intervalTimer;
             _scannerDevices = imagingDevices;
+            // Lock collection across threads to prevent conflicts
+            System.Windows.Data.BindingOperations.EnableCollectionSynchronization(_scannerDevices, _scannerDevicesLock);
             SetConfiguration();
 
             _scanTimer.Tick += ScanTimer_Tick;
