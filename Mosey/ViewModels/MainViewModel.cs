@@ -3,18 +3,19 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows.Input;
 using System.Threading.Tasks;
-using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Mosey.Models;
 
 namespace Mosey.ViewModels
 {
+    // TODO: Implement IDisposable if needed
     public class MainViewModel : ViewModelBase
     {
         private ILogger<MainViewModel> _log;
         private IIntervalTimer _scanTimer;
         private IExternalInstance _scanAnalysis;
+        private IImagingDevices<IImagingDevice> _scannerDevices;
         private ImageFileConfig _imageConfig;
         private IntervalTimerConfig _scanConfig;
 
@@ -108,8 +109,7 @@ namespace Mosey.ViewModels
             }
         }
 
-        private IImagingDevices _scannerDevices;
-        public IImagingDevices ScannerDevices
+        public IImagingDevices<IImagingDevice> ScannerDevices
         {
             get
             {
@@ -123,18 +123,18 @@ namespace Mosey.ViewModels
         }
         #endregion Properties
 
-        public MainViewModel(ILogger<MainViewModel> logger, IIntervalTimer intervalTimer, IImagingDevices imagingDevices)
+        public MainViewModel(ILogger<MainViewModel> logger, IIntervalTimer intervalTimer, IImagingDevices<IImagingDevice> imagingDevices)
         {
             _log = logger;
             _scanTimer = intervalTimer;
             _scannerDevices = imagingDevices;
-            SetPropertyConfiguration();
+            SetConfiguration();
 
             _scanTimer.Tick += ScanTimer_Tick;
             _scanTimer.Complete += ScanTimer_Complete;
         }
 
-        private void SetPropertyConfiguration()
+        private void SetConfiguration()
         {
             _scanConfig = Common.Configuration.GetSection("Timer").Get<IntervalTimerConfig>();
             _imageConfig = Common.Configuration.GetSection("Image:File").Get<ImageFileConfig>();
@@ -143,13 +143,25 @@ namespace Mosey.ViewModels
         }
 
         #region Commands
+        private ICommand _EnableScannersCommand;
+        public ICommand EnableScannerCommand
+        {
+            get
+            {
+                if (_EnableScannersCommand == null)
+                    _EnableScannersCommand = new RelayCommand(o => _scannerDevices.EnableAll(), o => !IsScanRunning);
+
+                return _EnableScannersCommand;
+            }
+        }
+
         private ICommand _ManualScanCommand;
         public ICommand ManualScanCommand
         {
             get
             {
                 if (_ManualScanCommand == null)
-                    _ManualScanCommand = new RelayCommand(o => ScanAsync(), o => !IsScanRunning && !_scanTimer.Paused && _scannerDevices.DevicesReady);
+                    _ManualScanCommand = new RelayCommand(o => ScanAsync(), o => !IsScanRunning);
 
                 return _ManualScanCommand;
             }
@@ -270,30 +282,33 @@ namespace Mosey.ViewModels
             {
                 foreach (IImagingDevice scanner in ScannerDevices)
                 {
-                    // Retrieve image(s) from scanner to memory
-                    scannerIDStr = scanner.ID.ToString();
-
-                    // Run the scanner and retrieve the image(s) to memory
-                    scanner.GetImage();
-                    _log.LogDebug($"Retrieved image on {scanner.Name} (#{scannerIDStr}) at {saveDateTime}");
-
-                    string fileName = String.Join("_", _imageConfig.Prefix, saveDateTime);
-                    string directory = Path.Combine(saveDirectory, String.Join(String.Empty, "Scanner", scannerIDStr));
-                    Directory.CreateDirectory(directory);
-
-                    // Write image(s) to filesystem and retrieve a list of saved file names
-                    IEnumerable<string> savedImages = scanner.SaveImage(fileName, directory: directory, fileFormat: ImageFormat);
-                    foreach (string image in savedImages)
+                    if(scanner.IsConnected && scanner.IsEnabled)
                     {
-                        imagePaths.Add(image);
-                        _log.LogInformation($"Saved image file {image} from scanner #{scannerIDStr} at {saveDateTime}");
+                        // Retrieve image(s) from scanner to memory
+                        scannerIDStr = scanner.ID.ToString();
+
+                        // Run the scanner and retrieve the image(s) to memory
+                        scanner.GetImage();
+                        _log.LogDebug($"Retrieved image on {scanner.Name} (#{scannerIDStr}) at {saveDateTime}");
+
+                        string fileName = String.Join("_", _imageConfig.Prefix, saveDateTime);
+                        string directory = Path.Combine(saveDirectory, String.Join(String.Empty, "Scanner", scannerIDStr));
+                        Directory.CreateDirectory(directory);
+
+                        // Write image(s) to filesystem and retrieve a list of saved file names
+                        IEnumerable<string> savedImages = scanner.SaveImage(fileName, directory: directory, fileFormat: ImageFormat);
+                        foreach (string image in savedImages)
+                        {
+                            imagePaths.Add(image);
+                            _log.LogInformation($"Saved image file {image} from scanner #{scannerIDStr} at {saveDateTime}");
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
                 _log.LogError(ex, $"Failed to scan image on scanner #{scannerIDStr} at {saveDateTime}");
-                throw;
+                 throw;
             }
 
             return imagePaths;

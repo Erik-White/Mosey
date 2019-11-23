@@ -15,7 +15,7 @@ namespace Mosey.Services
     public class ScanningDevices : ObservableItemsCollection<IImagingDevice>, IImagingDevices<IImagingDevice>
     {
         public int ConnectRetries { get; set; } = 30;
-        public bool DevicesReady { get { return this.All(x => x.Ready is true); } }
+        public bool IsScanInProgress { get { return this.All(x => x.IsScanning is true); } }
         private bool _disposed;
 
         public ScanningDevices()
@@ -78,13 +78,13 @@ namespace Mosey.Services
                     // If the device is already in the collection but not connected
                     // Replace the existing device with the connected device
                     ScanningDevice existingDevice = (ScanningDevice)this.Where(d => d.Equals(device)).First();
-                    if (!existingDevice.Connected)
+                    if (!existingDevice.IsConnected)
                     {
-                        bool enabledStatus = existingDevice.Enabled;
+                        bool enabledStatus = existingDevice.IsEnabled;
                         existingDevice.Dispose();
                         Remove(existingDevice);
 
-                        device.Enabled = enabledStatus;
+                        device.IsEnabled = enabledStatus;
                         AddDevice(device);
                     }
                 }
@@ -95,7 +95,7 @@ namespace Mosey.Services
             {
                 foreach(ScanningDevice device in devicesRemoved)
                 {
-                    device.Connected = false;
+                    device.IsConnected = false;
                 }
             }
         }
@@ -112,13 +112,14 @@ namespace Mosey.Services
             }
         }
 
-        public void EnableDevice(IImagingDevice device)
+        public void SetDeviceEnabled(IImagingDevice device, bool enabled)
         {
-            this.Where(x => x.DeviceID == device.DeviceID).First().Enabled = true;
+            this.Where(x => x.DeviceID == device.DeviceID).First().IsEnabled = enabled;
         }
-        public void EnableDevice(string deviceID)
+
+        public void SetDeviceEnabled(string deviceID, bool enabled)
         {
-            this.Where(x => x.DeviceID == deviceID).First().Enabled = true;
+            this.Where(x => x.DeviceID == deviceID).First().IsEnabled = enabled;
         }
 
         public void EnableAll()
@@ -133,13 +134,16 @@ namespace Mosey.Services
 
         private void SetByEnabled(bool enabled)
         {
-            // Set the Enabled property on all members of the collection
-            this.All(x => { x.Enabled = enabled; return true; });
+            // Set the IsEnabled property on all members of the collection
+            foreach(IImagingDevice device in this)
+            {
+                device.IsEnabled = enabled;
+            }
         }
 
         public IEnumerable<IImagingDevice> GetByEnabled(bool enabled)
         {
-            return this.Where(x => x.Enabled = enabled).AsEnumerable();
+            return this.Where(x => x.IsEnabled = enabled).AsEnumerable();
         }
 
         private IEnumerable<ScanningDevice> SystemScanners(ScanningDeviceSettings deviceConfig)
@@ -242,29 +246,29 @@ namespace Mosey.Services
         public int ID { get { return GetSimpleID(); } }
         public string DeviceID { get { return _scannerSettings.Id; } }
         public List<KeyValuePair<string, object>> DeviceSettings { get { return _scannerSettings.ScannerDeviceSettings.ToList<KeyValuePair<string, object>>(); } }
-        public bool Enabled
+        public bool IsEnabled
         {
-            get { return _enabled; }
-            set { SetField(ref _enabled, value); }
+            get { return _isenabled; }
+            set { SetField(ref _isenabled, value); }
         }
-        public bool Connected
+        public bool IsConnected
         {
-            get { return _connected; }
-            set { SetField(ref _connected, value); }
+            get { return _isconnected; }
+            set { SetField(ref _isconnected, value); }
         }
-        public bool Ready
+        public bool IsScanning
         {
-            get { return _ready; }
-            set { SetField(ref _ready, value); }
+            get { return _isscanning; }
+            set { SetField(ref _isscanning, value); }
         }
+        public bool IsAutomaticDocumentFeeder { get { return _scannerSettings.IsAutomaticDocumentFeeder; } }
+        public bool IsDuplex { get { return _scannerSettings.IsDuplex; } }
+        public bool IsFlatbed { get { return _scannerSettings.IsFlatbed; } }
         public int ScanRetries
         {
             get { return _scanRetries; }
             set { SetField(ref _scanRetries, value); }
         }
-        public bool IsAutomaticDocumentFeeder { get { return _scannerSettings.IsAutomaticDocumentFeeder; } }
-        public bool IsDuplex { get { return _scannerSettings.IsDuplex; } }
-        public bool IsFlatbed { get { return _scannerSettings.IsFlatbed; } }
         public enum ImageFormat
         {
             Bmp,
@@ -274,9 +278,9 @@ namespace Mosey.Services
             Tiff
         }
         public event PropertyChangedEventHandler PropertyChanged;
-        private bool _enabled;
-        private bool _connected = true;
-        private bool _ready = true;
+        private bool _isenabled;
+        private bool _isconnected = true;
+        private bool _isscanning;
         private int _scanRetries = 30;
         private bool _disposed;
         private ScannerDevice _scannerDevice;
@@ -297,7 +301,7 @@ namespace Mosey.Services
         {
             int retryCount = 0;
 
-            if (_scannerDevice is null || !Connected)
+            if (_scannerDevice is null || !IsConnected)
             {
                 throw new COMException("The scanner is not connected.");
             }
@@ -312,7 +316,7 @@ namespace Mosey.Services
             {
                 try
                 {
-                    Ready = false;
+                    IsScanning = true;
                     _scannerDevice.PerformScan(format);
                     break;
                 }
@@ -329,7 +333,7 @@ namespace Mosey.Services
                 }
                 finally
                 {
-                    Ready = true;
+                    IsScanning = false;
                 }
             }
         }

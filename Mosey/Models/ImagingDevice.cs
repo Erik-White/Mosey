@@ -7,11 +7,10 @@ namespace Mosey.Models
 {
     public interface IImagingDevices<T> : IEnumerable<T>, IDisposable where T : IImagingDevice
     {
-        bool DevicesReady { get; }
         void RefreshDevices();
         void RefreshDevices(IImagingDeviceSettings deviceSettings);
-        void EnableDevice(T device);
-        void EnableDevice(string deviceID);
+        void SetDeviceEnabled(T device);
+        void SetDeviceEnabled(string deviceID);
         void EnableAll();
         void DisableAll();
         IEnumerable<T> GetByEnabled(bool enabled);
@@ -22,9 +21,9 @@ namespace Mosey.Models
         string Name { get; }
         int ID { get; }
         string DeviceID { get; }
-        bool Enabled { get; set; }
-        bool Connected { get; }
-        bool Ready { get; }
+        bool IsEnabled { get; set; }
+        bool IsConnected { get; }
+        bool IsScanning { get; }
         void GetImage();
         void SaveImage();
         IEnumerable<string> SaveImage(string fileName, string directory, string fileFormat);
