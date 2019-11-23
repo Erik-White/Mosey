@@ -9,8 +9,8 @@ namespace Mosey.Models
     {
         void RefreshDevices();
         void RefreshDevices(IImagingDeviceSettings deviceSettings);
-        void SetDeviceEnabled(T device);
-        void SetDeviceEnabled(string deviceID);
+        void SetDeviceEnabled(T device, bool enabled);
+        void SetDeviceEnabled(string deviceID, bool enabled);
         void EnableAll();
         void DisableAll();
         IEnumerable<T> GetByEnabled(bool enabled);

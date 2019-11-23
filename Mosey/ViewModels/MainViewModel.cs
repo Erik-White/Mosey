@@ -147,7 +147,7 @@ namespace Mosey.ViewModels
 
         #region Commands
         private ICommand _EnableScannersCommand;
-        public ICommand EnableScannerCommand
+        public ICommand EnableScannersCommand
         {
             get
             {

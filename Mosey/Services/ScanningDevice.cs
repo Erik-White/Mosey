@@ -80,11 +80,11 @@ namespace Mosey.Services
                     ScanningDevice existingDevice = (ScanningDevice)this.Where(d => d.Equals(device)).First();
                     if (!existingDevice.IsConnected)
                     {
-                        bool enabledStatus = existingDevice.IsEnabled;
+                        bool enabled = existingDevice.IsEnabled;
                         existingDevice.Dispose();
                         Remove(existingDevice);
 
-                        device.IsEnabled = enabledStatus;
+                        device.IsEnabled = enabled;
                         AddDevice(device);
                     }
                 }
@@ -95,6 +95,7 @@ namespace Mosey.Services
             {
                 foreach(ScanningDevice device in devicesRemoved)
                 {
+                    device.Dispose();
                     device.IsConnected = false;
                 }
             }
@@ -108,7 +109,7 @@ namespace Mosey.Services
             }
             else
             {
-                throw new ArgumentException("This device already exists.", device.ID.ToString());
+                throw new ArgumentException($"This device {device.Name}, ID #{device.ID.ToString()} already exists.");
             }
         }
 
