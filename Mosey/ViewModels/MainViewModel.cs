@@ -13,12 +13,14 @@ namespace Mosey.ViewModels
     public class MainViewModel : ViewModelBase
     {
         private ILogger<MainViewModel> _log;
+        private IIntervalTimer _uiTimer;
         private IIntervalTimer _scanTimer;
         private IExternalInstance _scanAnalysis;
         private IImagingDevices<IImagingDevice> _scannerDevices;
         private object _scannerDevicesLock = new object();
         private ImageFileConfig _imageConfig;
-        private IntervalTimerConfig _scanConfig;
+        private IntervalTimerConfig _scanTimerConfig;
+        private IntervalTimerConfig _uiTimerConfig;
 
         #region Properties
         public string ImageFormat
@@ -46,11 +48,15 @@ namespace Mosey.ViewModels
         {
             get
             {
-                return _scanConfig.Delay;
+                return _scanTimerConfig.Delay;
             }
             set
             {
-                _scanConfig.Delay = value;
+                if (value < 1)
+                {
+                    value = 1;
+                }
+                _scanTimerConfig.Delay = value;
                 RaisePropertyChanged("ScanDelay");
             }
         }
@@ -59,11 +65,15 @@ namespace Mosey.ViewModels
         {
             get
             {
-                return _scanConfig.Interval;
+                return _scanTimerConfig.Interval;
             }
             set
             {
-                _scanConfig.Interval = value;
+                if(value < 1)
+                {
+                    value = 1;
+                }
+                _scanTimerConfig.Interval = value;
                 RaisePropertyChanged("ScanInterval");
             }
         }
@@ -72,11 +82,15 @@ namespace Mosey.ViewModels
         {
             get
             {
-                return _scanConfig.Repetitions;
+                return _scanTimerConfig.Repetitions;
             }
             set
             {
-                _scanConfig.Repetitions = value;
+                if (value < 1)
+                {
+                    value = 1;
+                }
+                _scanTimerConfig.Repetitions = value;
                 RaisePropertyChanged("ScanRepetitions");
             }
         }
@@ -110,6 +124,37 @@ namespace Mosey.ViewModels
             }
         }
 
+        public TimeSpan ScanNextTime
+        {
+            get
+            {
+                if (IsScanRunning)
+                {
+                    DateTime scanNext = _scanTimer.StartTime.Add((_scanTimer.RepetitionsCount) * _scanTimer.Interval);
+                    return scanNext.Subtract(DateTime.Now);
+                }
+                else
+                {
+                    return TimeSpan.Zero;
+                }
+            }
+        }
+
+        public DateTime ScanFinishTime
+        {
+            get
+            {
+                if (IsScanRunning)
+                {
+                    return _scanTimer.FinishTime;
+                }
+                else
+                {
+                    return DateTime.MinValue;
+                }
+            }
+        }
+
         public IImagingDevices<IImagingDevice> ScannerDevices
         {
             get
@@ -128,18 +173,22 @@ namespace Mosey.ViewModels
         {
             _log = logger;
             _scanTimer = intervalTimer;
+            _uiTimer = (IIntervalTimer)intervalTimer.Clone();
             _scannerDevices = imagingDevices;
+
             // Lock collection across threads to prevent conflicts
             System.Windows.Data.BindingOperations.EnableCollectionSynchronization(_scannerDevices, _scannerDevicesLock);
             SetConfiguration();
 
             _scanTimer.Tick += ScanTimer_Tick;
             _scanTimer.Complete += ScanTimer_Complete;
+            _uiTimer.Tick += UITimer_Tick;
         }
 
         private void SetConfiguration()
         {
-            _scanConfig = Common.Configuration.GetSection("Timer").Get<IntervalTimerConfig>();
+            _scanTimerConfig = Common.Configuration.GetSection("Timers:Scan").Get<IntervalTimerConfig>();
+            _uiTimerConfig = Common.Configuration.GetSection("Timers:UI").Get<IntervalTimerConfig>();
             _imageConfig = Common.Configuration.GetSection("Image:File").Get<ImageFileConfig>();
 
             ScannerDevices.EnableAll();
@@ -179,6 +228,22 @@ namespace Mosey.ViewModels
                     _StartScanCommand = new RelayCommand(o => StartScan(), o => !IsScanRunning && !_scanTimer.Paused);
 
                 return _StartScanCommand;
+            }
+        }
+
+        public ICommand StartStopScanCommand
+        {
+            get
+            {
+                if (IsScanRunning)
+                {
+                    return StopScanCommand;
+                }
+                else
+                {
+                    return StartScanCommand;
+                }
+
             }
         }
 
@@ -237,7 +302,9 @@ namespace Mosey.ViewModels
             //scanLagTimer.Start(TimeSpan.FromMinutes(ScanDelay), TimeSpan.FromMinutes(ScanInterval), ScanRepetitions);
             //Use seconds instead of minutes for testing functionality
             _scanTimer.Start(TimeSpan.FromSeconds(ScanDelay), TimeSpan.FromSeconds(ScanInterval), ScanRepetitions);
+            _uiTimer.Start(TimeSpan.FromSeconds(_uiTimerConfig.Delay), TimeSpan.FromSeconds(_uiTimerConfig.Interval), _uiTimerConfig.Repetitions);
             RaisePropertyChanged("IsScanRunning");
+            RaisePropertyChanged("ScanFinishTime");
         }
 
         private void ScanTimer_Tick(object sender, EventArgs e)
@@ -252,10 +319,17 @@ namespace Mosey.ViewModels
         {
             RaisePropertyChanged("ScanRepetitionsCount");
             RaisePropertyChanged("IsScanRunning");
+            RaisePropertyChanged("ScanFinishTime");
             _log.LogInformation($"Scan timer complete at {DateTime.Now.ToString(string.Join("_", _imageConfig.DateFormat, _imageConfig.TimeFormat))} with {ScanRepetitionsCount} repetitions.");
 
             // Run ScanLagAnalysis if required
             //ScanLagAnalysis();
+        }
+
+        private void UITimer_Tick(object sender, EventArgs e)
+        {
+            // Update progress
+            RaisePropertyChanged("ScanNextTime");
         }
 
         private async void ScanAsync()
