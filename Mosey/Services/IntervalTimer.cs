@@ -7,6 +7,8 @@ namespace Mosey.Services
 {
     public class IntervalTimer : IIntervalTimer
     {
+        public DateTime StartTime { get; private set; }
+        public DateTime FinishTime { get { return StartTime.Add(Repetitions * Interval) + Delay; } }
         public TimeSpan Delay { get; private set; }
         public TimeSpan Interval { get; private set; }
         public int Repetitions { get; private set; }
@@ -35,12 +37,14 @@ namespace Mosey.Services
         /// </summary>
         /// <param name="delay">The delay before starting the first scan</param>
         /// <param name="interval">The time between each scan</param>
-        /// <param name="repetitions">The number of scan intervals to complete</param>
+        /// <param name="repetitions">The number of scan intervals to complete. Set to -1 for infinite.</param>
         public void Start(TimeSpan delay, TimeSpan interval, int repetitions)
         {
             Delay = delay;
             Interval = interval;
             Repetitions = repetitions;
+            StartTime = DateTime.Now;
+
             if (timer != null)
             {
                 Stop();
@@ -73,9 +77,9 @@ namespace Mosey.Services
         /// <param name="state"></param>
         private void TimerInterval(object state)
         {
-            if (++RepetitionsCount <= Repetitions)
+            if (Repetitions == -1 | ++RepetitionsCount <= Repetitions)
             {
-                // Notify event subscribers that a scan is taking place
+                // Notify event subscribers
                 OnTick(EventArgs.Empty);
                 Resume();
             }
@@ -144,6 +148,11 @@ namespace Mosey.Services
                 }
                 Paused = false;
             }
+        }
+
+        public virtual object Clone()
+        {
+            return MemberwiseClone();
         }
 
         public void Dispose()

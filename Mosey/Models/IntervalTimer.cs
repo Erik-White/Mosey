@@ -2,8 +2,10 @@
 
 namespace Mosey.Models
 {
-    public interface IIntervalTimer : IDisposable
+    public interface IIntervalTimer : IDisposable, ICloneable
     {
+        DateTime StartTime { get; }
+        DateTime FinishTime { get; }
         TimeSpan Delay { get; }
         TimeSpan Interval { get; }
         int Repetitions { get; }
