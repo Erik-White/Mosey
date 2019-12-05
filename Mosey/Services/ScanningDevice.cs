@@ -15,12 +15,13 @@ namespace Mosey.Services
     public class ScanningDevices : ObservableItemsCollection<IImagingDevice>, IImagingDevices<IImagingDevice>
     {
         public int ConnectRetries { get; set; } = 30;
-        public bool IsScanInProgress { get { return this.All(x => x.IsScanning is true); } }
+        public bool IsScanInProgress { get { return this.Any(x => x.IsScanning is true); } }
+        public bool IsEmpty { get { return (Count == 0); } }
+        private static bool _isRefreshInProgress;
         private bool _disposed;
 
         public ScanningDevices()
         {
-            GetDevices();
         }
 
         public ScanningDevices(IImagingDeviceSettings deviceConfig)
@@ -44,8 +45,9 @@ namespace Mosey.Services
             Clear();
 
             // Populate a new collection of scanners using specified image settings
-            foreach (ScanningDevice device in SystemScanners((ScanningDeviceSettings)deviceConfig))
+            foreach (ScanningDevice device in SystemScanners((ScanningDeviceSettings)deviceConfig, ConnectRetries))
             {
+                device.IsEnabled = true;
                 AddDevice(device);
             }
         }
@@ -53,7 +55,7 @@ namespace Mosey.Services
         public void RefreshDevices()
         {
             // Get a new collection of devices if none already present
-            if(Count == 0)
+            if (Count == 0)
             {
                 GetDevices();
             }
@@ -63,21 +65,31 @@ namespace Mosey.Services
             }
         }
 
-        public void RefreshDevices(IImagingDeviceSettings deviceConfig)
+        public void RefreshDevices(IImagingDeviceSettings deviceConfig, bool enableDevices = true)
         {
-            IEnumerable<IImagingDevice> systemScanners = SystemScanners((ScanningDeviceSettings)deviceConfig);
+            // Do not attempt if already in progress
+            if (_isRefreshInProgress | IsScanInProgress)
+            {
+                return;
+            }
+
+            IEnumerable<IImagingDevice> systemScanners = SystemScanners((ScanningDeviceSettings)deviceConfig, ConnectRetries);
             foreach (ScanningDevice device in systemScanners)
             {
                 if (!Contains(device))
                 {
+                    device.IsEnabled = enableDevices; 
                     // Add any new devices
                     AddDevice(device);
                 }
                 else
                 {
+                    ScanningDevice existingDevice = (ScanningDevice)this.Where(d => d.Equals(device)).First();
+                    // If the device was successfully connected, clear any existing error state
+                    existingDevice.ErrorState = null;
+
                     // If the device is already in the collection but not connected
                     // Replace the existing device with the connected device
-                    ScanningDevice existingDevice = (ScanningDevice)this.Where(d => d.Equals(device)).First();
                     if (!existingDevice.IsConnected)
                     {
                         bool enabled = existingDevice.IsEnabled;
@@ -147,13 +159,19 @@ namespace Mosey.Services
             return this.Where(x => x.IsEnabled = enabled).AsEnumerable();
         }
 
-        private IEnumerable<ScanningDevice> SystemScanners(ScanningDeviceSettings deviceConfig)
+        private IEnumerable<IImagingDevice> SystemScanners(ScanningDeviceSettings deviceConfig, int connectRetries)
         {
+            List<IImagingDevice> deviceList = new List<IImagingDevice>();
             int retryCount = 0;
-            List<ScanningDevice> deviceList = new List<ScanningDevice>();
+            if (_isRefreshInProgress)
+            {
+                deviceList.AddRange(Items);
+                return deviceList;
+            }
+            _isRefreshInProgress = true;
 
             // Wait until the scanner is ready
-            while (retryCount < ConnectRetries)
+            while (retryCount < connectRetries)
             {
                 try
                 {
@@ -167,10 +185,7 @@ namespace Mosey.Services
 
                     foreach (ScannerSettings settings in systemScanners)
                     {
-                        // Start each scanner on its own thread
-                        // COM objects remain bound to the thread that they were started on
-                        // This prevents locking the UI and ensures multiple scanner can run together
-                        ScannerDevice device = Task.Run(() => new ScannerDevice(settings)).Result;
+                        ScannerDevice device = new ScannerDevice(settings);
 
                         // Use the same image settings for all scanners
                         device.ScannerPictureSettings(config =>
@@ -185,16 +200,22 @@ namespace Mosey.Services
                     }
                     break;
                 }
-                catch (COMException ex)
+                catch (Exception ex) when (ex is COMException | ex is NullReferenceException)
                 {
-                    // Wait until the scanner is ready if it is warming up or busy
-                    if (ex.ErrorCode == -2145320954 | ex.ErrorCode == -2145320953)
+                    // Retry if device is warming up, busy or just throws a general error
+                    // Also retry if the WIA driver does not respond in time (NullReference)
+                    if(ex is NullReferenceException | ex.HResult == -2145320954 | ex.HResult == -2145320953 | ex.HResult == -2145320955 | ex.HResult == -2145320959 | ex.HResult == -2145320946)
                     {
                         System.Threading.Thread.Sleep(1000);
                         retryCount += 1;
                         continue;
                     }
-                    throw new Exception(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
+
+                    throw new Exception(WiaExceptionExtensions.GetComErrorMessage((COMException)ex), ex);
+                }
+                finally
+                {
+                    _isRefreshInProgress = false;
                 }
             }
             return deviceList;
@@ -216,14 +237,7 @@ namespace Mosey.Services
                     {
                         if (item != null)
                         {
-                            try
-                            {
-                                item.Dispose();
-                            }
-                            catch (Exception)
-                            {
-                                // log exception and continue
-                            }
+                            item.Dispose();
                         }
                     }
                 }
@@ -247,6 +261,11 @@ namespace Mosey.Services
         public int ID { get { return GetSimpleID(); } }
         public string DeviceID { get { return _scannerSettings.Id; } }
         public List<KeyValuePair<string, object>> DeviceSettings { get { return _scannerSettings.ScannerDeviceSettings.ToList<KeyValuePair<string, object>>(); } }
+        public Exception ErrorState
+        {
+            get { return _errorState; }
+            set { SetField(ref _errorState, value); }
+        }
         public bool IsEnabled
         {
             get { return _isenabled; }
@@ -279,6 +298,7 @@ namespace Mosey.Services
             Tiff
         }
         public event PropertyChangedEventHandler PropertyChanged;
+        private Exception _errorState;
         private bool _isenabled;
         private bool _isconnected = true;
         private bool _isscanning;
@@ -318,7 +338,7 @@ namespace Mosey.Services
                 try
                 {
                     IsScanning = true;
-                    _scannerDevice.PerformScan(format);
+                     _scannerDevice.PerformScan(format);
                     break;
                 }
                 catch (COMException ex)
@@ -330,7 +350,8 @@ namespace Mosey.Services
                         retryCount += 1;
                         continue;
                     }
-                    throw new COMException(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
+                    ErrorState = new COMException(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
+                    break;
                 }
                 finally
                 {
