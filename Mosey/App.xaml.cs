@@ -25,7 +25,7 @@ namespace Mosey
                 })
                 // Register dependencies
                 .AddTransient<IIntervalTimer, IntervalTimer>()
-                .AddSingleton<IImagingDevices, ScanningDevices>()
+                .AddSingleton<IImagingDevices<IImagingDevice>, ScanningDevices>()
                 .AddSingleton<System.ComponentModel.INotifyPropertyChanged, ViewModels.MainViewModel>()
 
                 // Finalize
