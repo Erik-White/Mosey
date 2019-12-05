@@ -37,11 +37,7 @@ namespace Mosey.Services
 
         public void GetDevices(IImagingDeviceSettings deviceConfig)
         {
-            // Release all scanners then empty the collection
-            foreach (ScanningDevice device in this)
-            {
-                device.Dispose();
-            }
+            // Empty the collection
             Clear();
 
             // Populate a new collection of scanners using specified image settings
@@ -93,7 +89,6 @@ namespace Mosey.Services
                     if (!existingDevice.IsConnected)
                     {
                         bool enabled = existingDevice.IsEnabled;
-                        existingDevice.Dispose();
                         Remove(existingDevice);
 
                         device.IsEnabled = enabled;
@@ -107,7 +102,6 @@ namespace Mosey.Services
             {
                 foreach(ScanningDevice device in devicesRemoved)
                 {
-                    device.Dispose();
                     device.IsConnected = false;
                 }
             }
@@ -179,24 +173,13 @@ namespace Mosey.Services
                     var systemScanners = SystemDevices.GetScannerDevices();
                     if (systemScanners.FirstOrDefault() == null)
                     {
-                        Console.WriteLine("No scanner devices could be found. Please connect your scanner to the system and ensure that it's driver is installed.");
                         return deviceList;
                     }
 
                     foreach (ScannerSettings settings in systemScanners)
                     {
-                        ScannerDevice device = new ScannerDevice(settings);
-
-                        // Use the same image settings for all scanners
-                        device.ScannerPictureSettings(config =>
-                            config.ColorFormat(deviceConfig.ColorType)
-                                .Resolution(deviceConfig.Resolution)
-                                .Brightness(deviceConfig.Brightness)
-                                .Contrast(deviceConfig.Contrast)
-                            );
-
                         // Store the device in the collection
-                        deviceList.Add(new ScanningDevice(device, settings));
+                        deviceList.Add(new ScanningDevice(settings));
                     }
                     break;
                 }
@@ -258,7 +241,7 @@ namespace Mosey.Services
     public class ScanningDevice : IImagingDevice
     {
         public string Name { get { return _scannerSettings.Name; } }
-        public int ID { get { return GetSimpleID(); } }
+        public int ID { get { return GetSimpleID(_scannerSettings.Id); } }
         public string DeviceID { get { return _scannerSettings.Id; } }
         public List<KeyValuePair<string, object>> DeviceSettings { get { return _scannerSettings.ScannerDeviceSettings.ToList<KeyValuePair<string, object>>(); } }
         public Exception ErrorState
@@ -303,13 +286,11 @@ namespace Mosey.Services
         private bool _isconnected = true;
         private bool _isscanning;
         private int _scanRetries = 30;
-        private bool _disposed;
-        private ScannerDevice _scannerDevice;
+        private List<byte[]> _images;
         private ScannerSettings _scannerSettings;
 
-        public ScanningDevice(ScannerDevice device, ScannerSettings settings)
+        public ScanningDevice(ScannerSettings settings)
         {
-            _scannerDevice = device;
             _scannerSettings = settings;
         }
 
@@ -322,7 +303,7 @@ namespace Mosey.Services
         {
             int retryCount = 0;
 
-            if (_scannerDevice is null || !IsConnected)
+            if (!IsConnected)
             {
                 throw new COMException("The scanner is not connected.");
             }
@@ -332,30 +313,56 @@ namespace Mosey.Services
                 throw new ArgumentException($"The image format {format} is not supported by this device.");
             }
 
-            // Wait until the scanner is ready
-            while (retryCount < _scanRetries)
+            // Connect to the specified device and create a COM object representation
+            using (ScannerDevice scannerDevice = new ScannerDevice(_scannerSettings))
             {
-                try
+                // Configure the device
+                ScanningDeviceSettings deviceConfig = new ScanningDeviceSettings();
+                scannerDevice.ScannerPictureSettings(config =>
+                    config.ColorFormat(deviceConfig.ColorType)
+                        .Resolution(deviceConfig.Resolution)
+                        .Brightness(deviceConfig.Brightness)
+                        .Contrast(deviceConfig.Contrast)
+                    );
+
+                if (_images is null)
                 {
-                    IsScanning = true;
-                     _scannerDevice.PerformScan(format);
-                    break;
+                    _images = new List<byte[]>();
                 }
-                catch (COMException ex)
+
+                // Wait until the scanner is ready
+                while (retryCount < _scanRetries)
                 {
-                    // Wait until the scanner is ready if it is warming up or busy
-                    if (ex.ErrorCode == -2145320954 | ex.ErrorCode == -2145320953)
+                    try
                     {
-                        System.Threading.Thread.Sleep(1000);
-                        retryCount += 1;
-                        continue;
+                        // Retrieve image(s) from scanner
+                        IsScanning = true;
+                        scannerDevice.PerformScan(format);
+
+                        // Store images for processing etc
+                        foreach (byte[] image in scannerDevice.ExtractScannedImageFiles())
+                        {
+                            _images.Add(image.ToArray());
+                        }
+                        break;
                     }
-                    ErrorState = new COMException(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
-                    break;
-                }
-                finally
-                {
-                    IsScanning = false;
+                    catch (COMException ex)
+                    {
+                        // Wait until the scanner is ready if it is warming up or busy
+                        if (ex.ErrorCode == -2145320954 | ex.ErrorCode == -2145320953)
+                        {
+                            System.Threading.Thread.Sleep(1000);
+                            retryCount += 1;
+                            continue;
+                        }
+                        ErrorState = new COMException(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
+                        break;
+                    }
+                    finally
+                    {
+                        IsScanning = false;
+                    }
+                    
                 }
             }
         }
@@ -367,6 +374,11 @@ namespace Mosey.Services
 
         public IEnumerable<string> SaveImage(string fileName, string directory = "", string fileFormat = "")
         {
+            if (_images == null | _images.Count == 0)
+            {
+                throw new InvalidOperationException($"Please call the `{nameof(GetImage)}` method first.");
+            }
+
             // Check that the file extension is valid
             ImageFormat imageFormat = ImageFormatFromString(fileFormat);
 
@@ -380,13 +392,11 @@ namespace Mosey.Services
             fileName = Path.Combine(directory, fileName);
             fileName = Path.ChangeExtension(fileName, imageFormat.ToString().ToLower());
 
-            try
+            // Write all images to disk
+            foreach (byte[] image in _images)
             {
-                return _scannerDevice.SaveScannedImageFiles(fileName);
-            }
-            catch (COMException ex)
-            {
-                throw new Exception(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
+                File.WriteAllBytes(fileName, image);
+                yield return fileName;
             }
         }
 
@@ -396,9 +406,9 @@ namespace Mosey.Services
         /// </summary>
         /// <param name="imageFormatStr"></param>
         /// <returns>An ImageFormat enum</returns>
-        public ImageFormat ImageFormatFromString(string imageFormatStr)
+        public static ImageFormat ImageFormatFromString(string imageFormatStr)
         {
-            if(Enum.TryParse(imageFormatStr, ignoreCase: true, out ImageFormat imageFormat))
+            if (Enum.TryParse(imageFormatStr, ignoreCase: true, out ImageFormat imageFormat))
             {
                 return imageFormat;
             }
@@ -408,11 +418,10 @@ namespace Mosey.Services
             }
         }
 
-        private int GetSimpleID()
+        private static int GetSimpleID(string deviceID)
         {
             // Get the last two characters of the device instance path
-            // Hopefully a unique integer
-            string shortID = _scannerSettings.Id.Substring(Math.Max(0, _scannerSettings.Id.Length - 2));
+            string shortID = deviceID.Substring(Math.Max(0, deviceID.Length - 2));
 
             if (int.TryParse(shortID, out int intID))
             {
@@ -450,31 +459,6 @@ namespace Mosey.Services
         {
             return DeviceID.GetHashCode();
         }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposed){
-                if (disposing)
-                {
-                    if(_scannerDevice != null)
-                    {
-                        _scannerDevice.Dispose();
-                    }
-                }
-                _disposed = true;
-            }
-        }
-
-        ~ScanningDevice()
-        {
-            Dispose(false);
-        }
     }
 
     public class ScanningDeviceSettings : IImagingDeviceSettings
@@ -511,7 +495,8 @@ namespace Mosey.Services
         public ColorType ColorTypeFromFormat(ColorFormat colorFormat)
         {
             // ColorTypes properties are internal and not accessible for comparison
-            switch (colorFormat) {
+            switch (colorFormat)
+            {
                 case ColorFormat.BlackAndWhite:
                     return ColorType.BlackAndWhite;
                 case ColorFormat.Greyscale:

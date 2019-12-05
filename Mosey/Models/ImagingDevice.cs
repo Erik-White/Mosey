@@ -18,7 +18,7 @@ namespace Mosey.Models
         IEnumerable<T> GetByEnabled(bool enabled);
     }
 
-    public interface IImagingDevice : IEquatable<IImagingDevice>, INotifyPropertyChanged, IDisposable
+    public interface IImagingDevice : IEquatable<IImagingDevice>, INotifyPropertyChanged
     {
         string Name { get; }
         int ID { get; }
