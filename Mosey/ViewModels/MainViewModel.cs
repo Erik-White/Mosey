@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows.Input;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Mosey.Models;
@@ -350,6 +351,63 @@ namespace Mosey.ViewModels
         {
             // Run scanning on another thread
             List<string> result = await Task.Run(() => Scan());
+        }
+
+        public List<string> ScanParallel()
+        {
+            string saveDateTime = DateTime.Now.ToString(string.Join("_", _imageConfig.DateFormat, _imageConfig.TimeFormat));
+            string saveDirectory = _imageConfig.Path;
+            ConcurrentBag<string> imagePaths = new ConcurrentBag<string>();
+
+            //Default to user's Pictures directory if none is specified
+            if(string.IsNullOrWhiteSpace(saveDirectory))
+            {
+                saveDirectory = Path.Combine
+                (
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
+                    System.Reflection.Assembly.GetExecutingAssembly().GetName().Name
+                );
+            }
+
+            try
+            {
+                Parallel.ForEach<IImagingDevice>(ScannerDevices, scanner =>
+                {
+                    string scannerIDStr = scanner.ID.ToString();
+                    try
+                    {
+                        if (scanner.IsConnected && scanner.IsEnabled)
+                        { 
+                            // Run the scanner and retrieve the image(s) to memory
+                            scanner.GetImage();
+                            _log.LogDebug($"Retrieved image on {scanner.Name} (#{scannerIDStr}) at {saveDateTime}");
+
+                            string fileName = String.Join("_", _imageConfig.Prefix, saveDateTime);
+                            string directory = Path.Combine(saveDirectory, String.Join(String.Empty, "Scanner", scannerIDStr));
+                            Directory.CreateDirectory(directory);
+
+                            // Write image(s) to filesystem and retrieve a list of saved file names
+                            IEnumerable<string> savedImages = scanner.SaveImage(fileName, directory: directory, fileFormat: ImageFormat);
+                            foreach (string image in savedImages)
+                            {
+                                imagePaths.Add(image);
+                                _log.LogInformation($"Saved image file {image} from scanner #{scannerIDStr} at {saveDateTime}");
+                            }
+                        }
+                    }
+                    catch (Exception ex){
+                        // An error occurred with the scanner
+                        _log.LogError(ex, $"Failed to scan image on scanner #{scannerIDStr} at {saveDateTime}");
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                //_log.LogError(ex, $"Failed to scan image on scanner #{scannerIDStr} at {saveDateTime}");
+                 throw;
+            }
+
+            return imagePaths.ToList();
         }
 
         public List<string> Scan()
