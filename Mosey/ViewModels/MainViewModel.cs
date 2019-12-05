@@ -1,8 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows.Input;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Mosey.Models;
@@ -183,6 +184,7 @@ namespace Mosey.ViewModels
             _scanTimer.Tick += ScanTimer_Tick;
             _scanTimer.Complete += ScanTimer_Complete;
             _uiTimer.Tick += UITimer_Tick;
+            _uiTimer.Start(TimeSpan.FromSeconds(_uiTimerConfig.Delay), TimeSpan.FromSeconds(_uiTimerConfig.Interval), _uiTimerConfig.Repetitions);
         }
 
         private void SetConfiguration()
@@ -201,7 +203,7 @@ namespace Mosey.ViewModels
             get
             {
                 if (_EnableScannersCommand == null)
-                    _EnableScannersCommand = new RelayCommand(o => _scannerDevices.EnableAll(), o => !IsScanRunning);
+                    _EnableScannersCommand = new RelayCommand(o => _scannerDevices.EnableAll(), o => !ScannerDevices.IsEmpty && !IsScanRunning);
 
                 return _EnableScannersCommand;
             }
@@ -213,7 +215,7 @@ namespace Mosey.ViewModels
             get
             {
                 if (_ManualScanCommand == null)
-                    _ManualScanCommand = new RelayCommand(o => ScanAsync(), o => !IsScanRunning);
+                    _ManualScanCommand = new RelayCommand(o => ScanAsync(), o => !ScannerDevices.IsEmpty && !ScannerDevices.IsScanInProgress && !IsScanRunning);
 
                 return _ManualScanCommand;
             }
@@ -225,7 +227,7 @@ namespace Mosey.ViewModels
             get
             {
                 if (_StartScanCommand == null)
-                    _StartScanCommand = new RelayCommand(o => StartScan(), o => !IsScanRunning && !_scanTimer.Paused);
+                    _StartScanCommand = new RelayCommand(o => StartScan(), o => !ScannerDevices.IsEmpty && !ScannerDevices.IsScanInProgress && !IsScanRunning && !_scanTimer.Paused);
 
                 return _StartScanCommand;
             }
@@ -289,20 +291,18 @@ namespace Mosey.ViewModels
             get
             {
                 if (_RefreshScannersCommand == null)
-                    _RefreshScannersCommand = new RelayCommand(o => ScannerDevices.RefreshDevices());
+                    _RefreshScannersCommand = new RelayCommand(o => RefreshDevicesAsync(), o => !ScannerDevices.IsScanInProgress && !IsScanRunning);
 
                 return _RefreshScannersCommand;
             }
         }
         #endregion Commands
 
-
         public void StartScan()
         {
             //scanLagTimer.Start(TimeSpan.FromMinutes(ScanDelay), TimeSpan.FromMinutes(ScanInterval), ScanRepetitions);
             //Use seconds instead of minutes for testing functionality
             _scanTimer.Start(TimeSpan.FromSeconds(ScanDelay), TimeSpan.FromSeconds(ScanInterval), ScanRepetitions);
-            _uiTimer.Start(TimeSpan.FromSeconds(_uiTimerConfig.Delay), TimeSpan.FromSeconds(_uiTimerConfig.Interval), _uiTimerConfig.Repetitions);
             RaisePropertyChanged("IsScanRunning");
             RaisePropertyChanged("ScanFinishTime");
         }
@@ -328,8 +328,22 @@ namespace Mosey.ViewModels
 
         private void UITimer_Tick(object sender, EventArgs e)
         {
-            // Update progress
+            // Update devices
+            if (!ScannerDevices.IsScanInProgress)
+            {
+                RefreshDevicesAsync();
+            }
+
             RaisePropertyChanged("ScanNextTime");
+        }
+
+        private async void RefreshDevicesAsync()
+        {
+            // Start scanners on a separate thread
+            // COM objects remain bound to the thread that they were started on
+            // This prevents locking the UI and ensures multiple scanners can run together
+            await Task.Run(() => ScannerDevices.RefreshDevices());
+            RaisePropertyChanged("ScannerDevices");
         }
 
         private async void ScanAsync()
@@ -346,7 +360,7 @@ namespace Mosey.ViewModels
             List<string> imagePaths = new List<string>();
 
             //Default to user's Pictures directory if none is specified
-            if(string.IsNullOrWhiteSpace(saveDirectory))
+            if (string.IsNullOrWhiteSpace(saveDirectory))
             {
                 saveDirectory = Path.Combine
                 (
@@ -357,15 +371,21 @@ namespace Mosey.ViewModels
 
             try
             {
-                foreach (IImagingDevice scanner in ScannerDevices)
+                // TODO: Order devices by ID before scanning
+                // Provides clearer feedback to users than unordered scanning
+                foreach(IImagingDevice scanner in ScannerDevices)
                 {
-                    if(scanner.IsConnected && scanner.IsEnabled)
+                    if (scanner.IsConnected && scanner.IsEnabled)
                     {
-                        // Retrieve image(s) from scanner to memory
                         scannerIDStr = scanner.ID.ToString();
 
                         // Run the scanner and retrieve the image(s) to memory
                         scanner.GetImage();
+                        if(scanner.ErrorState != null)
+                        {
+                            _log.LogError(scanner.ErrorState, $"Unable to retrieve image on {scanner.Name} (#{scannerIDStr}) at {saveDateTime}");
+                            continue;
+                        }
                         _log.LogDebug($"Retrieved image on {scanner.Name} (#{scannerIDStr}) at {saveDateTime}");
 
                         string fileName = String.Join("_", _imageConfig.Prefix, saveDateTime);
@@ -385,7 +405,7 @@ namespace Mosey.ViewModels
             catch (Exception ex)
             {
                 _log.LogError(ex, $"Failed to scan image on scanner #{scannerIDStr} at {saveDateTime}");
-                 throw;
+                throw;
             }
 
             return imagePaths;
