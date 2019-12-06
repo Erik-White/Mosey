@@ -185,16 +185,14 @@ namespace Mosey.Services
                 }
                 catch (Exception ex) when (ex is COMException | ex is NullReferenceException)
                 {
-                    // Retry if device is warming up, busy or just throws a general error
+                    // Retry if device is warming up, busy etc
                     // Also retry if the WIA driver does not respond in time (NullReference)
-                    if(ex is NullReferenceException | ex.HResult == -2145320954 | ex.HResult == -2145320953 | ex.HResult == -2145320955 | ex.HResult == -2145320959 | ex.HResult == -2145320946)
+                    if(ex is NullReferenceException | ex is COMException)
                     {
                         System.Threading.Thread.Sleep(1000);
                         retryCount += 1;
                         continue;
                     }
-
-                    throw new Exception(WiaExceptionExtensions.GetComErrorMessage((COMException)ex), ex);
                 }
                 finally
                 {
@@ -313,28 +311,26 @@ namespace Mosey.Services
                 throw new ArgumentException($"The image format {format} is not supported by this device.");
             }
 
-            // Connect to the specified device and create a COM object representation
-            using (ScannerDevice scannerDevice = new ScannerDevice(_scannerSettings))
+            // Wait until the scanner is ready
+            while (retryCount < _scanRetries)
             {
-                // Configure the device
-                ScanningDeviceSettings deviceConfig = new ScanningDeviceSettings();
-                scannerDevice.ScannerPictureSettings(config =>
-                    config.ColorFormat(deviceConfig.ColorType)
-                        .Resolution(deviceConfig.Resolution)
-                        .Brightness(deviceConfig.Brightness)
-                        .Contrast(deviceConfig.Contrast)
-                    );
-
-                if (_images is null)
+                try
                 {
-                    _images = new List<byte[]>();
-                }
-
-                // Wait until the scanner is ready
-                while (retryCount < _scanRetries)
-                {
-                    try
+                    // Connect to the specified device and create a COM object representation
+                    using (ScannerDevice scannerDevice = new ScannerDevice(_scannerSettings))
                     {
+                        // Configure the device
+                        ScanningDeviceSettings deviceConfig = new ScanningDeviceSettings();
+                        scannerDevice.ScannerPictureSettings(config =>
+                            config.ColorFormat(deviceConfig.ColorType)
+                                .Resolution(deviceConfig.Resolution)
+                                .Brightness(deviceConfig.Brightness)
+                                .Contrast(deviceConfig.Contrast)
+                            );
+
+                        // Replace any existing images
+                        _images = new List<byte[]>();
+
                         // Retrieve image(s) from scanner
                         IsScanning = true;
                         scannerDevice.PerformScan(format);
@@ -344,25 +340,36 @@ namespace Mosey.Services
                         {
                             _images.Add(image.ToArray());
                         }
+
+                        // Cancel loop if successful
                         break;
                     }
-                    catch (COMException ex)
+                }
+                catch (Exception ex) when (ex is COMException | ex is NullReferenceException)
+                {
+                    // Wait until the scanner is ready if it is warming up, busy etc
+                    // Also retry if the WIA driver does not respond in time (NullReference)
+                    if (ex is NullReferenceException | ex.HResult == -2145320954 | ex.HResult == -2145320953 | ex.HResult == -2145320946 | ex.HResult == -2147467261)
                     {
-                        // Wait until the scanner is ready if it is warming up or busy
-                        if (ex.ErrorCode == -2145320954 | ex.ErrorCode == -2145320953)
-                        {
-                            System.Threading.Thread.Sleep(1000);
-                            retryCount += 1;
-                            continue;
-                        }
-                        ErrorState = new COMException(WiaExceptionExtensions.GetComErrorMessage(ex), ex);
-                        break;
+                        System.Threading.Thread.Sleep(1000);
+                        retryCount += 1;
+                        continue;
                     }
-                    finally
+
+                    // Store error state if not attempting a retry
+                    if (ex is COMException)
                     {
-                        IsScanning = false;
+                        ErrorState = new COMException(WiaExceptionExtensions.GetComErrorMessage((COMException)ex), ex);
                     }
-                    
+                    else
+                    {
+                        ErrorState = ex;
+                    }
+                    break;
+                }
+                finally
+                {
+                    IsScanning = false;
                 }
             }
         }
