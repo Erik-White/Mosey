@@ -439,11 +439,6 @@ namespace Mosey.ViewModels
 
                         // Run the scanner and retrieve the image(s) to memory
                         scanner.GetImage();
-                        if(scanner.ErrorState != null)
-                        {
-                            _log.LogError(scanner.ErrorState, $"Unable to retrieve image on {scanner.Name} (#{scannerIDStr}) at {saveDateTime}");
-                            continue;
-                        }
                         _log.LogDebug($"Retrieved image on {scanner.Name} (#{scannerIDStr}) at {saveDateTime}");
 
                         string fileName = String.Join("_", _imageConfig.Prefix, saveDateTime);

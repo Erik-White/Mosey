@@ -81,8 +81,6 @@ namespace Mosey.Services
                 else
                 {
                     ScanningDevice existingDevice = (ScanningDevice)this.Where(d => d.Equals(device)).First();
-                    // If the device was successfully connected, clear any existing error state
-                    existingDevice.ErrorState = null;
 
                     // If the device is already in the collection but not connected
                     // Replace the existing device with the connected device
@@ -242,11 +240,8 @@ namespace Mosey.Services
         public int ID { get { return GetSimpleID(_scannerSettings.Id); } }
         public string DeviceID { get { return _scannerSettings.Id; } }
         public List<KeyValuePair<string, object>> DeviceSettings { get { return _scannerSettings.ScannerDeviceSettings.ToList<KeyValuePair<string, object>>(); } }
-        public Exception ErrorState
-        {
-            get { return _errorState; }
-            set { SetField(ref _errorState, value); }
-        }
+        public List<byte[]> Images { get; private set; }
+        public ScanningDeviceSettings ImageSettings { get; set; }
         public bool IsEnabled
         {
             get { return _isenabled; }
@@ -279,17 +274,22 @@ namespace Mosey.Services
             Tiff
         }
         public event PropertyChangedEventHandler PropertyChanged;
-        private Exception _errorState;
         private bool _isenabled;
         private bool _isconnected = true;
         private bool _isscanning;
         private int _scanRetries = 30;
-        private List<byte[]> _images;
         private ScannerSettings _scannerSettings;
+        private ScanningDeviceSettings _scannerConfig;
 
         public ScanningDevice(ScannerSettings settings)
         {
             _scannerSettings = settings;
+        }
+
+        public ScanningDevice(ScannerSettings settings, ScanningDeviceSettings config)
+        {
+            _scannerSettings = settings;
+            _scannerConfig = config;
         }
 
         public void GetImage()
@@ -322,7 +322,11 @@ namespace Mosey.Services
                     using (ScannerDevice scannerDevice = new ScannerDevice(_scannerSettings))
                     {
                         // Configure the device
-                        ScanningDeviceSettings deviceConfig = new ScanningDeviceSettings();
+                        ScanningDeviceSettings deviceConfig = _scannerConfig;
+                        if (_scannerConfig is null)
+                        {
+                            deviceConfig = new ScanningDeviceSettings();
+                        }
                         scannerDevice.ScannerPictureSettings(config =>
                             config.ColorFormat(deviceConfig.ColorType)
                                 .Resolution(deviceConfig.Resolution)
@@ -331,7 +335,7 @@ namespace Mosey.Services
                             );
 
                         // Replace any existing images
-                        _images = new List<byte[]>();
+                        Images = new List<byte[]>();
 
                         // Retrieve image(s) from scanner
                         scannerDevice.PerformScan(format);
@@ -339,7 +343,7 @@ namespace Mosey.Services
                         // Store images for processing etc
                         foreach (byte[] image in scannerDevice.ExtractScannedImageFiles())
                         {
-                            _images.Add(image.ToArray());
+                            Images.Add(image.ToArray());
                         }
 
                         // Cancel loop if successful
@@ -353,12 +357,6 @@ namespace Mosey.Services
                     System.Threading.Thread.Sleep(1000);
                     retryCount += 1;
                     continue;
-                }
-                catch (Exception ex)
-                {
-                    // Store error state on general error
-                    ErrorState = ex;
-                    break;
                 }
                 finally
                 {
@@ -374,7 +372,7 @@ namespace Mosey.Services
 
         public IEnumerable<string> SaveImage(string fileName, string directory = "", string fileFormat = "")
         {
-            if (_images == null | _images.Count == 0)
+            if (Images == null | Images.Count == 0)
             {
                 throw new InvalidOperationException($"Please call the `{nameof(GetImage)}` method first.");
             }
@@ -393,7 +391,7 @@ namespace Mosey.Services
             fileName = Path.ChangeExtension(fileName, imageFormat.ToString().ToLower());
 
             // Write all images to disk
-            foreach (byte[] image in _images)
+            foreach (byte[] image in Images)
             {
                 File.WriteAllBytes(fileName, image);
                 yield return fileName;
@@ -473,6 +471,7 @@ namespace Mosey.Services
         {
             UseDefaults();
         }
+
         public ScanningDeviceSettings(ColorFormat colorFormat, int resolution, int brightness, int contrast)
         {
             ColorFormat = colorFormat;
@@ -480,6 +479,7 @@ namespace Mosey.Services
             Brightness = brightness;
             Contrast = contrast;
         }
+
         public void UseDefaults()
         {
             // Load default stored settings
@@ -492,7 +492,7 @@ namespace Mosey.Services
         /// </summary>
         /// <param name="colorFormat"></param>
         /// <returns></returns>
-        public ColorType ColorTypeFromFormat(ColorFormat colorFormat)
+        public static ColorType ColorTypeFromFormat(ColorFormat colorFormat)
         {
             // ColorTypes properties are internal and not accessible for comparison
             switch (colorFormat)
