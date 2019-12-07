@@ -316,6 +316,8 @@ namespace Mosey.Services
             {
                 try
                 {
+                    IsScanning = true;
+
                     // Connect to the specified device and create a COM object representation
                     using (ScannerDevice scannerDevice = new ScannerDevice(_scannerSettings))
                     {
@@ -332,7 +334,6 @@ namespace Mosey.Services
                         _images = new List<byte[]>();
 
                         // Retrieve image(s) from scanner
-                        IsScanning = true;
                         scannerDevice.PerformScan(format);
 
                         // Store images for processing etc
