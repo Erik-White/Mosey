@@ -18,7 +18,7 @@ namespace Mosey.Models
         IEnumerable<T> GetByEnabled(bool enabled);
     }
 
-    public interface IImagingDevice : IEquatable<IImagingDevice>, INotifyPropertyChanged, IDisposable
+    public interface IImagingDevice : IEquatable<IImagingDevice>, INotifyPropertyChanged
     {
         string Name { get; }
         int ID { get; }
@@ -29,7 +29,6 @@ namespace Mosey.Models
         void GetImage();
         void SaveImage();
         IEnumerable<string> SaveImage(string fileName, string directory, string fileFormat);
-        Exception ErrorState { get; }
     }
 
     public interface IImagingDeviceSettings
