@@ -349,22 +349,14 @@ namespace Mosey.Services
                 {
                     // Wait until the scanner is ready if it is warming up, busy etc
                     // Also retry if the WIA driver does not respond in time (NullReference)
-                    if (ex is NullReferenceException | ex.HResult == -2145320954 | ex.HResult == -2145320953 | ex.HResult == -2145320946 | ex.HResult == -2147467261)
-                    {
-                        System.Threading.Thread.Sleep(1000);
-                        retryCount += 1;
-                        continue;
-                    }
-
-                    // Store error state if not attempting a retry
-                    if (ex is COMException)
-                    {
-                        ErrorState = new COMException(WiaExceptionExtensions.GetComErrorMessage((COMException)ex), ex);
-                    }
-                    else
-                    {
-                        ErrorState = ex;
-                    }
+                    System.Threading.Thread.Sleep(1000);
+                    retryCount += 1;
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    // Store error state on general error
+                    ErrorState = ex;
                     break;
                 }
                 finally
