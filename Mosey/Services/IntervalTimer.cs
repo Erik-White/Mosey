@@ -167,6 +167,16 @@ namespace Mosey.Services
             {
                 if (disposing)
                 {
+                    if (Tick != null)
+                    {
+                        foreach (Delegate del in Tick.GetInvocationList())
+                            Tick -= (del as EventHandler);
+                    }
+                    if (Complete != null)
+                    {
+                        foreach (Delegate del in Complete.GetInvocationList())
+                            Complete -= (del as EventHandler);
+                    }
                     if (timer != null)
                     {
                         timer.Dispose();
