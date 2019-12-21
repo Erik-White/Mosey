@@ -6,7 +6,6 @@ using System.ComponentModel;
 namespace Mosey.Models
 {
     public class ObservableItemsCollection<T> : ObservableCollection<T> where T : INotifyPropertyChanged
-    //public class ObservableItemsCollection<T> : ObservableCollection<T>
     {
         protected override void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
         {
