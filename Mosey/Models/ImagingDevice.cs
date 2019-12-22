@@ -1,31 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.ComponentModel;
 
 namespace Mosey.Models
 {
-    public interface IImagingDevices<T> : IEnumerable<T>, IDisposable where T : IImagingDevice
+    public interface IImagingDevices<T> : IDeviceCollection<T> where T : IImagingDevice
     {
-        bool IsScanInProgress { get; }
         bool IsEmpty { get; }
-        void RefreshDevices();
+        bool IsImagingInProgress { get; }
         void RefreshDevices(IImagingDeviceSettings deviceSettings, bool enableDevices);
-        void SetDeviceEnabled(T device, bool enabled);
-        void SetDeviceEnabled(string deviceID, bool enabled);
-        void EnableAll();
-        void DisableAll();
-        IEnumerable<T> GetByEnabled(bool enabled);
     }
 
-    public interface IImagingDevice : IEquatable<IImagingDevice>, INotifyPropertyChanged
+    public interface IImagingDevice : IEquatable<IImagingDevice>, INotifyPropertyChanged, IDevice
     {
-        string Name { get; }
-        int ID { get; }
-        string DeviceID { get; }
-        bool IsEnabled { get; set; }
-        bool IsConnected { get; }
-        bool IsScanning { get; }
+        IList<byte[]> Images { get; }
+        bool IsImaging { get; }
+        void ClearImages();
         void GetImage();
         void SaveImage();
         IEnumerable<string> SaveImage(string fileName, string directory, string fileFormat);
