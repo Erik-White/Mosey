@@ -5,13 +5,16 @@ using Mosey.Models;
 
 namespace Mosey.Services
 {
+    /// <summary>
+    /// A timer with interval callback events. Allows for pausing between intervals
+    /// </summary>
     public class IntervalTimer : IIntervalTimer
     {
         public DateTime StartTime { get; private set; }
         public DateTime FinishTime { get { return StartTime.Add(Repetitions * Interval) + Delay; } }
-        public TimeSpan Delay { get; private set; }
-        public TimeSpan Interval { get; private set; }
-        public int Repetitions { get; private set; }
+        public TimeSpan Delay { get; private set; } = TimeSpan.Zero;
+        public TimeSpan Interval { get; private set; } = TimeSpan.FromSeconds(1);
+        public int Repetitions { get; private set; } = -1;
         public int RepetitionsCount { get; private set; }
         public bool Enabled { get { return (timer != null); } }
         public bool Paused { get; private set; }
@@ -32,11 +35,29 @@ namespace Mosey.Services
         }
 
         /// <summary>
-        /// Starts a timer with callback event. Allows for pausing between intervals
+        /// Starts a timer using the current properties
+        /// </summary>
+        public void Start()
+        {
+            Start(Delay, Interval, Repetitions);
+        }
+
+        /// <summary>
+        /// Starts a timer with no repetition limit
         /// If delay is zero then the first callback will begin immediately
         /// </summary>
-        /// <param name="delay">The delay before starting the first scan</param>
-        /// <param name="interval">The time between each scan</param>
+        /// <param name="delay">The delay before starting the first interval</param>
+        /// <param name="interval">The time between each callback</param>
+        public void Start(TimeSpan delay, TimeSpan interval)
+        {
+            Start(delay, interval, -1);
+        }
+
+        /// <summary>
+        /// Start a new timer. If delay is zero then the first callback will begin immediately
+        /// </summary>
+        /// <param name="delay">The delay before starting the first interval</param>
+        /// <param name="interval">The time between each callback</param>
         /// <param name="repetitions">The number of scan intervals to complete. Set to -1 for infinite.</param>
         public void Start(TimeSpan delay, TimeSpan interval, int repetitions)
         {
@@ -91,18 +112,21 @@ namespace Mosey.Services
         }
 
         /// <summary>
-        /// Cancel and reset all timers
+        /// Cancel and reset the timer and its properties
         /// </summary>
         public void Stop()
         {
+            Paused = false;
+            StartTime = DateTime.MinValue;
             RepetitionsCount = 0;
+            stopWatch.Reset();
+
             if (timer != null)
             {
                 timer.Dispose();
                 timer = null;
             }
-            stopWatch.Reset();
-            Paused = false;
+
             OnComplete(EventArgs.Empty);
         }
 
