@@ -376,7 +376,6 @@ namespace Mosey.ViewModels
 
                 try
                 {
-
                     // The apartment state MUST be single threaded for COM interop
                     // DisableComObjectEagerCleanup must be invoked to prevent COM exceptions
                     using (StaTaskScheduler staQueue = new StaTaskScheduler(numberOfThreads: 1, disableComObjectEagerCleanup: true))

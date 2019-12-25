@@ -361,6 +361,5 @@ namespace Mosey.Models.Controls
         }
     }
     #endregion FlexPanel
-
 }
 

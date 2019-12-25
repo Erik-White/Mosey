@@ -34,10 +34,11 @@
                 <scm:SortDescription PropertyName="ID" Direction="Ascending" />
             </CollectionViewSource.SortDescriptions>
         </CollectionViewSource>
-        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
-        <Converters:ValueConverterGroup x:Key="BooleanToInvertedVisibilityConverter">
+        <Converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" FalseValue="Collapsed" />
+        <Converters:BoolToVisibilityConverter x:Key="BoolToVisibilityHiddenConverter" FalseValue="Hidden" />
+        <Converters:ValueConverterGroup x:Key="BoolToInvertedVisibilityConverter">
             <Converters:BoolToInvertedBoolConverter />
-            <BooleanToVisibilityConverter />
+            <Converters:BoolToVisibilityConverter FalseValue="Collapsed" />
         </Converters:ValueConverterGroup>
         <Thickness x:Key="VerticalMargin">0 15 0 15</Thickness>
         <Thickness x:Key="HorizontalMargin">15 0 15 0</Thickness>
@@ -47,7 +48,15 @@
     <Border BorderThickness="15" BorderBrush="White" Background="WhiteSmoke">
         <DockPanel MinHeight="100" HorizontalAlignment="Stretch" VerticalAlignment="Top">
             <!--#region Header and logo -->
-            <TextBlock DockPanel.Dock="Top" Text="MOSEY" Margin="15" />
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Top">
+                <Label Style="{StaticResource IconLarge}" Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToInvertedVisibilityConverter}}">
+                    <IconPacks:Material Kind="DotsHorizontalCircle" Height="60" Width="60" />
+                </Label>
+                <Label Style="{StaticResource IconLarge}" Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <IconPacks:Material Kind="DotsHorizontalCircle" Height="60" Width="60" Spin="True" SpinDuration="3.5" />
+                </Label>
+                <TextBlock Text="MOSEY" Style="{StaticResource TextBlockHeading}" Margin="0" />
+            </StackPanel>
             <!--#endregion Header and logo -->
             <!--#region Sequence controls -->
             <Grid DockPanel.Dock="Top" Margin="{StaticResource VerticalMargin}">
@@ -70,22 +79,29 @@
                 <Label Content="Total repetitions" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="2" Grid.Row="0" HorizontalContentAlignment="Right" />
                 <Controls:NumericUpDown Value="{Binding Path=ScanRepetitions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Style="{StaticResource NumericUpDownNormal}" HorizontalAlignment="Stretch" Grid.Column="3" Grid.Row="0" />
                 <Label Content="Save location" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="3" />
-                <TextBlock Background="White" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Padding="5" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3" />
+                <TextBox Background="White" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Padding="5" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3" />
                 <!--
                 <Button Command="{Binding Path=StartStopScanCommand}" IsEnabled="True" HorizontalAlignment="Stretch" VerticalContentAlignment="Center" Height="Auto" Width="Auto" MinHeight="40" MinWidth="150" Margin="20 0 10 0" Padding="10" Grid.Column="4"  Grid.RowSpan="2" Background="{StaticResource MahApps.Brushes.Accent}">
                     <IconPacks:Material Kind="ArrowRightDropCircle" />
                 </Button>
                 -->
                 <!-- Start/Stop scanning -->
-                <ToggleButton Command="{Binding Path=StartStopScanCommand}" IsEnabled="True" HorizontalAlignment="Stretch" VerticalContentAlignment="Center" Height="Auto" Width="Auto" MinHeight="40" MinWidth="150" Margin="30 0 15 0" Grid.Column="4"  Grid.RowSpan="2" Background="{StaticResource MahApps.Brushes.Accent}" Foreground="{StaticResource MahApps.Brushes.AccentSelectedColor}" Cursor="Hand">
+                <ToggleButton Command="{Binding Path=StartStopScanCommand}" Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToInvertedVisibilityConverter}}" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" HorizontalAlignment="Stretch" VerticalContentAlignment="Center" Height="Auto" Width="Auto" MinHeight="40" MinWidth="150" Margin="30 0 15 0" Grid.Column="4"  Grid.RowSpan="2" Background="{StaticResource MahApps.Brushes.Accent}" Cursor="Hand">
+                    <ToggleButton.Resources>
+                        <Style TargetType="Label">
+                            <Style.Setters>
+                                <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.AccentSelectedColor}" />
+                            </Style.Setters>
+                        </Style>
+                    </ToggleButton.Resources>
                     <ToggleButton.Style>
                         <Style TargetType="ToggleButton">
                             <Style.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Trigger.EnterActions>
                                         <BeginStoryboard Name="HighlightAnim">
-                                            <Storyboard TargetProperty="Opacity" AutoReverse="True" RepeatBehavior="Forever">
-                                                <DoubleAnimation From="1" To="0.2" Duration="00:00:01"/>
+                                            <Storyboard TargetProperty="Opacity" AutoReverse="True">
+                                                <DoubleAnimation From="1" To="0.95" Duration="00:00:02"/>
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </Trigger.EnterActions>
@@ -96,10 +112,27 @@
                             </Style.Triggers>
                         </Style>
                     </ToggleButton.Style>
-                    <IconPacks:Material Kind="PlayCircle" Height="40" Width="40" />
+                    <StackPanel Orientation="Horizontal">
+                        <Label Style="{StaticResource IconNormal}">
+                            <IconPacks:Material Kind="PlayCircle" Height="40" Width="40" />
+                        </Label>
+                        <Label Content="Start scan" Style="{StaticResource LabelNormal}" />
+                    </StackPanel>
                 </ToggleButton>
-                <ToggleButton Command="{Binding Path=StopScanCommand}" Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BooleanToVisibilityConverter}}" IsEnabled="True" HorizontalAlignment="Stretch" VerticalContentAlignment="Center" Height="Auto" Width="Auto" MinHeight="40" MinWidth="150" Margin="30 0 15 0" Grid.Column="4"  Grid.RowSpan="2" Background="{StaticResource MahApps.Brushes.Accent}" Foreground="{StaticResource MahApps.Brushes.AccentSelectedColor}" Cursor="Hand">
-                    <IconPacks:Material Kind="CloseCircle" Height="40" Width="40" Spin="True" SpinDuration="3.5"  />
+                <ToggleButton Command="{Binding Path=StopScanCommand}" Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToVisibilityConverter}}" IsEnabled="True" HorizontalAlignment="Stretch" VerticalContentAlignment="Center" Height="Auto" Width="Auto" MinHeight="40" MinWidth="150" Margin="30 0 15 0" Grid.Column="4"  Grid.RowSpan="2" Background="{StaticResource MahApps.Brushes.Accent}" Cursor="Hand">
+                    <ToggleButton.Resources>
+                        <Style TargetType="Label">
+                            <Style.Setters>
+                                <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.AccentSelectedColor}" />
+                            </Style.Setters>
+                        </Style>
+                    </ToggleButton.Resources>
+                    <StackPanel Orientation="Horizontal">
+                        <Label Style="{StaticResource IconNormal}">
+                            <IconPacks:Material Kind="CloseCircle" Height="40" Width="40" />
+                        </Label>
+                        <Label Content="Stop scan" Style="{StaticResource LabelNormal}" />
+                    </StackPanel>
                 </ToggleButton>
                 <!-- Advanced options -->
                 <!--
@@ -111,32 +144,40 @@
             </Grid>
             <!--#endregion Sequence controls -->
             <!--#region Progress information -->
-            <Grid DockPanel.Dock="Top" Background="{StaticResource MahApps.Brushes.Gray1}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" MinWidth="150" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="2*" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition MinHeight="20" />
-                    <RowDefinition MinHeight="80" />
-                    <RowDefinition MinHeight="20" />
-                </Grid.RowDefinitions>
-                <!-- Scans completed -->
-                <Label Content="Completed" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" HorizontalContentAlignment="Center" />
-                <TextBlock Text="{Binding ScanRepetitionsCount, FallbackValue='0'}" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" HorizontalAlignment="Center" FontSize="60" />
-                <Label Content="scans" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="2" HorizontalContentAlignment="Center" />
-                <!-- Next scan -->
-                <Label Content="Next scan" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="2" Grid.Row="0" Grid.ColumnSpan="2" HorizontalContentAlignment="Center" />
-                <Label Content="{Binding ScanNextTime, FallbackValue=''}" ContentStringFormat="mm':'ss" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="2" Grid.Row="1" Grid.ColumnSpan="2" HorizontalAlignment="Center" FontSize="60" />
-                <!-- Finish time -->
-                <Label Content="Finish time" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="4" Grid.Row="0" Grid.ColumnSpan="2" HorizontalContentAlignment="Center" />
-                <Label Content="{Binding ScanFinishTime}" ContentStringFormat="HH:mm" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="4" Grid.Row="1" Grid.ColumnSpan="2" HorizontalAlignment="Center" FontSize="60" />
-                <Label Content="{Binding ScanFinishTime}" ContentStringFormat="dddd dd" Visibility="{Binding IsScanRunning, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="4" Grid.Row="2" Grid.ColumnSpan="2" HorizontalContentAlignment="Center" />
-                <!--#endregion Progress information -->
-            </Grid>
+            <Border DockPanel.Dock="Top" IsEnabled="{Binding Path=IsScanRunning}" Style="{StaticResource VisibleExpandYBounceAnimation}" Padding="{StaticResource HorizontalMargin}" Background="{StaticResource MahApps.Brushes.Gray1}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="150" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="2*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition MinHeight="20" />
+                        <RowDefinition MinHeight="80" />
+                        <RowDefinition MinHeight="20" />
+                    </Grid.RowDefinitions>
+                    <Grid.Resources>
+                        <Style TargetType="Label">
+                            <Style.Setters>
+                                <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Gray5}" />
+                            </Style.Setters>
+                        </Style>
+                    </Grid.Resources>
+                    <!-- Scans completed -->
+                    <Label Content="Completed" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" HorizontalContentAlignment="Center" />
+                    <Label Content="{Binding ScanRepetitionsCount, FallbackValue='0'}" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" HorizontalAlignment="Center" FontSize="60" />
+                    <!-- Next scan -->
+                    <Label Content="Next scan" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="2" Grid.Row="0" Grid.ColumnSpan="2" HorizontalContentAlignment="Center" />
+                    <Label Content="{Binding ScanNextTime, FallbackValue=''}" ContentStringFormat="mm':'ss" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="2" Grid.Row="1" Grid.ColumnSpan="2" HorizontalAlignment="Center" FontSize="60" />
+                    <!-- Finish time -->
+                    <Label Content="Finish time" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="4" Grid.Row="0" Grid.ColumnSpan="2" HorizontalContentAlignment="Center" />
+                    <Label Content="{Binding ScanFinishTime}" ContentStringFormat="HH:mm" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="4" Grid.Row="1" Grid.ColumnSpan="2" HorizontalAlignment="Center" FontSize="60" />
+                    <Label Content="{Binding ScanFinishTime}" ContentStringFormat="dddd dd" Visibility="{Binding IsScanRunning, Converter={StaticResource BoolToVisibilityConverter}}" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="4" Grid.Row="2" Grid.ColumnSpan="2" HorizontalContentAlignment="Center" />
+                    <!--#endregion Progress information -->
+                </Grid>
+            </Border>
             <StackPanel DockPanel.Dock="Top" Orientation="Vertical">
                 <StackPanel Orientation="Horizontal">
                     <Button Command="{Binding Path=RefreshScannersCommand}" Content="Refresh scanners" />
@@ -145,7 +186,7 @@
                 </StackPanel>
             </StackPanel>
             <!--#region Display scanners and their properties -->
-            <ScrollViewer DockPanel.Dock="Top" Visibility="{Binding ScannerDevices.IsEmpty, Converter={StaticResource BooleanToInvertedVisibilityConverter}}" VerticalScrollBarVisibility="Visible" VerticalAlignment="Stretch">
+            <ScrollViewer DockPanel.Dock="Top" Visibility="{Binding ScannerDevices.IsEmpty, Converter={StaticResource BoolToInvertedVisibilityConverter}}" VerticalScrollBarVisibility="Visible" VerticalAlignment="Stretch">
                 <ItemsControl ItemsSource="{Binding Source={StaticResource ScannerDevicesOrdered}}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -163,9 +204,9 @@
                                 </Grid.RowDefinitions>
                                 <TextBlock Text="{Binding Name}" Grid.Column="0" Grid.ColumnSpan="4" />
                                 <TextBlock Text="{Binding ID}" Grid.Column="0" Grid.Row="1" />
-                                <TextBlock Text="Connected" Visibility="{Binding IsConnected, Converter={StaticResource BooleanToVisibilityConverter}}" Grid.Column="1" Grid.Row="1" />
-                                <Controls:ToggleSwitchButton Content="Enable scanning" IsChecked="{Binding Path=IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsScanning, Converter={Converters:BoolToInvertedBoolConverter}}" Cursor="Hand" Grid.Column="2" Grid.Row="1" />
-                                <Label Visibility="{Binding IsScanning, Converter={StaticResource BooleanToVisibilityConverter}}" Style="{StaticResource IconNormal}" Grid.Column="4" Grid.RowSpan="2">
+                                <TextBlock Text="Connected" Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibilityConverter}}" Grid.Column="1" Grid.Row="1" />
+                                <Controls:ToggleSwitchButton Content="Enable scanning" IsChecked="{Binding Path=IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsImaging, Converter={Converters:BoolToInvertedBoolConverter}}" Cursor="Hand" Grid.Column="2" Grid.Row="1" />
+                                <Label Visibility="{Binding IsImaging, Converter={StaticResource BoolToVisibilityConverter}}" Style="{StaticResource IconNormal}" Grid.Column="4" Grid.RowSpan="2">
                                     <IconPacks:Material Kind="DotsHorizontalCircle" Spin="True" SpinDuration="3.5" Height="40" Width="40" />
                                 </Label>
                             </Grid>
@@ -174,7 +215,7 @@
                 </ItemsControl>
             </ScrollViewer>
             <!-- Display a message if no scanners found -->
-            <StackPanel DockPanel.Dock="Top" Visibility="{Binding ScannerDevices.IsEmpty, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Center">
+            <StackPanel DockPanel.Dock="Top" Visibility="{Binding ScannerDevices.IsEmpty, Converter={StaticResource BoolToVisibilityConverter}}" HorizontalAlignment="Center">
                 <TextBlock Text="Waiting for scanners" Style="{StaticResource TextBlockHeading}" />
                 <Label Style="{StaticResource IconExtraLarge}">
                     <IconPacks:Material Kind="Brightness5" Spin="True" SpinDuration="2" Height="80" Width="80" />
