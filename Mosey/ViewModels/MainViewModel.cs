@@ -1,65 +1,114 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
 using System.Windows.Input;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Threading.Tasks.Schedulers;
+using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Mosey.Models;
 
 namespace Mosey.ViewModels
 {
-    public class MainViewModel : ViewModelBase
+    // TODO: Implement IDisposable if needed
+    public class MainViewModel : ViewModelBase, IDisposable
     {
-        private ILogger<MainViewModel> log;
-        private IIntervalTimer scanLagTimer;
-        private IExternalInstance scanLagAnalysis;
+        private ILogger<MainViewModel> _log;
+        private IIntervalTimer _uiTimer;
+        private IIntervalTimer _scanTimer;
+        private IExternalInstance _scanAnalysis;
+        private IImagingDevices<IImagingDevice> _scannerDevices;
+        private readonly object _scannerDevicesLock = new object();
+        private IImagingDeviceSettings _imageConfig;
+        private ImageFileConfig _imageFileConfig;
+        private IntervalTimerConfig _scanTimerConfig;
+        private IntervalTimerConfig _uiTimerConfig;
+        private static SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        private CancellationTokenSource _cancelScanTokenSource = new CancellationTokenSource();
+        private bool _disposed;
 
-        private int _ScanDelay;
+        #region Properties
+        public string ImageFormat
+        {
+            get
+            {
+                return _imageFileConfig.Format;
+            }
+            set
+            {
+                _imageFileConfig.Format = value;
+                RaisePropertyChanged("ImageFormat");
+            }
+        }
+
+        public List<string> ImageFormatSupported
+        {
+            get
+            {
+                return _imageFileConfig.SupportedFormats;
+            }
+        }
+
         public int ScanDelay
         {
             get
             {
-                return _ScanDelay;
+                return _scanTimerConfig.Delay;
             }
             set
             {
-                _ScanDelay = value;
+                if (value < 1)
+                {
+                    value = 1;
+                }
+                _scanTimerConfig.Delay = value;
                 RaisePropertyChanged("ScanDelay");
             }
         }
-        private int _ScanInterval;
+
         public int ScanInterval
         {
             get
             {
-                return _ScanInterval;
+                return _scanTimerConfig.Interval;
             }
             set
             {
-                _ScanInterval = value;
+                if(value < 1)
+                {
+                    value = 1;
+                }
+                _scanTimerConfig.Interval = value;
                 RaisePropertyChanged("ScanInterval");
             }
         }
-        private int _ScanRepetitions;
+
         public int ScanRepetitions
         {
             get
             {
-                return _ScanRepetitions;
+                return _scanTimerConfig.Repetitions;
             }
             set
             {
-                _ScanRepetitions = value;
+                if (value < 1)
+                {
+                    value = 1;
+                }
+                _scanTimerConfig.Repetitions = value;
                 RaisePropertyChanged("ScanRepetitions");
             }
         }
+
         public int ScanRepetitionsCount
         {
             get
             {
-                if (scanLagTimer != null)
+                if (_scanTimer != null)
                 {
-                    return scanLagTimer.RepetitionsCount;
+                    return _scanTimer.RepetitionsCount;
                 }
                 else
                 {
@@ -71,9 +120,9 @@ namespace Mosey.ViewModels
         {
             get
             {
-                if(scanLagTimer != null)
+                if(_scanTimer != null)
                 {
-                    return scanLagTimer.Enabled;
+                    return _scanTimer.Enabled;
                 }
                 else
                 {
@@ -82,48 +131,134 @@ namespace Mosey.ViewModels
             }
         }
 
-        private ObservableCollection<IImagingDevice> _ScannerDevices;
-        public ObservableCollection<IImagingDevice> ScannerDevices
+        public TimeSpan ScanNextTime
         {
             get
             {
-                return _ScannerDevices;
+                if (IsScanRunning)
+                {
+                    DateTime scanNext = _scanTimer.StartTime.Add((_scanTimer.RepetitionsCount) * _scanTimer.Interval);
+                    return scanNext.Subtract(DateTime.Now);
+                }
+                else
+                {
+                    return TimeSpan.Zero;
+                }
+            }
+        }
+
+        public DateTime ScanFinishTime
+        {
+            get
+            {
+                if (IsScanRunning)
+                {
+                    return _scanTimer.FinishTime;
+                }
+                else
+                {
+                    return DateTime.MinValue;
+                }
+            }
+        }
+
+        public IImagingDevices<IImagingDevice> ScannerDevices
+        {
+            get
+            {
+                return _scannerDevices;
             }
             set
             {
-                _ScannerDevices = value;
+                _scannerDevices = value;
                 RaisePropertyChanged("ScannerDevices");
             }
         }
+        #endregion Properties
 
-        public MainViewModel(ILogger<MainViewModel> logger, IIntervalTimer intervalTimer, IImagingDevices imagingDevices)
+        public MainViewModel(ILogger<MainViewModel> logger, IIntervalTimer intervalTimer, IImagingDevices<IImagingDevice> imagingDevices)
         {
-            log = logger;
-            scanLagTimer = intervalTimer;
-            _ScannerDevices = new ObservableCollection<IImagingDevice>(imagingDevices);
-            SetPropertyDefaults();
+            _log = logger;
+            _scanTimer = intervalTimer;
+            _uiTimer = (IIntervalTimer)intervalTimer.Clone();
+            _scannerDevices = imagingDevices;
 
-            scanLagTimer.Tick += ScanLagTimer_Tick;
-            scanLagTimer.Complete += ScanLagTimer_Complete;
+            // Lock scanners collection across threads to prevent conflicts
+            System.Windows.Data.BindingOperations.EnableCollectionSynchronization(_scannerDevices, _scannerDevicesLock);
+
+            // Load configuration options from JSON file
+            SetConfiguration();
+
+            _scanTimer.Tick += ScanTimer_Tick;
+            _scanTimer.Complete += ScanTimer_Complete;
+            _uiTimer.Tick += UITimer_Tick;
+            _uiTimer.Start(TimeSpan.FromMilliseconds(_uiTimerConfig.Delay), TimeSpan.FromMilliseconds(_uiTimerConfig.Interval), _uiTimerConfig.Repetitions);
+
+            // Start a task loop to update the scanners collection
+            RefreshDevicesAsync();
         }
 
-        private void SetPropertyDefaults()
+        private void SetConfiguration()
         {
-            _ScanDelay = Common.Configuration.GetValue<int>("Timer:Delay");
-            _ScanInterval = Common.Configuration.GetValue<int>("Timer:Interval");
-            _ScanRepetitions = Common.Configuration.GetValue<int>("Timer:Repetitions");
+            // TODO: Load device image config in ViewModel
+            //_imageConfig = Common.Configuration.GetSection("Image").Get<IImagingDeviceSettings>();
+            _scanTimerConfig = Common.Configuration.GetSection("Timers:Scan").Get<IntervalTimerConfig>();
+            _uiTimerConfig = Common.Configuration.GetSection("Timers:UI").Get<IntervalTimerConfig>();
+            _imageFileConfig = Common.Configuration.GetSection("Image:File").Get<ImageFileConfig>();
+
+            ScannerDevices.EnableAll();
         }
 
         #region Commands
+        private ICommand _EnableScannersCommand;
+        public ICommand EnableScannersCommand
+        {
+            get
+            {
+                if (_EnableScannersCommand == null)
+                    _EnableScannersCommand = new RelayCommand(o => _scannerDevices.EnableAll(), o => !ScannerDevices.IsEmpty && !IsScanRunning);
+
+                return _EnableScannersCommand;
+            }
+        }
+
+        private ICommand _ManualScanCommand;
+        public ICommand ManualScanCommand
+        {
+            get
+            {
+                if (_ManualScanCommand == null)
+                    _ManualScanCommand = new RelayCommand(o => ScanAsync(), o => !ScannerDevices.IsEmpty && !ScannerDevices.IsImagingInProgress && !IsScanRunning);
+
+                return _ManualScanCommand;
+            }
+        }
+
         private ICommand _StartScanCommand;
         public ICommand StartScanCommand
         {
             get
             {
                 if (_StartScanCommand == null)
-                    _StartScanCommand = new RelayCommand(o => StartScan(), o => !IsScanRunning && !scanLagTimer.Paused);
+                    _StartScanCommand = new RelayCommand(o => StartScan(), o => !ScannerDevices.IsEmpty && !ScannerDevices.IsImagingInProgress && !IsScanRunning && !_scanTimer.Paused);
 
                 return _StartScanCommand;
+            }
+        }
+
+        public ICommand StartStopScanCommand
+        {
+            get
+            {
+                if (IsScanRunning)
+                {
+                    return StopScanCommand;
+                }
+                else
+                {
+                    return StartScanCommand;
+                }
+
             }
         }
 
@@ -133,7 +268,7 @@ namespace Mosey.ViewModels
             get
             {
                 if (_PauseScanCommand == null)
-                    _PauseScanCommand = new RelayCommand(o => scanLagTimer.Pause(), o => IsScanRunning && !scanLagTimer.Paused);
+                    _PauseScanCommand = new RelayCommand(o => _scanTimer.Pause(), o => IsScanRunning && !_scanTimer.Paused);
 
                 return _PauseScanCommand;
             }
@@ -145,83 +280,282 @@ namespace Mosey.ViewModels
             get
             {
                 if (_ResumeScanCommand == null)
-                    _ResumeScanCommand = new RelayCommand(o => scanLagTimer.Resume(), o => scanLagTimer.Paused);
+                    _ResumeScanCommand = new RelayCommand(o => _scanTimer.Resume(), o => _scanTimer.Paused);
 
                 return _ResumeScanCommand;
             }
         }
-
+         
         private ICommand _StopScanCommand;
         public ICommand StopScanCommand
         {
             get
             {
                 if (_StopScanCommand == null)
-                    _StopScanCommand = new RelayCommand(o => scanLagTimer.Stop(), o => IsScanRunning);
+                    _StopScanCommand = new RelayCommand(o => StopScan(), o => IsScanRunning);
 
                 return _StopScanCommand;
             }
         }
-        #endregion Commands
 
+        private ICommand _RefreshScannersCommand;
+        public ICommand RefreshScannersCommand
+        {
+            get
+            {
+                if (_RefreshScannersCommand == null)
+                    _RefreshScannersCommand = new RelayCommand(o => RefreshDevices(), o => !ScannerDevices.IsImagingInProgress && !IsScanRunning);
+
+                return _RefreshScannersCommand;
+            }
+        }
+        #endregion Commands
 
         public void StartScan()
         {
+            _cancelScanTokenSource = new CancellationTokenSource();
+
             //scanLagTimer.Start(TimeSpan.FromMinutes(ScanDelay), TimeSpan.FromMinutes(ScanInterval), ScanRepetitions);
             //Use seconds instead of minutes for testing functionality
-            scanLagTimer.Start(TimeSpan.FromSeconds(ScanDelay), TimeSpan.FromSeconds(ScanInterval), ScanRepetitions);
+            _scanTimer.Start(TimeSpan.FromSeconds(ScanDelay), TimeSpan.FromSeconds(ScanInterval), ScanRepetitions);
+
             RaisePropertyChanged("IsScanRunning");
+            RaisePropertyChanged("ScanFinishTime");
+        }
+        public void StopScan()
+        {
+            _scanTimer.Stop();
+            _cancelScanTokenSource.Cancel();
+        }
+
+        private void ScanTimer_Tick(object sender, EventArgs e)
+        {
+            ScanAsync(_cancelScanTokenSource.Token);
+
+            // Update progress
+            RaisePropertyChanged("ScanNextTime");
+            RaisePropertyChanged("ScanRepetitionsCount");
+        }
+
+        private void ScanTimer_Complete(object sender, EventArgs e)
+        {
+            RaisePropertyChanged("ScanRepetitionsCount");
+            RaisePropertyChanged("IsScanRunning");
+            RaisePropertyChanged("ScanFinishTime");
+            _log.LogInformation($"Scan timer complete at {DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat))} with {ScanRepetitionsCount} repetitions.");
 
             // Run ScanLagAnalysis if required
             //ScanLagAnalysis();
         }
 
-        private void ScanLagTimer_Tick(object sender, EventArgs e)
+        private void UITimer_Tick(object sender, EventArgs e)
         {
-            // Update progress
-            RaisePropertyChanged("ScanRepetitionsCount");
-
-            // Call scanner API
-            Scan();
+            RaisePropertyChanged("ScanNextTime");
         }
 
-        private void ScanLagTimer_Complete(object sender, EventArgs e)
+        private void RefreshDevices()
         {
-            RaisePropertyChanged("ScanRepetitionsCount");
-            RaisePropertyChanged("IsScanRunning");
-            log.LogInformation("ScanLag timer complete");
+            ScannerDevices.RefreshDevices(_imageConfig, true);
+            RaisePropertyChanged("ScannerDevices");
         }
 
-        public void Scan()
+        private async void RefreshDevicesAsync(int intervalSeconds = 1, CancellationToken cancellationToken = default(CancellationToken))
         {
-            string fileName = "test.jpg";
+            while (true)
+            {
+                // Exit at a safe point in the loop, if requested
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(intervalSeconds));
+
+                // Wait until all scanning operations are complete
+                await _semaphore.WaitAsync();
+
+                try
+                {
+                    // The apartment state MUST be single threaded for COM interop
+                    // DisableComObjectEagerCleanup must be invoked to prevent COM exceptions
+                    using (StaTaskScheduler staQueue = new StaTaskScheduler(numberOfThreads: 1, disableComObjectEagerCleanup: true))
+                    {
+                        // Update the scanners
+                        await Task.Factory.StartNew(() =>
+                        {
+                            ScannerDevices.RefreshDevices();
+                        }, cancellationToken, TaskCreationOptions.LongRunning, staQueue);
+
+                        // Runtime Callable Wrappers (RCWs) must be cleared to prevent memory leaks
+                        // This is done manually as automatic cleanup can result in early disposal of COM servers
+                        await Task.Factory.StartNew(() =>
+                        {
+                            System.Runtime.InteropServices.Marshal.CleanupUnusedObjectsInCurrentContext();
+                        }, CancellationToken.None, TaskCreationOptions.None, staQueue);
+                    }
+                }
+                finally
+                {
+                    RaisePropertyChanged("ScannerDevices");
+                    _semaphore.Release();
+                }
+            }
+        }
+
+        private async void ScanAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            // Ensure device refresh is complete
+            await _semaphore.WaitAsync();
+
             try
             {
-                foreach (IImagingDevice scanner in ScannerDevices)
+                // The apartment state MUST be single threaded for COM interop
+                // DisableComObjectEagerCleanup must be invoked to prevent early disposal of COM servers
+                using (StaTaskScheduler staQueue = new StaTaskScheduler(numberOfThreads: 1, disableComObjectEagerCleanup: true))
                 {
-                    // Retrieve image(s) to memory
-                    scanner.GetImage();
-                    log.LogDebug("Retrieved image on {scanner.Name} at {DateTime.Now}", scanner.Name, DateTime.Now);
-
-                    // Write image(s) to filesystem and retrieve a list of saved file names
-                    IEnumerable<string> savedImages = scanner.SaveImage("", fileName);
-                    foreach(string image in savedImages)
+                    await Task.Factory.StartNew(() =>
                     {
-                        fileName = image;
-                        log.LogInformation("Saved image file {fileName) at {DateTime.Now}", fileName, DateTime.Now);
+                        Scan(cancellationToken);
+                    }, cancellationToken, TaskCreationOptions.LongRunning, staQueue);
+
+                    // Runtime Callable Wrappers (RCWs) must be cleared to prevent memory leaks
+                    // This is done manually as automatic cleanup can result in early disposal of COM servers
+                    await Task.Factory.StartNew(() =>
+                    {
+                        System.Runtime.InteropServices.Marshal.CleanupUnusedObjectsInCurrentContext();
+                    }, CancellationToken.None, TaskCreationOptions.None, staQueue);
+                }
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        public List<string> Scan(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            string scannerIDStr = string.Empty;
+            string saveDateTime = DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat));
+            string saveDirectory = _imageFileConfig.Path;
+            List<string> imagePaths = new List<string>();
+
+            //Default to user's Pictures directory if none is specified
+            if (string.IsNullOrWhiteSpace(saveDirectory))
+            {
+                saveDirectory = Path.Combine
+                (
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
+                    System.Reflection.Assembly.GetExecutingAssembly().GetName().Name
+                );
+            }
+
+            try
+            {
+                // Order devices by ID to provide clearer feedback to users
+                foreach(IImagingDevice scanner in ScannerDevices.OrderBy(o => o.DeviceID).ToList())
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    if (scanner.IsConnected && scanner.IsEnabled && !scanner.IsImaging)
+                    {
+                        scannerIDStr = scanner.ID.ToString();
+
+                        // Run the scanner and retrieve the image(s) to memory
+                        scanner.GetImage();
+                        _log.LogDebug($"Retrieved image on {scanner.Name} (#{scannerIDStr}) at {saveDateTime}");
+
+                        if(scanner.Images.Count() > 0)
+                        {
+                            string fileName = string.Join("_", _imageFileConfig.Prefix, saveDateTime);
+                            string directory = Path.Combine(saveDirectory, string.Join(string.Empty, "Scanner", scannerIDStr));
+                            Directory.CreateDirectory(directory);
+
+                            // Write image(s) to filesystem and retrieve a list of saved file names
+                            IEnumerable<string> savedImages = scanner.SaveImage(fileName, directory: directory, fileFormat: ImageFormat);
+                            foreach (string image in savedImages)
+                            {
+                                imagePaths.Add(image);
+                                _log.LogInformation($"Saved image file {image} from scanner #{scannerIDStr} at {saveDateTime}");
+                            }
+                        }
+                        else
+                        {
+                            _log.LogDebug($"Unable to retrieve image on {scanner.Name} (#{scannerIDStr}) at {saveDateTime}");
+                        }
                     }
                 }
             }
+            catch (OperationCanceledException ex)
+            {
+                _log.LogInformation(ex, $"Scanning operation cancelled at {saveDateTime}");
+                return imagePaths;
+            }
             catch (Exception ex)
             {
-                log.LogError(ex, "Failed to scan image {fileName) at {DateTime.Now}", fileName, DateTime.Now);
+                _log.LogError(ex, $"Failed to scan image on scanner #{scannerIDStr} at {saveDateTime}");
+                throw;
             }
+
+            return imagePaths;
         }
-        public void ScanLagAnalysis()
+
+        public void ScanAnalysis()
         {
             // Create a new ScanLag object using IronPython
             //IExternalInstance scanLag = new ExternalInstance(Python.CreateEngine(), "", "ScanLag");
             //ScanLag.ExecuteMethod("ScanLag", param1, param2);
+            throw new NotImplementedException();
+        }
+
+        public class IntervalTimerConfig
+        {
+            public int Delay { get; set; }
+            public int Interval { get; set; }
+            public int Repetitions { get; set; }
+        }
+
+        public class ImageFileConfig
+        {
+            public string Path { get; set; }
+            public string Prefix { get; set; }
+            public string Format { get; set; }
+            public List<string> SupportedFormats { get; set; }
+            public string DateFormat { get; set; }
+            public string TimeFormat { get; set; }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    if (_cancelScanTokenSource != null)
+                    {
+                        _cancelScanTokenSource.Cancel();
+                    }
+                    if (_scanTimer != null)
+                    {
+                        _scanTimer.Dispose();
+                    }
+                    if (_uiTimer != null)
+                    {
+                        _uiTimer.Dispose();
+                    }
+                }
+                _disposed = true;
+            }
+        }
+
+        ~MainViewModel()
+        {
+            Dispose(false);
         }
     }
 }

@@ -1,0 +1,11 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:Mosey.Views.Styles"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <SolidColorBrush x:Key="FontColor.Default">#808080</SolidColorBrush>
+    <SolidColorBrush x:Key="FontColor.Heading">#708090</SolidColorBrush>
+    <SolidColorBrush x:Key="FontColor.Light">#FFFFFF</SolidColorBrush>
+    <SolidColorBrush x:Key="FontColor.Dark">#483D8B</SolidColorBrush>
+
+</ResourceDictionary>
