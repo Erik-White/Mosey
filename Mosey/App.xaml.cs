@@ -25,6 +25,7 @@ namespace Mosey
                 })
                 // Register dependencies
                 .AddTransient<IIntervalTimer, IntervalTimer>()
+                .AddTransient<IFolderBrowserDialog, FolderBrowserDialog>()
                 .AddSingleton<IImagingDevices<IImagingDevice>, ScanningDevices>()
                 .AddSingleton<System.ComponentModel.INotifyPropertyChanged, ViewModels.MainViewModel>()
 
