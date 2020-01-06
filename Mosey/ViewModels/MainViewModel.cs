@@ -12,7 +12,6 @@ using Mosey.Models;
 
 namespace Mosey.ViewModels
 {
-    // TODO: Implement IDisposable if needed
     public class MainViewModel : ViewModelBase, IDisposable
     {
         private ILogger<MainViewModel> _log;
@@ -20,6 +19,7 @@ namespace Mosey.ViewModels
         private IIntervalTimer _scanTimer;
         private IExternalInstance _scanAnalysis;
         private IImagingDevices<IImagingDevice> _scannerDevices;
+        private IFolderBrowserDialog _folderBrowserDialog;
         private readonly object _scannerDevicesLock = new object();
         private IImagingDeviceSettings _imageConfig;
         private ImageFileConfig _imageFileConfig;
@@ -48,6 +48,19 @@ namespace Mosey.ViewModels
             get
             {
                 return _imageFileConfig.SupportedFormats;
+            }
+        }
+
+        public string ImageSavePath
+        {
+            get
+            {
+                return _folderBrowserDialog.SelectedPath ?? _folderBrowserDialog.InitialDirectory;
+            }
+            set
+            {
+                _folderBrowserDialog.SelectedPath = value;
+                RaisePropertyChanged("ImageSavePath");
             }
         }
 
@@ -176,12 +189,18 @@ namespace Mosey.ViewModels
         }
         #endregion Properties
 
-        public MainViewModel(ILogger<MainViewModel> logger, IIntervalTimer intervalTimer, IImagingDevices<IImagingDevice> imagingDevices)
+        public MainViewModel(
+            ILogger<MainViewModel> logger,
+            IIntervalTimer intervalTimer,
+            IImagingDevices<IImagingDevice> imagingDevices,
+            IFolderBrowserDialog folderBrowserDialog
+        )
         {
             _log = logger;
             _scanTimer = intervalTimer;
             _uiTimer = (IIntervalTimer)intervalTimer.Clone();
             _scannerDevices = imagingDevices;
+            _folderBrowserDialog = folderBrowserDialog;
 
             // Lock scanners collection across threads to prevent conflicts
             System.Windows.Data.BindingOperations.EnableCollectionSynchronization(_scannerDevices, _scannerDevicesLock);
@@ -205,6 +224,9 @@ namespace Mosey.ViewModels
             _scanTimerConfig = Common.Configuration.GetSection("Timers:Scan").Get<IntervalTimerConfig>();
             _uiTimerConfig = Common.Configuration.GetSection("Timers:UI").Get<IntervalTimerConfig>();
             _imageFileConfig = Common.Configuration.GetSection("Image:File").Get<ImageFileConfig>();
+
+            _folderBrowserDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString();
+            _folderBrowserDialog.SelectedPath = _folderBrowserDialog.InitialDirectory;
 
             ScannerDevices.EnableAll();
         }
@@ -307,6 +329,18 @@ namespace Mosey.ViewModels
                     _RefreshScannersCommand = new RelayCommand(o => RefreshDevices(), o => !ScannerDevices.IsImagingInProgress && !IsScanRunning);
 
                 return _RefreshScannersCommand;
+            }
+        }
+
+        private ICommand _SelectFolderCommand;
+        public ICommand SelectFolderCommand
+        {
+            get
+            {
+                if (_SelectFolderCommand == null)
+                    _SelectFolderCommand = new RelayCommand(o => OpenFolderDialog());
+
+                return _SelectFolderCommand;
             }
         }
         #endregion Commands
@@ -497,6 +531,22 @@ namespace Mosey.ViewModels
             }
 
             return imagePaths;
+        }
+
+        /// <summary>
+        /// Display a dialog window that allows the user to select an image save location
+        /// </summary>
+        private void OpenFolderDialog()
+        {
+            _folderBrowserDialog.Title = "Choose the image file save location";
+            if(ImageSavePath != Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString())
+            {
+                // Go up one directory level, otherwise the dialog starts inside the selected directory
+                _folderBrowserDialog.InitialDirectory = Directory.GetParent(ImageSavePath).FullName;
+            }
+            _folderBrowserDialog.ShowDialog();
+
+            RaisePropertyChanged("ImageSavePath");
         }
 
         public void ScanAnalysis()

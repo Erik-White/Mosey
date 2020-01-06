@@ -79,7 +79,12 @@
                 <Label Content="Total repetitions" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="2" Grid.Row="0" HorizontalContentAlignment="Right" />
                 <Controls:NumericUpDown Value="{Binding Path=ScanRepetitions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Style="{StaticResource NumericUpDownNormal}" HorizontalAlignment="Stretch" Grid.Column="3" Grid.Row="0" />
                 <Label Content="Save location" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="3" />
-                <TextBox Background="White" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Padding="5" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3" />
+                <TextBox Text="{Binding Path=ImageSavePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Cursor="IBeam" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Padding="5" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3" />
+                <Button Command="{Binding SelectFolderCommand}" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" HorizontalAlignment="Right" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3">
+                    <Label Style="{StaticResource IconSmall}" Margin="10 0 10 0">
+                        <IconPacks:Material Kind="DotsHorizontal" Width="20" Height="20" />
+                    </Label>
+                </Button>
                 <!--
                 <Button Command="{Binding Path=StartStopScanCommand}" IsEnabled="True" HorizontalAlignment="Stretch" VerticalContentAlignment="Center" Height="Auto" Width="Auto" MinHeight="40" MinWidth="150" Margin="20 0 10 0" Padding="10" Grid.Column="4"  Grid.RowSpan="2" Background="{StaticResource MahApps.Brushes.Accent}">
                     <IconPacks:Material Kind="ArrowRightDropCircle" />
