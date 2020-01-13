@@ -17,7 +17,6 @@ namespace Mosey.ViewModels
         private ILogger<MainViewModel> _log;
         private IIntervalTimer _uiTimer;
         private IIntervalTimer _scanTimer;
-        private IExternalInstance _scanAnalysis;
         private IImagingDevices<IImagingDevice> _scannerDevices;
         private IFolderBrowserDialog _folderBrowserDialog;
         private readonly object _scannerDevicesLock = new object();
@@ -377,9 +376,6 @@ namespace Mosey.ViewModels
             RaisePropertyChanged("IsScanRunning");
             RaisePropertyChanged("ScanFinishTime");
             _log.LogInformation($"Scan timer complete at {DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat))} with {ScanRepetitionsCount} repetitions.");
-
-            // Run ScanLagAnalysis if required
-            //ScanLagAnalysis();
         }
 
         private void UITimer_Tick(object sender, EventArgs e)
@@ -547,14 +543,6 @@ namespace Mosey.ViewModels
             _folderBrowserDialog.ShowDialog();
 
             RaisePropertyChanged("ImageSavePath");
-        }
-
-        public void ScanAnalysis()
-        {
-            // Create a new ScanLag object using IronPython
-            //IExternalInstance scanLag = new ExternalInstance(Python.CreateEngine(), "", "ScanLag");
-            //ScanLag.ExecuteMethod("ScanLag", param1, param2);
-            throw new NotImplementedException();
         }
 
         public class IntervalTimerConfig

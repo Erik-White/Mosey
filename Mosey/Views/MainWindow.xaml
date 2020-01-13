@@ -141,8 +141,6 @@
                 </ToggleButton>
                 <!-- Advanced options -->
                 <!--
-                <Label Content="Run analysis on completion" Grid.Column="0" Grid.Row="2" Margin="{StaticResource HorizontalMargin}" />
-                <Controls:ToggleSwitchButton IsChecked="False"  IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Margin="{StaticResource HorizontalMargin}" Padding="5" Grid.Column="0" Grid.Row="3" />
                 <Label Content="Image format" Grid.Column="1" Grid.Row="2" Margin="{StaticResource HorizontalMargin}" />
                 <Controls:DropDownList  IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Margin="{StaticResource HorizontalMargin}" Padding="5" Grid.Column="1" Grid.Row="3" />
                 -->
