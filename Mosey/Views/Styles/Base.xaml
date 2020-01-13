@@ -17,6 +17,11 @@
     <sys:Int16 x:Key="Radius.Narrow">3.5</sys:Int16>
     <sys:Int16 x:Key="Radius.Wide">12</sys:Int16>
 
+    <sys:Double x:Key="Default">15</sys:Double>
+    <sys:Double x:Key="Tiny">5</sys:Double>
+    <sys:Double x:Key="Narrow">10</sys:Double>
+    <sys:Double x:Key="Wide">20</sys:Double>
+
     <Style x:Key="StyleBase" TargetType="{x:Type Control}">
         <Setter Property="Foreground" Value="{StaticResource FontColor.Default}" />
         <Setter Property="FontSize" Value="{StaticResource FontSize.Default}" />

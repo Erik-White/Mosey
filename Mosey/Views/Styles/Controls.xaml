@@ -33,13 +33,7 @@
     <Style x:Key="TextBlockNormal" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBase}">
         <Setter Property="FontSize" Value="{StaticResource FontSize.Default}" />
         <Setter Property="CustomControls:Margin.Top" Value="0" />
-    </Style>
-    <Style x:Key="TextBlockBlocklet" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockNormal}">
-        <Setter Property="CustomControls:Margin.Left" Value="0" />
-        <Setter Property="Foreground" Value="{StaticResource FontColor.Light}" />
-        <Setter Property="Background" Value="SkyBlue" />
-        <Setter Property="TextAlignment" Value="Center" />
-        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
 
     <!-- Label styles -->
@@ -59,28 +53,47 @@
     </Style>
     <Style x:Key="LabelNormal" TargetType="{x:Type Label}" BasedOn="{StaticResource LabelBase}">
         <Setter Property="FontSize" Value="{StaticResource FontSize.Default}" />
-        <Setter Property="CustomControls:Margin.Top" Value="0" />
     </Style>
 
     <!-- Button styles-->
-    <Style x:Key="ButtonBase" TargetType="{x:Type Button}">
-        <Setter Property="Padding" Value="{StaticResource PaddingSize.Default}" />
+    <Style x:Key="ButtonBase" TargetType="{x:Type Button}" BasedOn="{StaticResource MouseOverBackgroundOpacityAnimation}">
+        <Setter Property="Padding" Value="{StaticResource Padding.Default}" />
+        <Setter Property="BorderThickness" Value="{StaticResource Margin.Narrow}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
     </Style>
     <Style x:Key="ButtonHorizontal" TargetType="{x:Type Button}" BasedOn="{StaticResource ButtonBase}">
-        <Setter Property="CustomControls:Margin.Right" Value="{StaticResource Margin.Default}" />
+        <Setter Property="CustomControls:Margin.Left" Value="{StaticResource Default}" />
+        <Setter Property="CustomControls:Margin.Right" Value="{StaticResource Default}" />
     </Style>
     <Style x:Key="ButtonVertical" TargetType="{x:Type Button}" BasedOn="{StaticResource ButtonBase}">
-        <Setter Property="CustomControls:Margin.Bottom" Value="{StaticResource Margin.Default}" />
+        <Setter Property="CustomControls:Margin.Top" Value="{StaticResource Default}" />
+        <Setter Property="CustomControls:Margin.Bottom" Value="{StaticResource Default}" />
+    </Style>
+
+    <!-- ToggleButton styles-->
+    <Style x:Key="ToggleButtonBase" TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource MouseOverBackgroundOpacityAnimation}">
+        <Setter Property="Padding" Value="{StaticResource Padding.Default}" />
+        <Setter Property="BorderThickness" Value="{StaticResource Margin.Narrow}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style x:Key="ToggleButtonHorizontal" TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource ToggleButtonBase}">
+        <Setter Property="CustomControls:Margin.Left" Value="{StaticResource Default}" />
+        <Setter Property="CustomControls:Margin.Right" Value="{StaticResource Default}" />
+    </Style>
+    <Style x:Key="ToggleButtonVertical" TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource ToggleButtonBase}">
+        <Setter Property="CustomControls:Margin.Top" Value="{StaticResource Default}" />
+        <Setter Property="CustomControls:Margin.Bottom" Value="{StaticResource Default}" />
     </Style>
 
     <!-- Grid styles-->
     <Style x:Key="GridBase" TargetType="{x:Type Grid}">
         <Setter Property="Margin" Value="{StaticResource Margin.Default}" />
     </Style>
-    
+
     <!-- NumericUpDown styles-->
     <Style x:Key="NumericUpDownBase" TargetType="{x:Type Controls:NumericUpDown}">
         <Setter Property="Margin" Value="{StaticResource Margin.Default}" />

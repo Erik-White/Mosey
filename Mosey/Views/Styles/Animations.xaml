@@ -2,12 +2,13 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:Mosey.Views.Styles">
 
+    <!--#region Visibility animations -->
     <Style TargetType="FrameworkElement" x:Key="VisibleAnimation">
         <!-- Ensure control is hidden by default -->
         <Setter Property="Visibility" Value="Collapsed" />
         <Setter Property="Opacity" Value="0" />
         <Style.Triggers>
-            <!-- A trigger based on Visibility cannot provide fade out animation because Visibility.Collpased is instant -->
+            <!-- A trigger based on Visibility cannot provide fade out animation because Visibility.Collapsed is instant -->
             <Trigger Property="Visibility" Value="Visible">
                 <Trigger.EnterActions>
                     <BeginStoryboard>
@@ -42,7 +43,7 @@
             </Trigger>
         </Style.Triggers>
     </Style>
-    
+
     <Style TargetType="FrameworkElement" x:Key="VisibleExpandAnimation" BasedOn="{StaticResource VisibleAnimation}">
         <Setter Property="RenderTransform">
             <Setter.Value>
@@ -110,4 +111,31 @@
             </Trigger>
         </Style.Triggers>
     </Style>
+    <!--#endregion Visibility animations -->
+    <!--#region MouseOver animations-->
+    <Style TargetType="FrameworkElement" x:Key="MouseOverBackgroundOpacityAnimation">
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Trigger.EnterActions>
+                    <BeginStoryboard>
+                        <Storyboard Storyboard.TargetProperty="Background.(SolidColorBrush.Opacity)">
+                            <DoubleAnimation To="0.80" Duration="00:00:00.40" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </Trigger.EnterActions>
+                <Trigger.ExitActions>
+                    <!--
+                        A StopStoryBoard cannot be used as the BeginStoryBoard
+                        will be out of scope when used in as a template
+                    -->
+                    <BeginStoryboard>
+                        <Storyboard TargetProperty="Background.(SolidColorBrush.Opacity)">
+                            <DoubleAnimation To="1" Duration="00:00:00.40"/>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </Trigger.ExitActions>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    <!--#endregion MouseOver animations-->
 </ResourceDictionary>

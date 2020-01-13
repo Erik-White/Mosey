@@ -53,6 +53,7 @@
                     <IconPacks:Material Kind="DotsHorizontalCircle" Height="60" Width="60" />
                 </Label>
                 <Label Style="{StaticResource IconLarge}" Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <!-- The spin cannot be set with binding as it is not a DependencyProperty. The same issue affects Height and Width, which must be set manually -->
                     <IconPacks:Material Kind="DotsHorizontalCircle" Height="60" Width="60" Spin="True" SpinDuration="3.5" />
                 </Label>
                 <TextBlock Text="MOSEY" Style="{StaticResource TextBlockHeading}" Margin="0" />
@@ -73,34 +74,93 @@
                     <RowDefinition />
                     <RowDefinition />
                 </Grid.RowDefinitions>
+                <Grid.Resources>
+                    <Style x:Key="ToggleButtonMain" TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource ToggleButtonHorizontal}">
+                        <Style.Resources>
+                            <Style TargetType="FrameworkElement">
+                                <Setter Property="DockPanel.Dock" Value="Left" />
+                            </Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource TextBlockHeading}">
+                                <Style.Setters>
+                                    <Setter Property="Margin" Value="0" />
+                                    <Setter Property="CustomControls:Margin.Bottom" Value="0" />
+                                    <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.AccentSelectedColor}" />
+                                    <Setter Property="TextWrapping" Value="Wrap" />
+                                </Style.Setters>
+                            </Style>
+                            <Style TargetType="Label" BasedOn="{StaticResource IconNormal}">
+                                <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.AccentSelectedColor}" />
+                            </Style>
+                        </Style.Resources>
+                        <Style.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard Storyboard.TargetProperty="Background.(SolidColorBrush.Opacity)" AutoReverse="True">
+                                            <DoubleAnimation To="0.30" Duration="00:00:00.40" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Setter Property="Cursor" Value="Wait" />
+                            </Trigger>
+                        </Style.Triggers>
+                        <Style.Setters>
+                            <!-- Need to override the default ControlTemplate in order to remove the default triggers -->
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                        <Border Background="{TemplateBinding Background}" BorderThickness="0">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent}" />
+                            <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.AccentSelectedColor}" />
+                        </Style.Setters>
+                    </Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource TextBlockNormal}">
+                        <Setter Property="Padding" Value="0" />
+                    </Style>
+                    <Style TargetType="Controls:NumericUpDown" BasedOn="{StaticResource NumericUpDownNormal}">
+                        <Setter Property="IsEnabled" Value="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" />
+                        <Setter Property="HorizontalAlignment" Value="Stretch" />
+                    </Style>
+                </Grid.Resources>
                 <!-- Scan options -->
-                <Label Content="Interval time (minutes)" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="0" Grid.Row="0" />
-                <Controls:NumericUpDown Value="{Binding Path=ScanInterval, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Style="{StaticResource NumericUpDownBase}" HorizontalAlignment="Stretch" Grid.Column="1" Grid.Row="0" />
-                <Label Content="Total repetitions" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="2" Grid.Row="0" HorizontalContentAlignment="Right" />
-                <Controls:NumericUpDown Value="{Binding Path=ScanRepetitions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Style="{StaticResource NumericUpDownNormal}" HorizontalAlignment="Stretch" Grid.Column="3" Grid.Row="0" />
-                <Label Content="Save location" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="3" />
+                <TextBlock Text="Interval time (minutes)" Grid.Column="0" Grid.Row="0" />
+                <Controls:NumericUpDown Value="{Binding Path=ScanInterval, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Grid.Column="1" Grid.Row="0" />
+                <TextBlock Text="Total repetitions" Grid.Column="2" Grid.Row="0" HorizontalAlignment="Right" />
+                <Controls:NumericUpDown Value="{Binding Path=ScanRepetitions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Grid.Column="3" Grid.Row="0" />
+                <TextBox Text="Save location" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="3" />
                 <TextBox Text="{Binding Path=ImageSavePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Cursor="IBeam" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Padding="5" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3" />
-                <Button Command="{Binding SelectFolderCommand}" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" HorizontalAlignment="Right" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3">
-                    <Label Style="{StaticResource IconSmall}" Margin="10 0 10 0">
+                <Button Command="{Binding SelectFolderCommand}" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Panel.ZIndex="100" HorizontalAlignment="Right" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3">
+                    <Label Style="{StaticResource IconSmall}" Margin="{StaticResource HorizontalMargin}">
                         <IconPacks:Material Kind="DotsHorizontal" Width="20" Height="20" />
                     </Label>
                 </Button>
+                <TextBox IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Padding="5" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3" />
+                <!--#region Start/stop scan button -->
+                <ToggleButton Command="{Binding Path=StartStopScanCommand, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ToggleButtonMain}" Grid.Column="4" Grid.RowSpan="2">
+                    <!--
+                        A DockPanel is used instead of a stackpanel otherwise child elements
+                        have infinite width and will not wrap their contents
+                    -->
+                    <DockPanel>
+                        <Label Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToInvertedVisibilityConverter}}">
+                            <IconPacks:Material Kind="PlayCircle" Height="40" Width="40" />
+                        </Label>
+                        <TextBlock Text="Start scanning" Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToInvertedVisibilityConverter}}" />
+                        <Label Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <IconPacks:Material Kind="CloseCircle" Height="40" Width="40" />
+                        </Label>
+                        <TextBlock Text="Stop scanning" Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToVisibilityConverter}}" />
+                    </DockPanel>
+                </ToggleButton>
                 <!--
-                <Button Command="{Binding Path=StartStopScanCommand}" IsEnabled="True" HorizontalAlignment="Stretch" VerticalContentAlignment="Center" Height="Auto" Width="Auto" MinHeight="40" MinWidth="150" Margin="20 0 10 0" Padding="10" Grid.Column="4"  Grid.RowSpan="2" Background="{StaticResource MahApps.Brushes.Accent}">
-                    <IconPacks:Material Kind="ArrowRightDropCircle" />
-                </Button>
-                -->
-                <!-- Start/Stop scanning -->
-                <ToggleButton Command="{Binding Path=StartStopScanCommand}" Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToInvertedVisibilityConverter}}" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" HorizontalAlignment="Stretch" VerticalContentAlignment="Center" Height="Auto" Width="Auto" MinHeight="40" MinWidth="150" Margin="30 0 15 0" Grid.Column="4"  Grid.RowSpan="2" Background="{StaticResource MahApps.Brushes.Accent}" Cursor="Hand">
-                    <ToggleButton.Resources>
-                        <Style TargetType="Label">
-                            <Style.Setters>
-                                <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.AccentSelectedColor}" />
-                            </Style.Setters>
-                        </Style>
-                    </ToggleButton.Resources>
+                <ToggleButton Command="{Binding Path=StartStopScanCommand}" Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToInvertedVisibilityConverter}}" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Grid.Column="4" Grid.RowSpan="2">
                     <ToggleButton.Style>
-                        <Style TargetType="ToggleButton">
+                        <Style TargetType="ToggleButton" BasedOn="{StaticResource ToggleButtonMain}">
                             <Style.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Trigger.EnterActions>
@@ -121,24 +181,19 @@
                         <Label Style="{StaticResource IconNormal}">
                             <IconPacks:Material Kind="PlayCircle" Height="40" Width="40" />
                         </Label>
-                        <Label Content="Start scan" Style="{StaticResource LabelNormal}" />
+                        <TextBlock Text="Start scan" />
                     </StackPanel>
                 </ToggleButton>
-                <ToggleButton Command="{Binding Path=StopScanCommand}" Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToVisibilityConverter}}" IsEnabled="True" HorizontalAlignment="Stretch" VerticalContentAlignment="Center" Height="Auto" Width="Auto" MinHeight="40" MinWidth="150" Margin="30 0 15 0" Grid.Column="4"  Grid.RowSpan="2" Background="{StaticResource MahApps.Brushes.Accent}" Cursor="Hand">
-                    <ToggleButton.Resources>
-                        <Style TargetType="Label">
-                            <Style.Setters>
-                                <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.AccentSelectedColor}" />
-                            </Style.Setters>
-                        </Style>
-                    </ToggleButton.Resources>
+                <ToggleButton Command="{Binding Path=StopScanCommand}" Style="{StaticResource ToggleButtonMain}" Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToVisibilityConverter}}" IsEnabled="True" Grid.Column="4" Grid.RowSpan="2">
                     <StackPanel Orientation="Horizontal">
                         <Label Style="{StaticResource IconNormal}">
                             <IconPacks:Material Kind="CloseCircle" Height="40" Width="40" />
                         </Label>
-                        <Label Content="Stop scan" Style="{StaticResource LabelNormal}" />
+                        <TextBlock Text="Stop scan" />
                     </StackPanel>
                 </ToggleButton>
+                -->
+                <!--#endregion Start/stop scan button -->
                 <!-- Advanced options -->
                 <!--
                 <Label Content="Image format" Grid.Column="1" Grid.Row="2" Margin="{StaticResource HorizontalMargin}" />
