@@ -8,4 +8,9 @@
     <SolidColorBrush x:Key="FontColor.Light">#FFFFFF</SolidColorBrush>
     <SolidColorBrush x:Key="FontColor.Dark">#483D8B</SolidColorBrush>
 
+    <SolidColorBrush x:Key="Color.Info">#17A2B8</SolidColorBrush>
+    <SolidColorBrush x:Key="Color.Warning">#FFC107</SolidColorBrush>
+    <SolidColorBrush x:Key="Color.Error">#DC3545</SolidColorBrush>
+    <SolidColorBrush x:Key="Color.Success">#28A745</SolidColorBrush>
+
 </ResourceDictionary>

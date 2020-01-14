@@ -21,6 +21,7 @@
         MinWidth="600"
         Style="{StaticResource StyleBase}"
         GlowBrush="{DynamicResource AccentColorBrush}"
+        UseLayoutRounding="True"
         >
     <!--
     Data context is set at window instantiation
@@ -96,12 +97,44 @@
                             <Trigger Property="IsEnabled" Value="False">
                                 <Trigger.EnterActions>
                                     <BeginStoryboard>
-                                        <Storyboard Storyboard.TargetProperty="Background.(SolidColorBrush.Opacity)" AutoReverse="True">
+                                        <Storyboard Storyboard.TargetProperty="Background.(SolidColorBrush.Opacity)">
                                             <DoubleAnimation To="0.30" Duration="00:00:00.40" />
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard Storyboard.TargetProperty="Background.(SolidColorBrush.Opacity)">
+                                            <DoubleAnimation To="1.00" Duration="00:00:00.40" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
                                 <Setter Property="Cursor" Value="Wait" />
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsPressed" Value="True" />
+                                    <Condition Property="IsEnabled" Value="True" />
+                                </MultiTrigger.Conditions>
+                                <MultiTrigger.Setters>
+                                    <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent2}" />
+                                </MultiTrigger.Setters>
+                            </MultiTrigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard Storyboard.TargetProperty="Background.(SolidColorBrush.Opacity)">
+                                            <DoubleAnimation To="0.80" Duration="00:00:00.40" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard TargetProperty="Background.(SolidColorBrush.Opacity)">
+                                            <DoubleAnimation To="1" Duration="00:00:00.40"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
                             </Trigger>
                         </Style.Triggers>
                         <Style.Setters>
@@ -117,6 +150,7 @@
                             </Setter>
                             <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent}" />
                             <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.AccentSelectedColor}" />
+                            <Setter Property="MinWidth" Value="200" />
                         </Style.Setters>
                     </Style>
                     <Style TargetType="TextBlock" BasedOn="{StaticResource TextBlockNormal}">
@@ -132,14 +166,13 @@
                 <Controls:NumericUpDown Value="{Binding Path=ScanInterval, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Grid.Column="1" Grid.Row="0" />
                 <TextBlock Text="Total repetitions" Grid.Column="2" Grid.Row="0" HorizontalAlignment="Right" />
                 <Controls:NumericUpDown Value="{Binding Path=ScanRepetitions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Grid.Column="3" Grid.Row="0" />
-                <TextBox Text="Save location" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="3" />
-                <TextBox Text="{Binding Path=ImageSavePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Cursor="IBeam" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Padding="5" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3" />
-                <Button Command="{Binding SelectFolderCommand}" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Panel.ZIndex="100" HorizontalAlignment="Right" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3">
+                <TextBlock Text="Save location" Margin="{StaticResource HorizontalMargin}" Padding="0" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="3" />
+                <Button Command="{Binding SelectFolderCommand}" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Panel.ZIndex="100" Cursor="Hand" HorizontalAlignment="Right" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3">
                     <Label Style="{StaticResource IconSmall}" Margin="{StaticResource HorizontalMargin}">
                         <IconPacks:Material Kind="DotsHorizontal" Width="20" Height="20" />
                     </Label>
                 </Button>
-                <TextBox IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Padding="5" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3" />
+                <TextBox Text="{Binding Path=ImageSavePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Cursor="IBeam" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Padding="5" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3" />
                 <!--#region Start/stop scan button -->
                 <ToggleButton Command="{Binding Path=StartStopScanCommand, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ToggleButtonMain}" Grid.Column="4" Grid.RowSpan="2">
                     <!--
@@ -157,42 +190,6 @@
                         <TextBlock Text="Stop scanning" Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToVisibilityConverter}}" />
                     </DockPanel>
                 </ToggleButton>
-                <!--
-                <ToggleButton Command="{Binding Path=StartStopScanCommand}" Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToInvertedVisibilityConverter}}" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Grid.Column="4" Grid.RowSpan="2">
-                    <ToggleButton.Style>
-                        <Style TargetType="ToggleButton" BasedOn="{StaticResource ToggleButtonMain}">
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Trigger.EnterActions>
-                                        <BeginStoryboard Name="HighlightAnim">
-                                            <Storyboard TargetProperty="Opacity" AutoReverse="True">
-                                                <DoubleAnimation From="1" To="0.95" Duration="00:00:02"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.EnterActions>
-                                    <Trigger.ExitActions>
-                                        <StopStoryboard BeginStoryboardName="HighlightAnim"/>
-                                    </Trigger.ExitActions>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ToggleButton.Style>
-                    <StackPanel Orientation="Horizontal">
-                        <Label Style="{StaticResource IconNormal}">
-                            <IconPacks:Material Kind="PlayCircle" Height="40" Width="40" />
-                        </Label>
-                        <TextBlock Text="Start scan" />
-                    </StackPanel>
-                </ToggleButton>
-                <ToggleButton Command="{Binding Path=StopScanCommand}" Style="{StaticResource ToggleButtonMain}" Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToVisibilityConverter}}" IsEnabled="True" Grid.Column="4" Grid.RowSpan="2">
-                    <StackPanel Orientation="Horizontal">
-                        <Label Style="{StaticResource IconNormal}">
-                            <IconPacks:Material Kind="CloseCircle" Height="40" Width="40" />
-                        </Label>
-                        <TextBlock Text="Stop scan" />
-                    </StackPanel>
-                </ToggleButton>
-                -->
                 <!--#endregion Start/stop scan button -->
                 <!-- Advanced options -->
                 <!--
@@ -202,7 +199,7 @@
             </Grid>
             <!--#endregion Sequence controls -->
             <!--#region Progress information -->
-            <Border DockPanel.Dock="Top" IsEnabled="{Binding Path=IsScanRunning}" Style="{StaticResource VisibleExpandYBounceAnimation}" Padding="{StaticResource HorizontalMargin}" Background="{StaticResource MahApps.Brushes.Gray1}">
+            <Border DockPanel.Dock="Top" IsEnabled="{Binding Path=IsScanRunning}" Style="{StaticResource VisibleExpandYBounceAnimation}" Padding="{StaticResource HorizontalMargin}" CustomControls:Margin.Bottom="{StaticResource Default}" Background="{StaticResource MahApps.Brushes.Gray1}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" MinWidth="150" />
@@ -236,13 +233,6 @@
                     <!--#endregion Progress information -->
                 </Grid>
             </Border>
-            <StackPanel DockPanel.Dock="Top" Orientation="Vertical">
-                <StackPanel Orientation="Horizontal">
-                    <Button Command="{Binding Path=RefreshScannersCommand}" Content="Refresh scanners" />
-                    <Button Command="{Binding Path=EnableScannersCommand}" Content="Enable all scanners" />
-                    <Button Command="{Binding Path=ManualScanCommand}" Content="Manual scan" />
-                </StackPanel>
-            </StackPanel>
             <!--#region Display scanners and their properties -->
             <ScrollViewer DockPanel.Dock="Top" Visibility="{Binding ScannerDevices.IsEmpty, Converter={StaticResource BoolToInvertedVisibilityConverter}}" VerticalScrollBarVisibility="Visible" VerticalAlignment="Stretch">
                 <ItemsControl ItemsSource="{Binding Source={StaticResource ScannerDevicesOrdered}}">
@@ -250,21 +240,59 @@
                         <DataTemplate>
                             <Grid VerticalAlignment="Stretch">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="4*" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
-                                    <RowDefinition MinHeight="60" />
-                                    <RowDefinition MinHeight="40" />
+                                    <RowDefinition />
+                                    <RowDefinition />
                                 </Grid.RowDefinitions>
-                                <TextBlock Text="{Binding Name}" Grid.Column="0" Grid.ColumnSpan="4" />
-                                <TextBlock Text="{Binding ID}" Grid.Column="0" Grid.Row="1" />
-                                <TextBlock Text="Connected" Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibilityConverter}}" Grid.Column="1" Grid.Row="1" />
-                                <Controls:ToggleSwitchButton Content="Enable scanning" IsChecked="{Binding Path=IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsImaging, Converter={Converters:BoolToInvertedBoolConverter}}" Cursor="Hand" Grid.Column="2" Grid.Row="1" />
-                                <Label Visibility="{Binding IsImaging, Converter={StaticResource BoolToVisibilityConverter}}" Style="{StaticResource IconNormal}" Grid.Column="4" Grid.RowSpan="2">
+                                <Grid.Style>
+                                    <Style TargetType="{x:Type Grid}">
+                                        <Style.Resources>
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource TextBlockSmall}">
+                                                <Setter Property="CustomControls:Margin.Left" Value="0" />
+                                                <Setter Property="CustomControls:Margin.Right" Value="40" />
+                                                <Setter Property="Padding" Value="{StaticResource Padding.Tiny}" />
+                                                <Setter Property="VerticalAlignment" Value="Center" />
+                                            </Style>
+                                        </Style.Resources>
+                                        <Setter Property="CustomControls:Margin.Bottom" Value="{StaticResource Default}" />
+                                        <Setter Property="CustomControls:Margin.Right" Value="0" />
+                                        <Setter Property="Background" Value="LightGray" />
+                                    </Style>
+                                </Grid.Style>
+                                <TextBlock Text="{Binding Name}" Grid.Column="0" Grid.Row="0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockLarge}">
+                                            <Setter Property="CustomControls:Margin.Top" Value="0" />
+                                            <Setter Property="Padding" Value="0" />
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <StackPanel Orientation="Horizontal" Grid.Column="0" Grid.Row="1" >
+                                    <Label Style="{StaticResource IconSmall}">
+                                        <IconPacks:Material Kind="Scanner" Height="20" Width="20" />
+                                    </Label>
+                                    <TextBlock Text="{Binding ID}" />
+                                    <Label Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibilityConverter}}" Style="{StaticResource IconSmall}">
+                                        <IconPacks:Material Kind="CheckboxMultipleMarked" Height="20" Width="20" />
+                                    </Label>
+                                    <TextBlock Text="Connected" Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                    <Label Visibility="{Binding IsConnected, Converter={StaticResource BoolToInvertedVisibilityConverter}}">
+                                        <Label.Style>
+                                            <Style TargetType="{x:Type Label}" BasedOn="{StaticResource IconSmall}">
+                                                <Setter Property="Foreground" Value="{StaticResource Color.Error}" />
+                                            </Style>
+                                        </Label.Style>
+                                        <IconPacks:Material Kind="AlertRhombusOutline" Height="20" Width="20" />
+                                    </Label>
+                                    <TextBlock Text="Disconnected" Visibility="{Binding IsConnected, Converter={StaticResource BoolToInvertedVisibilityConverter}}" />
+                                    <Controls:ToggleSwitchButton Content="Enable scanner" IsChecked="{Binding Path=IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsImaging, Converter={Converters:BoolToInvertedBoolConverter}}" Cursor="Hand" />
+                                    <TextBlock Text="Disable scanner" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                    <TextBlock Text="Enable scanner" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToInvertedVisibilityConverter}}" />
+                                </StackPanel>
+                                <Label Visibility="{Binding IsImaging, Converter={StaticResource BoolToVisibilityConverter}}" Style="{StaticResource IconNormal}" Grid.Column="1" Grid.RowSpan="2">
                                     <IconPacks:Material Kind="DotsHorizontalCircle" Spin="True" SpinDuration="3.5" Height="40" Width="40" />
                                 </Label>
                             </Grid>

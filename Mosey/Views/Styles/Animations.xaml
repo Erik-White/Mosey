@@ -126,7 +126,7 @@
                 <Trigger.ExitActions>
                     <!--
                         A StopStoryBoard cannot be used as the BeginStoryBoard
-                        will be out of scope when used in as a template
+                        will be out of scope when used in a template
                     -->
                     <BeginStoryboard>
                         <Storyboard TargetProperty="Background.(SolidColorBrush.Opacity)">
