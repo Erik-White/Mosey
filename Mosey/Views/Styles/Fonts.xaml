@@ -4,10 +4,13 @@
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <sys:Double x:Key="FontSize.Default">16</sys:Double>
-    <sys:Double x:Key="FontSize.Title">26</sys:Double>
+    <sys:Double x:Key="FontSize.XXL">60</sys:Double>
+    <sys:Double x:Key="FontSize.XL">50</sys:Double>
+    <sys:Double x:Key="FontSize.Title">42</sys:Double>
     <sys:Double x:Key="FontSize.Heading">22</sys:Double>
     <sys:Double x:Key="FontSize.Large">18</sys:Double>
     <sys:Double x:Key="FontSize.Medium">16</sys:Double>
-    <sys:Double x:Key="FontSize.Small">12</sys:Double>
+    <sys:Double x:Key="FontSize.Small">14</sys:Double>
+    <sys:Double x:Key="FontSize.Tiny">12</sys:Double>
 
 </ResourceDictionary>

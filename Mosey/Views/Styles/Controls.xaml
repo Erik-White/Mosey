@@ -22,6 +22,7 @@
         <Setter Property="Padding" Value="{StaticResource Padding.Default}" />
         <Setter Property="TextAlignment" Value="Left" />
         <Setter Property="Foreground" Value="{StaticResource FontColor.Default}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Default}" />
     </Style>
     <Style x:Key="TextBlockHeading" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBase}">
         <Setter Property="MinWidth" Value="100" />
@@ -30,9 +31,31 @@
         <Setter Property="FontSize" Value="{StaticResource FontSize.Heading}" />
         <Setter Property="FontWeight" Value="Bold" />
     </Style>
+    <Style x:Key="TextBlockTitle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockHeading}">
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="FontSize" Value="{StaticResource FontSize.XL}" />
+        <Setter Property="FontFamily" Value="Corbel Bold" />
+        <Setter Property="FontStretch" Value="Expanded" />
+    </Style>
+    <Style x:Key="TextBlockLarge" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBase}">
+        <Setter Property="Margin" Value="{StaticResource Padding.Default}" />
+        <Setter Property="Padding" Value="{StaticResource Padding.Default}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Large}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
     <Style x:Key="TextBlockNormal" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBase}">
-        <Setter Property="FontSize" Value="{StaticResource FontSize.Default}" />
-        <Setter Property="CustomControls:Margin.Top" Value="0" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="TextBlockSmall" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBase}">
+        <Setter Property="Margin" Value="{StaticResource Margin.Narrow}" />
+        <Setter Property="Padding" Value="{StaticResource Padding.Narrow}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Small}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="TextBlockTiny" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBase}">
+        <Setter Property="Margin" Value="{StaticResource Margin.Tiny}" />
+        <Setter Property="Padding" Value="{StaticResource Padding.Tiny}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Tiny}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
 
@@ -54,14 +77,22 @@
     <Style x:Key="LabelNormal" TargetType="{x:Type Label}" BasedOn="{StaticResource LabelBase}">
         <Setter Property="FontSize" Value="{StaticResource FontSize.Default}" />
     </Style>
+    <Style x:Key="LabelSmall" TargetType="{x:Type Label}" BasedOn="{StaticResource LabelBase}">
+        <Setter Property="Margin" Value="{StaticResource Margin.Horizontal.Narrow}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Small}" />
+    </Style>
+    <Style x:Key="LabelTiny" TargetType="{x:Type Label}" BasedOn="{StaticResource LabelBase}">
+        <Setter Property="Margin" Value="{StaticResource Margin.Horizontal.Tiny}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Tiny}" />
+    </Style>
 
     <!-- Button styles-->
     <Style x:Key="ButtonBase" TargetType="{x:Type Button}" BasedOn="{StaticResource MouseOverBackgroundOpacityAnimation}">
         <Setter Property="Padding" Value="{StaticResource Padding.Default}" />
         <Setter Property="BorderThickness" Value="{StaticResource Margin.Narrow}" />
-        <Setter Property="Cursor" Value="Hand" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
     </Style>
     <Style x:Key="ButtonHorizontal" TargetType="{x:Type Button}" BasedOn="{StaticResource ButtonBase}">
         <Setter Property="CustomControls:Margin.Left" Value="{StaticResource Default}" />
