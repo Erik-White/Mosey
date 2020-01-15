@@ -4,7 +4,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <UseWPF>true</UseWPF>
-    <ApplicationIcon />
+    <ApplicationIcon>Mosey.ico</ApplicationIcon>
     <Win32Resource />
     <Authors>Erik White</Authors>
     <Platforms>AnyCPU</Platforms>
