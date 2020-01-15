@@ -345,9 +345,7 @@ namespace Mosey.ViewModels
         {
             _cancelScanTokenSource = new CancellationTokenSource();
 
-            //scanLagTimer.Start(TimeSpan.FromMinutes(ScanDelay), TimeSpan.FromMinutes(ScanInterval), ScanRepetitions);
-            //Use seconds instead of minutes for testing functionality
-            _scanTimer.Start(TimeSpan.FromSeconds(ScanDelay), TimeSpan.FromSeconds(ScanInterval), ScanRepetitions);
+            _scanTimer.Start(TimeSpan.FromMinutes(ScanDelay), TimeSpan.FromMinutes(ScanInterval), ScanRepetitions);
 
             RaisePropertyChanged("IsScanRunning");
             RaisePropertyChanged("ScanFinishTime");
