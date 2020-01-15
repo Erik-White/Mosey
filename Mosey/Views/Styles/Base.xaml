@@ -1,26 +1,169 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:local="clr-namespace:Mosey.Views.Styles"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
-
-    <Thickness x:Key="Margin.Default">15</Thickness>
-    <Thickness x:Key="Margin.Tiny">5</Thickness>
-    <Thickness x:Key="Margin.Narrow">10</Thickness>
-    <Thickness x:Key="Margin.Wide">20</Thickness>
-
-    <Thickness x:Key="Padding.Default">15</Thickness>
-    <Thickness x:Key="Padding.Tiny">5</Thickness>
-    <Thickness x:Key="Padding.Narrow">10</Thickness>
-    <Thickness x:Key="Padding.Wide">20</Thickness>
-
-    <sys:Int16 x:Key="Radius.Default">8</sys:Int16>
-    <sys:Int16 x:Key="Radius.Narrow">3.5</sys:Int16>
-    <sys:Int16 x:Key="Radius.Wide">12</sys:Int16>
 
     <sys:Double x:Key="Default">15</sys:Double>
     <sys:Double x:Key="Tiny">5</sys:Double>
     <sys:Double x:Key="Narrow">10</sys:Double>
     <sys:Double x:Key="Wide">20</sys:Double>
+
+    <!--#region Margin -->
+    <Thickness x:Key="Margin.Default"
+               Top="{StaticResource Default}"
+               Right="{StaticResource Default}"
+               Bottom="{StaticResource Default}"
+               Left="{StaticResource Default}"
+    />
+    <Thickness x:Key="Margin.Tiny"
+               Top="{StaticResource Tiny}"
+               Right="{StaticResource Tiny}"
+               Bottom="{StaticResource Tiny}"
+               Left="{StaticResource Tiny}"
+    />
+    <Thickness x:Key="Margin.Narrow"
+               Top="{StaticResource Narrow}"
+               Right="{StaticResource Narrow}"
+               Bottom="{StaticResource Narrow}"
+               Left="{StaticResource Narrow}"
+    />
+    <Thickness x:Key="Margin.Wide"
+               Top="{StaticResource Wide}"
+               Right="{StaticResource Wide}"
+               Bottom="{StaticResource Wide}"
+               Left="{StaticResource Wide}"
+    />
+
+    <Thickness x:Key="Margin.Horizontal.Default"
+               Top="0"
+               Right="{StaticResource Default}"
+               Bottom="0"
+               Left="{StaticResource Default}"
+    />
+    <Thickness x:Key="Margin.Horizontal.Tiny"
+               Top="0"
+               Right="{StaticResource Tiny}"
+               Bottom="0"
+               Left="{StaticResource Tiny}"
+    />
+    <Thickness x:Key="Margin.Horizontal.Narrow"
+               Top="0"
+               Right="{StaticResource Narrow}"
+               Bottom="0"
+               Left="{StaticResource Narrow}"
+    />
+    <Thickness x:Key="Margin.Horizontal.Wide"
+               Top="0"
+               Right="{StaticResource Wide}"
+               Bottom="0"
+               Left="{StaticResource Wide}"
+    />
+
+    <Thickness x:Key="Margin.Vertical.Default"
+               Top="{StaticResource Default}"
+               Right="0"
+               Bottom="{StaticResource Default}"
+               Left="0"
+    />
+    <Thickness x:Key="Margin.Vertical.Tiny"
+               Top="{StaticResource Tiny}"
+               Right="0"
+               Bottom="{StaticResource Tiny}"
+               Left="0"
+    />
+    <Thickness x:Key="Margin.Vertical.Narrow"
+               Top="{StaticResource Narrow}"
+               Right="0"
+               Bottom="{StaticResource Narrow}"
+               Left="0"
+    />
+    <Thickness x:Key="Margin.Vertical.Wide"
+               Top="{StaticResource Wide}"
+               Right="0"
+               Bottom="{StaticResource Wide}"
+               Left="0"
+    />
+    <!--#endregion Margin -->
+
+    <!--#region Padding -->
+    <Thickness x:Key="Padding.Default"
+               Top="{StaticResource Default}"
+               Right="{StaticResource Default}"
+               Bottom="{StaticResource Default}"
+               Left="{StaticResource Default}"
+    />
+    <Thickness x:Key="Padding.Tiny"
+               Top="{StaticResource Tiny}"
+               Right="{StaticResource Tiny}"
+               Bottom="{StaticResource Tiny}"
+               Left="{StaticResource Tiny}"
+    />
+    <Thickness x:Key="Padding.Narrow"
+               Top="{StaticResource Narrow}"
+               Right="{StaticResource Narrow}"
+               Bottom="{StaticResource Narrow}"
+               Left="{StaticResource Narrow}"
+    />
+    <Thickness x:Key="Padding.Wide"
+               Top="{StaticResource Wide}"
+               Right="{StaticResource Wide}"
+               Bottom="{StaticResource Wide}"
+               Left="{StaticResource Wide}"
+    />
+
+    <Thickness x:Key="Padding.Horizontal.Default"
+               Top="0"
+               Right="{StaticResource Default}"
+               Bottom="0"
+               Left="{StaticResource Default}"
+    />
+    <Thickness x:Key="Padding.Horizontal.Tiny"
+               Top="0"
+               Right="{StaticResource Tiny}"
+               Bottom="0"
+               Left="{StaticResource Tiny}"
+    />
+    <Thickness x:Key="Padding.Horizontal.Narrow"
+               Top="0"
+               Right="{StaticResource Narrow}"
+               Bottom="0"
+               Left="{StaticResource Narrow}"
+    />
+    <Thickness x:Key="Padding.Horizontal.Wide"
+               Top="0"
+               Right="{StaticResource Wide}"
+               Bottom="0"
+               Left="{StaticResource Wide}"
+    />
+
+    <Thickness x:Key="Padding.Vertical.Default"
+               Top="{StaticResource Default}"
+               Right="0"
+               Bottom="{StaticResource Default}"
+               Left="0"
+    />
+    <Thickness x:Key="Padding.Vertical.Tiny"
+               Top="{StaticResource Tiny}"
+               Right="0"
+               Bottom="{StaticResource Tiny}"
+               Left="0"
+    />
+    <Thickness x:Key="Padding.Vertical.Narrow"
+               Top="{StaticResource Narrow}"
+               Right="0"
+               Bottom="{StaticResource Narrow}"
+               Left="0"
+    />
+    <Thickness x:Key="Padding.Vertical.Wide"
+               Top="{StaticResource Wide}"
+               Right="0"
+               Bottom="{StaticResource Wide}"
+               Left="0"
+    />
+    <!--#endregion Padding -->
+    
+    <sys:Int16 x:Key="Radius.Default">8</sys:Int16>
+    <sys:Int16 x:Key="Radius.Narrow">3.5</sys:Int16>
+    <sys:Int16 x:Key="Radius.Wide">12</sys:Int16>
 
     <Style x:Key="StyleBase" TargetType="{x:Type Control}">
         <Setter Property="Foreground" Value="{StaticResource FontColor.Default}" />
