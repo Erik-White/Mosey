@@ -34,7 +34,7 @@
     <Style x:Key="TextBlockTitle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockHeading}">
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="FontSize" Value="{StaticResource FontSize.XL}" />
-        <Setter Property="FontFamily" Value="Corbel" />
+        <Setter Property="FontFamily" Value="Corbel Bold" />
         <Setter Property="FontStretch" Value="Expanded" />
     </Style>
     <Style x:Key="TextBlockLarge" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBase}">

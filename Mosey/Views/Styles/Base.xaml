@@ -6,6 +6,8 @@
     <sys:Double x:Key="Tiny">5</sys:Double>
     <sys:Double x:Key="Narrow">10</sys:Double>
     <sys:Double x:Key="Wide">20</sys:Double>
+    <sys:Double x:Key="XL">30</sys:Double>
+    <sys:Double x:Key="XXL">40</sys:Double>
 
     <!--#region Margin -->
     <Thickness x:Key="Margin.Default"
