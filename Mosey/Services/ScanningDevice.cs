@@ -21,8 +21,7 @@ namespace Mosey.Services
         public int ConnectRetries { get; set; } = 10;
         public bool IsImagingInProgress { get { return this.Any(x => x.IsImaging is true); } }
         public bool IsEmpty { get { return (Count == 0); } }
-        private static bool _isRefreshInProgress;
-        private bool _disposed;
+        private static System.Threading.SemaphoreSlim _semaphore = new System.Threading.SemaphoreSlim(1, 1);
 
         public ScanningDevices()
         {
@@ -67,44 +66,52 @@ namespace Mosey.Services
 
         public void RefreshDevices(IImagingDeviceSettings deviceConfig, bool enableDevices = true)
         {
-            // Do not attempt if already in progress
-            if (_isRefreshInProgress | IsImagingInProgress)
+            IList<IDictionary<string, object>> deviceProperties = SystemScannerProperties(connectRetries: ConnectRetries);
+            if (deviceProperties.Count == 0)
             {
+                // No devices detected, any current devices have been disconnected
+                foreach (ScanningDevice device in this)
+                {
+                    device.IsConnected = false;
+                }
                 return;
             }
 
-            IEnumerable<IImagingDevice> systemScanners = SystemScanners((ScanningDeviceSettings)deviceConfig, ConnectRetries);
-            foreach (ScanningDevice device in systemScanners)
+            // Check if devices not already in the collection
+            // Or already in the collection, but not connected
+            foreach (IDictionary<string, object> properties in deviceProperties)
             {
-                if (!Contains(device))
+                string deviceID = properties["Unique Device ID"].ToString();
+
+                if (!this.Where(d => d.DeviceID == deviceID).Any())
                 {
-                    device.IsEnabled = enableDevices; 
-                    // Add any new devices
-                    AddDevice(device);
+                    // Create a new device and add it to the collection
+                    ScanningDevice device = AddDevice(deviceID);
+                    device.IsEnabled = enableDevices;
                 }
                 else
                 {
-                    ScanningDevice existingDevice = (ScanningDevice)this.Where(d => d.Equals(device)).First();
-
-                    // If the device is already in the collection but not connected
-                    // Replace the existing device with the connected device
-                    if (!existingDevice.IsConnected)
+                    ScanningDevice existingDevice = (ScanningDevice)this.Where(d => d.DeviceID == deviceID && !d.IsConnected).FirstOrDefault();
+                    if (existingDevice != null)
                     {
+                        // Remove the existing device from the collection
                         bool enabled = existingDevice.IsEnabled;
                         Remove(existingDevice);
 
+                        // Replace with the new and updated device
+                        ScanningDevice device = AddDevice(deviceID);
                         device.IsEnabled = enabled;
-                        AddDevice(device);
                     }
                 }
-            }
-            // Update device status if device(s) removed
-            IEnumerable<IImagingDevice> devicesRemoved = this.Except(systemScanners);
-            if (devicesRemoved.Count() > 0)
-            {
-                foreach(ScanningDevice device in devicesRemoved)
+
+                // If the device is in the collection but no longer found
+                IEnumerable<IImagingDevice> devicesRemoved = this.Where(l1 => !deviceProperties.Any(l2 => l1.DeviceID == l2["Unique Device ID"].ToString()));
+                if (devicesRemoved.Count() > 0)
                 {
-                    device.IsConnected = false;
+                    foreach (ScanningDevice device in devicesRemoved)
+                    {
+                        device.IsConnected = false;
+                    }
                 }
             }
         }
@@ -117,8 +124,24 @@ namespace Mosey.Services
             }
             else
             {
-                throw new ArgumentException($"This device {device.Name}, ID #{device.ID.ToString()} already exists.");
+                throw new ArgumentException($"This device {device.Name}, ID #{device.ID} already exists.");
             }
+        }
+
+        public ScanningDevice AddDevice(string deviceID)
+        {
+            // Attempt to create a new ScanningDevice from the deviceID
+            ScannerSettings settings = SystemDevices.GetScannerDevices().Where(x => x.Id == deviceID).FirstOrDefault();
+
+            if (settings is null)
+            {
+                return null;
+            }
+            ScanningDevice device = new ScanningDevice(settings);
+
+            AddDevice(device);
+
+            return device;
         }
 
         public void SetDeviceEnabled(IImagingDevice device, bool enabled)
@@ -144,7 +167,7 @@ namespace Mosey.Services
         private void SetByEnabled(bool enabled)
         {
             // Set the IsEnabled property on all members of the collection
-            foreach(IImagingDevice device in this)
+            foreach (IImagingDevice device in this)
             {
                 device.IsEnabled = enabled;
             }
@@ -155,19 +178,50 @@ namespace Mosey.Services
             return this.Where(x => x.IsEnabled = enabled).AsEnumerable();
         }
 
-        private IEnumerable<IImagingDevice> SystemScanners(ScanningDeviceSettings deviceConfig, int connectRetries)
+        /// <summary>
+        /// Lists the static properties of scanners connected to the system.
+        /// </summary>
+        private IList<IDictionary<string, object>> SystemScannerProperties(int connectRetries = 1)
         {
-            List<IImagingDevice> deviceList = new List<IImagingDevice>();
-            if (_isRefreshInProgress)
-            {
-                deviceList.AddRange(Items);
-                return deviceList;
-            }
-            _isRefreshInProgress = true;
+            _semaphore.Wait();
+            List<IDictionary<string, object>> properties = new List<IDictionary<string, object>>();
 
             // Wait until the WIA device manager is ready
             while (connectRetries > 0)
             {
+                try
+                {
+                    properties = SystemDevices.GetScannerDeviceProperties();
+                    break;
+                }
+                catch (Exception ex) when (ex is COMException | ex is NullReferenceException)
+                {
+                    if (--connectRetries > 0)
+                    {
+                        // Wait until the scanner is ready if it is warming up, busy etc
+                        // Also retry if the WIA driver does not respond in time (NullReference)
+                        System.Threading.Thread.Sleep(1000);
+                        continue;
+                    }
+                    throw;
+                }
+                finally
+                {
+                    _semaphore.Release();
+                }
+            }
+            return properties;
+        }
+
+        private IEnumerable<IImagingDevice> SystemScanners(ScanningDeviceSettings deviceConfig, int connectRetries = 1)
+        {
+            List<IImagingDevice> deviceList = new List<IImagingDevice>();
+
+            // Wait until the WIA device manager is ready
+            while (connectRetries > 0)
+            {
+                _semaphore.Wait();
+
                 try
                 {
                     var systemScanners = SystemDevices.GetScannerDevices();
@@ -184,56 +238,25 @@ namespace Mosey.Services
                         deviceList.Add(new ScanningDevice(settings));
                     }
 
-                    systemScanners = null;
                     break;
                 }
                 catch (Exception ex) when (ex is COMException | ex is NullReferenceException)
                 {
-                    // Retry if device is warming up, busy etc
-                    // Also retry if the WIA driver does not respond in time (NullReference)
-                    if(ex is NullReferenceException | ex is COMException)
+                    if (--connectRetries > 0)
                     {
+                        // Wait until the scanner is ready if it is warming up, busy etc
+                        // Also retry if the WIA driver does not respond in time (NullReference)
                         System.Threading.Thread.Sleep(1000);
-                        --connectRetries;
                         continue;
                     }
+                    throw;
                 }
                 finally
                 {
-                    _isRefreshInProgress = false;
+                    _semaphore.Release();
                 }
             }
             return deviceList;
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposed)
-            {
-                if (disposing)
-                {
-                    foreach (IDisposable item in this)
-                    {
-                        if (item != null)
-                        {
-                            item.Dispose();
-                        }
-                    }
-                }
-                Clear();
-                _disposed = true;
-            }
-        }
-
-        ~ScanningDevices()
-        {
-            Dispose(false);
         }
     }
 
@@ -250,13 +273,13 @@ namespace Mosey.Services
         public ScanningDeviceSettings ImageSettings { get; set; }
         public bool IsEnabled
         {
-            get { return _isenabled; }
-            set { SetField(ref _isenabled, value); }
+            get { return _isEnabled; }
+            set { SetField(ref _isEnabled, value); }
         }
         public bool IsConnected
         {
-            get { return _isconnected; }
-            protected internal set { SetField(ref _isconnected, value); }
+            get { return _isConnected; }
+            protected internal set { SetField(ref _isConnected, value); }
         }
         public bool IsImaging
         {
@@ -280,8 +303,8 @@ namespace Mosey.Services
             Tiff
         }
         public event PropertyChangedEventHandler PropertyChanged;
-        private bool _isenabled;
-        private bool _isconnected = true;
+        private bool _isEnabled;
+        private bool _isConnected = true;
         private bool _isImaging;
         private int _scanRetries = 10;
         private ScannerSettings _scannerSettings;
@@ -305,7 +328,7 @@ namespace Mosey.Services
 
         public void ClearImages()
         {
-            Images = new List<byte[]>(); 
+            Images = new List<byte[]>();
         }
 
         public void GetImage(WiaImageFormat format)
@@ -361,7 +384,7 @@ namespace Mosey.Services
                 }
                 catch (Exception ex) when (ex is COMException | ex is NullReferenceException)
                 {
-                    if(--_scanRetries > 0)
+                    if (--_scanRetries > 0)
                     {
                         // Wait until the scanner is ready if it is warming up, busy etc
                         // Also retry if the WIA driver does not respond in time (NullReference)
@@ -376,12 +399,12 @@ namespace Mosey.Services
 
                     // Mark the device as unreachable if the limit is reached
                     IsConnected = false;
-                    break;
+                    throw;
                 }
                 catch (Exception ex) when (ex is InvalidOperationException)
                 {
                     // Scanner has been disconnected or similar
-                    _isconnected = false;
+                    IsConnected = false;
                     throw;
                 }
                 finally

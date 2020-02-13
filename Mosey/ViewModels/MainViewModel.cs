@@ -24,6 +24,7 @@ namespace Mosey.ViewModels
         private ImageFileConfig _imageFileConfig;
         private IntervalTimerConfig _scanTimerConfig;
         private IntervalTimerConfig _uiTimerConfig;
+        private static StaTaskScheduler _staQueue = new StaTaskScheduler(numberOfThreads: 1);
         private static SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         private CancellationTokenSource _cancelScanTokenSource = new CancellationTokenSource();
         private bool _disposed;
@@ -398,30 +399,18 @@ namespace Mosey.ViewModels
                     return;
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(intervalSeconds));
-
-                // Wait until all scanning operations are complete
+                // Wait until all other staQueue operations are complete
                 await _semaphore.WaitAsync();
 
                 try
                 {
+                    // Use a dedicated thread for refresh tasks
                     // The apartment state MUST be single threaded for COM interop
-                    // DisableComObjectEagerCleanup must be invoked to prevent COM exceptions
-                    using (StaTaskScheduler staQueue = new StaTaskScheduler(numberOfThreads: 1, disableComObjectEagerCleanup: true))
+                    await Task.Factory.StartNew(() =>
                     {
-                        // Update the scanners
-                        await Task.Factory.StartNew(() =>
-                        {
-                            ScannerDevices.RefreshDevices();
-                        }, cancellationToken, TaskCreationOptions.LongRunning, staQueue);
-
-                        // Runtime Callable Wrappers (RCWs) must be cleared to prevent memory leaks
-                        // This is done manually as automatic cleanup can result in early disposal of COM servers
-                        await Task.Factory.StartNew(() =>
-                        {
-                            System.Runtime.InteropServices.Marshal.CleanupUnusedObjectsInCurrentContext();
-                        }, CancellationToken.None, TaskCreationOptions.None, staQueue);
-                    }
+                        Task.Delay(TimeSpan.FromSeconds(intervalSeconds)).Wait();
+                        ScannerDevices.RefreshDevices();
+                    }, cancellationToken, TaskCreationOptions.None, _staQueue);
                 }
                 finally
                 {
@@ -441,20 +430,19 @@ namespace Mosey.ViewModels
             try
             {
                 // The apartment state MUST be single threaded for COM interop
-                // DisableComObjectEagerCleanup must be invoked to prevent early disposal of COM servers
+                // Runtime callable wrappers must be disposed manually to prevent problems with early disposal of COM servers
                 using (StaTaskScheduler staQueue = new StaTaskScheduler(numberOfThreads: 1, disableComObjectEagerCleanup: true))
                 {
                     await Task.Factory.StartNew(() =>
                     {
+                        // Obtain images from scanners
                         Scan(cancellationToken);
-                    }, cancellationToken, TaskCreationOptions.LongRunning, staQueue);
-
-                    // Runtime Callable Wrappers (RCWs) must be cleared to prevent memory leaks
-                    // This is done manually as automatic cleanup can result in early disposal of COM servers
-                    await Task.Factory.StartNew(() =>
+                    }, cancellationToken, TaskCreationOptions.LongRunning, staQueue)
+                    .ContinueWith(t =>
                     {
+                        // Manually clear (RCWs) to prevent memory leaks
                         System.Runtime.InteropServices.Marshal.CleanupUnusedObjectsInCurrentContext();
-                    }, CancellationToken.None, TaskCreationOptions.None, staQueue);
+                    }, staQueue);
                 }
             }
             finally
@@ -513,6 +501,10 @@ namespace Mosey.ViewModels
                         {
                             _log.LogDebug($"Unable to retrieve image on {scanner.Name} (#{scannerIDStr}) at {saveDateTime}");
                         }
+                    }
+                    if (!scanner.IsConnected)
+                    {
+                        _log.LogDebug($"Connection to {scanner.Name} (#{scannerIDStr}) lost when attempting scan at {saveDateTime}");
                     }
                 }
             }
@@ -575,9 +567,18 @@ namespace Mosey.ViewModels
             {
                 if (disposing)
                 {
+                    _scanTimer.Tick -= ScanTimer_Tick;
+                    _scanTimer.Complete -= ScanTimer_Complete;
+                    _uiTimer.Tick -= UITimer_Tick;
+
+                    if (_staQueue != null)
+                    {
+                        _staQueue.Dispose();
+                    }
                     if (_cancelScanTokenSource != null)
                     {
                         _cancelScanTokenSource.Cancel();
+                        _cancelScanTokenSource.Dispose();
                     }
                     if (_scanTimer != null)
                     {
