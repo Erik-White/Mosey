@@ -41,10 +41,21 @@
             <Converters:BoolToVisibilityConverter FalseValue="Collapsed" />
         </Converters:ValueConverterGroup>
     </Window.Resources>
+    
+    <!--#region Settings panel -->
+    <Controls:MetroWindow.Flyouts>
+        <Controls:FlyoutsControl>
+            <Controls:Flyout Name="settingsFlyout" Header="Settings" Position="Right" Width="400" Theme="Dark">
+                <Views:Settings />
+            </Controls:Flyout>
+        </Controls:FlyoutsControl>
+    </Controls:MetroWindow.Flyouts>
+    <!--#endregion Settings panel-->
+    
     <!--<Border BorderThickness="{StaticResource Margin.Default}" BorderBrush="White" Background="WhiteSmoke">-->
     <DockPanel>
         <!--#region Header and logo -->
-        <StackPanel Orientation="Horizontal" DockPanel.Dock="Top">
+        <DockPanel DockPanel.Dock="Top">
             <Label Style="{StaticResource IconLarge}" Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToInvertedVisibilityConverter}}">
                 <IconPacks:Material Kind="DotsHorizontalCircle" Height="60" Width="60" />
             </Label>
@@ -53,7 +64,10 @@
                 <IconPacks:Material Kind="DotsHorizontalCircle" Height="60" Width="60" Spin="True" SpinDuration="3.5" />
             </Label>
             <TextBlock Text="MOSEY" Style="{StaticResource TextBlockTitle}" Margin="0" Padding="{StaticResource Padding.Vertical.Default}" />
-        </StackPanel>
+            <ToggleButton CustomControls:Margin.Right="{StaticResource Default}" HorizontalAlignment="Right" IsChecked="{Binding ElementName=settingsFlyout, Path=IsOpen}" Style="{DynamicResource MahApps.Styles.ToggleButton.Circle}" ToolTip="Settings" Width="50" Height="50" Cursor="Hand">
+                <IconPacks:Material Kind="Tune" />
+            </ToggleButton>
+        </DockPanel>
         <!--#endregion Header and logo -->
         <DockPanel Margin="{StaticResource Margin.Horizontal.Default}" CustomControls:Margin.Bottom="{StaticResource Default}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="WhiteSmoke">
             <!--#region Sequence controls -->
@@ -158,6 +172,7 @@
                         <Setter Property="IsEnabled" Value="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" />
                         <Setter Property="Minimum" Value="1" />
                         <Setter Property="UpDownButtonsWidth" Value="{StaticResource XL}" />
+                        <Setter Property="MinWidth" Value="40" />
                         <Setter Property="Margin" Value="0" />
                         <Setter Property="CustomControls:Margin.Bottom" Value="{StaticResource Default}" />
                         <Setter Property="HorizontalAlignment" Value="Stretch" />

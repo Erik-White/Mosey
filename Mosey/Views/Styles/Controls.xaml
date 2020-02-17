@@ -120,6 +120,15 @@
         <Setter Property="CustomControls:Margin.Bottom" Value="{StaticResource Default}" />
     </Style>
 
+    <!-- ToggleSwitch styles -->
+    <Style x:Key="ToggleSwitchBase" TargetType="{x:Type Controls:ToggleSwitch}">
+        <Setter Property="Margin" Value="{StaticResource Margin.Default}" />
+        <Setter Property="CustomControls:Margin.Top" Value="0" />
+        <Setter Property="Padding" Value="{StaticResource Padding.Default}" />
+        <Setter Property="Foreground" Value="{StaticResource FontColor.Default}" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
     <!-- Grid styles-->
     <Style x:Key="GridBase" TargetType="{x:Type Grid}">
         <Setter Property="Margin" Value="{StaticResource Margin.Default}" />
