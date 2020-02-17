@@ -184,7 +184,7 @@ namespace Mosey.Services
         private IList<IDictionary<string, object>> SystemScannerProperties(int connectRetries = 1)
         {
             _semaphore.Wait();
-            List<IDictionary<string, object>> properties = new List<IDictionary<string, object>>();
+            IList<IDictionary<string, object>> properties = new List<IDictionary<string, object>>();
 
             // Wait until the WIA device manager is ready
             while (connectRetries > 0)
