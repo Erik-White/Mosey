@@ -59,6 +59,13 @@
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
 
+    <!-- TextBox styles -->
+    <Style TargetType="TextBoxBase">
+        <Setter Property="Padding" Value="{StaticResource Padding.Horizontal.Narrow}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Default}" />
+        <Setter Property="Cursor" Value="IBeam" />
+    </Style>
+
     <!-- Label styles -->
     <Style x:Key="LabelBase" TargetType="{x:Type Label}">
         <Setter Property="Margin" Value="{StaticResource Margin.Default}" />
@@ -127,6 +134,9 @@
         <Setter Property="Padding" Value="{StaticResource Padding.Default}" />
         <Setter Property="Foreground" Value="{StaticResource FontColor.Default}" />
         <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Default}" />
+        <Setter Property="FontFamily" Value="Segoe UI, Lucida Sans Unicode, Verdana" />
+        <Setter Property="HeaderFontFamily" Value="Segoe UI, Lucida Sans Unicode, Verdana" />
     </Style>
 
     <!-- Grid styles-->
@@ -139,9 +149,12 @@
         <Setter Property="Margin" Value="{StaticResource Margin.Default}" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="FontSize" Value="{StaticResource FontSize.Default}" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
     </Style>
     <Style x:Key="NumericUpDownNormal" TargetType="{x:Type Controls:NumericUpDown}" BasedOn="{StaticResource NumericUpDownBase}">
         <Setter Property="MinWidth" Value="100" />
+        <Setter Property="MinHeight" Value="36" />
+        <Setter Property="UpDownButtonsWidth" Value="{StaticResource XL}" />
     </Style>
 
     <!-- Icon styles -->

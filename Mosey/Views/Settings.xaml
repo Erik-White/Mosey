@@ -14,4 +14,61 @@
              Style="{StaticResource StyleBase}"
              d:DesignHeight="450" d:DesignWidth="800">
 
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="{StaticResource Margin.Vertical.Default}">
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Top">
+                <StackPanel.Resources>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource TextBlockNormal}">
+                        <Setter Property="Margin" Value="0" />
+                        <Setter Property="Margin" Value="{StaticResource Margin.Horizontal.Default}" />
+                        <Setter Property="CustomControls:Margin.Top" Value="{StaticResource Wide}" />
+                        <Setter Property="CustomControls:Margin.Bottom" Value="{StaticResource Tiny}" />
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Foreground" Value="{StaticResource FontColor.Heading}" />
+                    </Style>
+                    <Style TargetType="TextBox" BasedOn="{StaticResource MahApps.Styles.TextBox}">
+                        <Setter Property="VerticalContentAlignment" Value="Center" />
+                        <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Gray5}" />
+                        <Setter Property="Foreground" Value="{StaticResource FontColor.Dark}" />
+                        <Setter Property="FontSize" Value="{StaticResource FontSize.Default}" />
+                    </Style>
+                    <Style TargetType="Controls:ToggleSwitch" BasedOn="{StaticResource ToggleSwitchBase}">
+                        <Setter Property="Margin" Value="0" />
+                        <Setter Property="Margin" Value="{StaticResource Margin.Horizontal.Default}" />
+                        <Setter Property="CustomControls:Margin.Top" Value="{StaticResource Wide}" />
+                        <Setter Property="CustomControls:Margin.Bottom" Value="{StaticResource Tiny}" />
+                        <Setter Property="CustomControls:Margin.Right" Value="{StaticResource Narrow}" />
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Foreground" Value="{StaticResource FontColor.Heading}" />
+                    </Style>
+                    <Style TargetType="Controls:NumericUpDown" BasedOn="{StaticResource NumericUpDownNormal}">
+                        <Setter Property="Minimum" Value="1" />
+                        <Setter Property="Margin" Value="0" />
+                        <Setter Property="CustomControls:Margin.Top" Value="{StaticResource Tiny}" />
+                    </Style>
+                </StackPanel.Resources>
+                <TextBlock Text="Default save path" />
+                <DockPanel Margin="{StaticResource Margin.Horizontal.Default}">
+                    <Button DockPanel.Dock="Right" Command="{Binding SelectFolderCommand}" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" HorizontalAlignment="Right" Cursor="Hand">
+                        <Label Style="{StaticResource IconSmall}" Margin="{StaticResource Margin.Horizontal.Tiny}">
+                            <IconPacks:Material Kind="DotsHorizontal" Width="20" Height="20" />
+                        </Label>
+                    </Button>
+                    <TextBox Text="{Binding Path=ImageSavePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Stretch" CustomControls:Margin.Right="{StaticResource Narrow}" />
+                </DockPanel>
+                <Controls:ToggleSwitch OnLabel="Delay scanning by interval duration" OffLabel="Do not delay scanning" />
+                <DockPanel Margin="{StaticResource Margin.Horizontal.Default}" CustomControls:Margin.Top="{StaticResource Wide}">
+                    <TextBlock Text="Default scan interval (minutes)" DockPanel.Dock="Left" Margin="0" CustomControls:Margin.Top="{StaticResource Tiny}" VerticalAlignment="Center" />
+                    <Controls:NumericUpDown Value="{Binding Path=ScanInterval, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Right" />
+                </DockPanel>
+                <DockPanel Margin="{StaticResource Margin.Horizontal.Default}" CustomControls:Margin.Top="{StaticResource Wide}">
+                    <TextBlock Text="Default total repetitions" DockPanel.Dock="Left" Margin="0" CustomControls:Margin.Top="{StaticResource Tiny}" VerticalAlignment="Center" />
+                    <Controls:NumericUpDown Value="{Binding Path=ScanRepetitions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Right" />
+                </DockPanel>
+                <Controls:ToggleSwitch OnLabel="Enable scanners when connected" OffLabel="Disable scanners when connected" />
+                <Controls:ToggleSwitch OnLabel="Enable new scanners during scanning" OffLabel="Disable new scanners during scaning" />
+            </StackPanel>
+            <Button DockPanel.Dock="Bottom" Style="{StaticResource ButtonHorizontal}" CustomControls:Margin.Top="{StaticResource XXL}" VerticalAlignment="Bottom" Content="Reset all to default" Foreground="{StaticResource Color.Error}" />
+        </DockPanel>
+    </ScrollViewer>
 </UserControl>
