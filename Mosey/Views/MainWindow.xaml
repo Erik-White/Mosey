@@ -46,8 +46,8 @@
     <Controls:MetroWindow.Flyouts>
         <Controls:FlyoutsControl>
             <Controls:Flyout Name="settingsFlyout" Header="Settings" Position="Right" Width="400" Theme="Dark">
-                <Views:Settings />
-            </Controls:Flyout>
+                <Views:Settings DataContext="{Binding Path=SettingsViewModel}" />
+            </Controls:Flyout>]
         </Controls:FlyoutsControl>
     </Controls:MetroWindow.Flyouts>
     <!--#endregion Settings panel-->

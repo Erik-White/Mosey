@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Mosey.Models;
 using Mosey.Services;
+using Mosey.ViewModels;
 
 namespace Mosey
 {
@@ -27,7 +28,8 @@ namespace Mosey
                 .AddTransient<IIntervalTimer, IntervalTimer>()
                 .AddTransient<IFolderBrowserDialog, FolderBrowserDialog>()
                 .AddSingleton<IImagingDevices<IImagingDevice>, ScanningDevices>()
-                .AddSingleton<System.ComponentModel.INotifyPropertyChanged, ViewModels.MainViewModel>()
+                .AddTransient<IViewModel, SettingsViewModel>()
+                .AddSingleton<MainViewModel, MainViewModel>()
 
                 // Finalize
                 .BuildServiceProvider();
@@ -36,7 +38,7 @@ namespace Mosey
             logger.LogDebug("Starting application");
 
             // Locate MainViewModel dependencies and create new window
-            var viewModel = serviceProvider.GetService<System.ComponentModel.INotifyPropertyChanged>();
+            var viewModel = serviceProvider.GetRequiredService<MainViewModel>();
             var window = new Views.MainWindow { DataContext = viewModel };
             window.Show();
         }

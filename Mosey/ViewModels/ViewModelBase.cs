@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
 using System.ComponentModel;
+using Mosey.Models;
 
 namespace Mosey.ViewModels
 {
-    public abstract class ViewModelBase : INotifyPropertyChanged
+    public abstract class ViewModelBase : IViewModel, INotifyPropertyChanged
     {
         #region Debugging Aides
 
@@ -39,6 +40,8 @@ namespace Mosey.ViewModels
         protected virtual bool ThrowOnInvalidPropertyName { get; private set; }
 
         #endregion // Debugging Aides
+
+        public abstract IViewModel Create();
 
         #region INotifyPropertyChanged Members
 

@@ -12,6 +12,7 @@ namespace Mosey.ViewModels
     {
         private ILogger<SettingsViewModel> _log;
         private IFolderBrowserDialog _folderBrowserDialog;
+        private IConfiguration _config;
 
         #region Properties
         public string ImageSavePath
@@ -26,12 +27,38 @@ namespace Mosey.ViewModels
                 RaisePropertyChanged("ImageSavePath");
             }
         }
+
+        private bool _scannersEnableOnConnect;
+        public bool ScannersEnableOnConnect
+        {
+            get
+            {
+                return _scannersEnableOnConnect;
+            }
+            set
+            {
+                _scannersEnableOnConnect = value;
+                RaisePropertyChanged("ScannersEnableOnConnect");
+            }
+        }
         #endregion Properties
 
-        public SettingsViewModel(ILogger<SettingsViewModel> logger, IFolderBrowserDialog folderBrowserDialog)
+        public SettingsViewModel(ILogger<SettingsViewModel> logger, IFolderBrowserDialog folderBrowserDialog, IConfiguration appSettings)
         {
             _log = logger;
             _folderBrowserDialog = folderBrowserDialog;
+            _config = appSettings;
+
+            _scannersEnableOnConnect = true;
+        }
+
+        public override IViewModel Create()
+        {
+            return new SettingsViewModel(
+                logger: _log,
+                folderBrowserDialog: _folderBrowserDialog,
+                appSettings: _config
+                );
         }
 
         #region Commands

@@ -9,21 +9,25 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Mosey.Models;
+using Mosey.Services;
 
 namespace Mosey.ViewModels
 {
-    public class MainViewModel : ViewModelBase, IDisposable
+    public class MainViewModel : ViewModelBase, IViewModelParent<IViewModel>, IDisposable
     {
         private ILogger<MainViewModel> _log;
+        private IConfiguration _appSettings;
         private IIntervalTimer _uiTimer;
         private IIntervalTimer _scanTimer;
         private IImagingDevices<IImagingDevice> _scannerDevices;
         private IFolderBrowserDialog _folderBrowserDialog;
+        private IViewModel _settingsViewModel;
+
         private readonly object _scannerDevicesLock = new object();
         private IImagingDeviceSettings _imageConfig;
         private ImageFileConfig _imageFileConfig;
-        private IntervalTimerConfig _scanTimerConfig;
-        private IntervalTimerConfig _uiTimerConfig;
+        private IIntervalTimerConfig _scanTimerConfig;
+        private IIntervalTimerConfig _uiTimerConfig;
         private static StaTaskScheduler _staQueue = new StaTaskScheduler(numberOfThreads: 1);
         private static SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         private CancellationTokenSource _cancelScanTokenSource = new CancellationTokenSource();
@@ -187,20 +191,40 @@ namespace Mosey.ViewModels
                 RaisePropertyChanged("ScannerDevices");
             }
         }
+
+        public ICollection<IViewModel> ViewModelChildren { get; private set; } = new System.Collections.ObjectModel.ObservableCollection<IViewModel>();
+
+        public SettingsViewModel SettingsViewModel
+        {
+            get
+            {
+                var settingsViewModel = ViewModelChildren.Where(child => child is SettingsViewModel).FirstOrDefault();
+                if (settingsViewModel is null)
+                {
+                    settingsViewModel = AddChildViewModel(_settingsViewModel);
+                }
+
+                return (SettingsViewModel)settingsViewModel;
+            }
+        }
         #endregion Properties
 
         public MainViewModel(
             ILogger<MainViewModel> logger,
+            IConfiguration appSettings,
             IIntervalTimer intervalTimer,
             IImagingDevices<IImagingDevice> imagingDevices,
-            IFolderBrowserDialog folderBrowserDialog
+            IFolderBrowserDialog folderBrowserDialog,
+            IViewModel settingsViewModel
         )
         {
             _log = logger;
+            _appSettings = appSettings;
             _scanTimer = intervalTimer;
             _uiTimer = (IIntervalTimer)intervalTimer.Clone();
             _scannerDevices = imagingDevices;
             _folderBrowserDialog = folderBrowserDialog;
+            _settingsViewModel = settingsViewModel;
 
             // Lock scanners collection across threads to prevent conflicts
             System.Windows.Data.BindingOperations.EnableCollectionSynchronization(_scannerDevices, _scannerDevicesLock);
@@ -217,13 +241,26 @@ namespace Mosey.ViewModels
             RefreshDevicesAsync();
         }
 
+        public override IViewModel Create()
+        {
+            return new MainViewModel(
+                logger: _log,
+                appSettings: _appSettings,
+                intervalTimer: _scanTimer,
+                imagingDevices: _scannerDevices,
+                folderBrowserDialog: _folderBrowserDialog,
+                //settingsViewModelFactory: _settingsViewModelFactory
+                settingsViewModel: _settingsViewModel
+                );
+        }
+
         private void SetConfiguration()
         {
             // TODO: Load device image config in ViewModel
-            //_imageConfig = Common.Configuration.GetSection("Image").Get<IImagingDeviceSettings>();
-            _scanTimerConfig = Common.Configuration.GetSection("Timers:Scan").Get<IntervalTimerConfig>();
-            _uiTimerConfig = Common.Configuration.GetSection("Timers:UI").Get<IntervalTimerConfig>();
-            _imageFileConfig = Common.Configuration.GetSection("Image:File").Get<ImageFileConfig>();
+            //_imageConfig = Common.Configuration.GetSection("Image").Get<ImagingDeviceSettings>();
+            _scanTimerConfig = _appSettings.GetSection("Timers:Scan").Get<IntervalTimerConfig>();
+            _uiTimerConfig = _appSettings.GetSection("Timers:UI").Get<IntervalTimerConfig>();
+            _imageFileConfig = _appSettings.GetSection("Image:File").Get<ImageFileConfig>();
 
             _folderBrowserDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString();
             _folderBrowserDialog.SelectedPath = _folderBrowserDialog.InitialDirectory;
@@ -341,6 +378,14 @@ namespace Mosey.ViewModels
             }
         }
         #endregion Commands
+
+        public IViewModel AddChildViewModel(IFactory<IViewModel> viewModelFactory)
+        {
+            var viewModel = viewModelFactory.Create();
+            ViewModelChildren.Add(viewModel);
+
+            return viewModel;
+        }
 
         public void StartScan()
         {
@@ -536,13 +581,6 @@ namespace Mosey.ViewModels
             _folderBrowserDialog.ShowDialog();
 
             RaisePropertyChanged("ImageSavePath");
-        }
-
-        public class IntervalTimerConfig
-        {
-            public int Delay { get; set; }
-            public int Interval { get; set; }
-            public int Repetitions { get; set; }
         }
 
         public class ImageFileConfig
