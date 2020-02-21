@@ -11,7 +11,7 @@ using Mosey.ViewModels;
 namespace Mosey
 {
     /// <summary>
-    /// Set up dependency injection and logging for application
+    /// Set up dependency injection, configuration and logging for application
     /// </summary>
     public partial class App : Application
     {
@@ -24,12 +24,12 @@ namespace Mosey
             _appConfig = CreateConfiguration("appsettings.json");
 
             var serviceProvider = new ServiceCollection()
-                // Logging
+                // Logging to file
                 .AddLogging(options =>
                 {
                     options.AddConsole();
                     options.AddDebug();
-                    options.AddFile("app.log", append: true);
+                    options.AddFile("mosey.log", append: true);
                 })
 
                 // Configuration
