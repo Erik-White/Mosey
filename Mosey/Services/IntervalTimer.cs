@@ -31,7 +31,9 @@ namespace Mosey.Services
 
         public IntervalTimer(TimeSpan delay, TimeSpan interval, int repetitions)
         {
-            Start(delay, interval, repetitions);
+            Delay = delay;
+            Interval = interval;
+            Repetitions = repetitions;
         }
 
         /// <summary>
@@ -90,10 +92,10 @@ namespace Mosey.Services
         protected virtual void OnComplete(EventArgs e)
         {
             Complete?.Invoke(this, EventArgs.Empty);
-        }
+        } 
 
         /// <summary>
-        /// Timer callback method. Continues the timer until the maximum repetitions is reached
+        /// Timer callback method. Continues the timer until the maximum repetition count is reached
         /// </summary>
         /// <param name="state"></param>
         private void TimerInterval(object state)
@@ -103,6 +105,10 @@ namespace Mosey.Services
                 // Notify event subscribers
                 OnTick(EventArgs.Empty);
                 Resume();
+                if(RepetitionsCount == Repetitions)
+                {
+                    Stop();
+                }
             }
             else
             {
@@ -214,5 +220,12 @@ namespace Mosey.Services
         {
             Dispose(false);
         }
+    }
+
+    public class IntervalTimerConfig : IIntervalTimerConfig
+    {
+        public TimeSpan Delay { get; set; }
+        public TimeSpan Interval { get; set; }
+        public int Repetitions { get; set; }
     }
 }
