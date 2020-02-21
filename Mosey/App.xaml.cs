@@ -1,6 +1,9 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Mosey.Models;
 using Mosey.Services;
 using Mosey.ViewModels;
@@ -12,24 +15,49 @@ namespace Mosey
     /// </summary>
     public partial class App : Application
     {
-        protected override void OnStartup(StartupEventArgs e)
+        private IConfiguration _appConfig;
+
+        protected override void OnStartup(StartupEventArgs e) 
         {
             base.OnStartup(e);
 
+            _appConfig = CreateConfiguration("appsettings.json");
+
             var serviceProvider = new ServiceCollection()
-                // Register application logging
+                // Logging
                 .AddLogging(options =>
                 {
                     options.AddConsole();
                     options.AddDebug();
                     options.AddFile("app.log", append: true);
                 })
-                // Register dependencies
+
+                // Configuration
+                .Configure<IntervalTimerConfig>(_appConfig.GetSection("Timers:Scan"))
+                .Configure<TimerConfig>(_appConfig.GetSection("Timers:UI"))
+                .Configure<ImageFileConfig>(_appConfig.GetSection("Image:File"))
+                .Configure<ScanningDeviceSettings>(_appConfig.GetSection("Image"))
+
+                // Inject strongly typed configuration classes
+                // This method removes the need for the Microsoft.Extensions.Options dependencies that come with IOptions
+                .AddScoped<ITimerConfig>(c => c.GetService<IOptions<TimerConfig>>().Value)
+                .AddScoped<IIntervalTimerConfig>(c => c.GetService<IOptions<IntervalTimerConfig>>().Value)
+                .AddScoped<IImageFileConfig>(c => c.GetService<IOptions<ImageFileConfig>>().Value)
+                .AddScoped<IImagingDeviceConfig>(c => c.GetService<IOptions<ScanningDeviceSettings>>().Value)
+
+                // Services
                 .AddTransient<IIntervalTimer, IntervalTimer>()
-                .AddTransient<IFolderBrowserDialog, FolderBrowserDialog>()
+                .AddScoped<IFolderBrowserDialog, FolderBrowserDialog>()
+                .AddTransient<IImagingDevice, ScanningDevice>()
                 .AddSingleton<IImagingDevices<IImagingDevice>, ScanningDevices>()
-                .AddTransient<IViewModel, SettingsViewModel>()
-                .AddSingleton<MainViewModel, MainViewModel>()
+
+                // ViewModels
+                .AddSingleton<IViewModel, SettingsViewModel>()
+                .AddSingleton<MainViewModel>()
+
+                // Windows
+                .AddTransient<Views.Settings>()
+                .AddTransient<Views.MainWindow>()
 
                 // Finalize
                 .BuildServiceProvider();
@@ -38,30 +66,26 @@ namespace Mosey
             logger.LogDebug("Starting application");
 
             // Locate MainViewModel dependencies and create new window
-            var viewModel = serviceProvider.GetRequiredService<MainViewModel>();
-            var window = new Views.MainWindow { DataContext = viewModel };
+            var window = serviceProvider.GetRequiredService<Views.MainWindow>();
+            window.DataContext = serviceProvider.GetRequiredService<MainViewModel>();
             window.Show();
         }
-        // TODO: Ensure scanner COM objects get released and disposed correctly
-        // May not be necessary if ScanningDevices is disposable
+
+        private static IConfiguration CreateConfiguration(string fileName, bool optional = false)
+        {
+            // Register settings file
+            IConfiguration config = new ConfigurationBuilder()
+                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                .AddJsonFile(fileName, optional: optional, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .Build();
+
+            return config;
+        }
+
         protected override void OnExit(ExitEventArgs e)
         {
             base.OnExit(e);
         }
-
-
-        /*
-        //Dispose on unhandled exception
-        this.DispatcherUnhandledException += (sender, args) => 
-        { 
-            if (disposableViewModel != null) disposableViewModel.Dispose(); 
-        };
-
-        //Dispose on exit
-        this.Exit += (sender, args) =>
-        { 
-            if (disposableViewModel != null) disposableViewModel.Dispose();
-        };
-        */
     }
 }

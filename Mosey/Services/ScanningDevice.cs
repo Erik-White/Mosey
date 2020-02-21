@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Configuration;
-using Mosey.Models;
 using DNTScanner.Core;
+using Mosey.Models;
 
 namespace Mosey.Services
 {
@@ -27,7 +27,7 @@ namespace Mosey.Services
         {
         }
 
-        public ScanningDevices(IImagingDeviceSettings deviceConfig)
+        public ScanningDevices(IImagingDeviceConfig deviceConfig)
         {
             GetDevices(deviceConfig);
         }
@@ -38,13 +38,13 @@ namespace Mosey.Services
             GetDevices(new ScanningDeviceSettings());
         }
 
-        public void GetDevices(IImagingDeviceSettings deviceConfig)
+        public void GetDevices(IImagingDeviceConfig deviceConfig)
         {
             // Empty the collection
             Clear();
 
             // Populate a new collection of scanners using specified image settings
-            foreach (ScanningDevice device in SystemScanners((ScanningDeviceSettings)deviceConfig, ConnectRetries))
+            foreach (ScanningDevice device in SystemScanners(deviceConfig, ConnectRetries))
             {
                 device.IsEnabled = true;
                 AddDevice(device);
@@ -64,7 +64,7 @@ namespace Mosey.Services
             }
         }
 
-        public void RefreshDevices(IImagingDeviceSettings deviceConfig, bool enableDevices = true)
+        public void RefreshDevices(IImagingDeviceConfig deviceConfig, bool enableDevices = true)
         {
             IList<IDictionary<string, object>> deviceProperties = SystemScannerProperties(connectRetries: ConnectRetries);
             if (deviceProperties.Count == 0)
@@ -86,7 +86,7 @@ namespace Mosey.Services
                 if (!this.Where(d => d.DeviceID == deviceID).Any())
                 {
                     // Create a new device and add it to the collection
-                    ScanningDevice device = AddDevice(deviceID);
+                    ScanningDevice device = AddDevice(deviceID, deviceConfig);
                     device.IsEnabled = enableDevices;
                 }
                 else
@@ -99,7 +99,7 @@ namespace Mosey.Services
                         Remove(existingDevice);
 
                         // Replace with the new and updated device
-                        ScanningDevice device = AddDevice(deviceID);
+                        ScanningDevice device = AddDevice(deviceID, deviceConfig);
                         device.IsEnabled = enabled;
                     }
                 }
@@ -130,6 +130,11 @@ namespace Mosey.Services
 
         public ScanningDevice AddDevice(string deviceID)
         {
+            return AddDevice(deviceID, null);
+        }
+
+        public ScanningDevice AddDevice(string deviceID, IImagingDeviceConfig config)
+        {
             // Attempt to create a new ScanningDevice from the deviceID
             ScannerSettings settings = SystemDevices.GetScannerDevices().Where(x => x.Id == deviceID).FirstOrDefault();
 
@@ -137,7 +142,7 @@ namespace Mosey.Services
             {
                 return null;
             }
-            ScanningDevice device = new ScanningDevice(settings);
+            ScanningDevice device = new ScanningDevice(settings, config);
 
             AddDevice(device);
 
@@ -213,7 +218,7 @@ namespace Mosey.Services
             return properties;
         }
 
-        private IEnumerable<IImagingDevice> SystemScanners(ScanningDeviceSettings deviceConfig, int connectRetries = 1)
+        private IEnumerable<IImagingDevice> SystemScanners(IImagingDeviceConfig deviceConfig, int connectRetries = 1)
         {
             List<IImagingDevice> deviceList = new List<IImagingDevice>();
 
@@ -235,7 +240,7 @@ namespace Mosey.Services
                     foreach (ScannerSettings settings in systemScanners)
                     {
                         // Store the device in the collection
-                        deviceList.Add(new ScanningDevice(settings));
+                        deviceList.Add(new ScanningDevice(settings, deviceConfig));
                     }
 
                     break;
@@ -308,14 +313,14 @@ namespace Mosey.Services
         private bool _isImaging;
         private int _scanRetries = 10;
         private ScannerSettings _scannerSettings;
-        private ScanningDeviceSettings _scannerConfig;
+        private IImagingDeviceConfig _scannerConfig;
 
         public ScanningDevice(ScannerSettings settings)
         {
             _scannerSettings = settings;
         }
 
-        public ScanningDevice(ScannerSettings settings, ScanningDeviceSettings config)
+        public ScanningDevice(ScannerSettings settings, IImagingDeviceConfig config)
         {
             _scannerSettings = settings;
             _scannerConfig = config;
@@ -353,13 +358,14 @@ namespace Mosey.Services
                     using (ScannerDevice scannerDevice = new ScannerDevice(_scannerSettings))
                     {
                         // Configure the device
-                        ScanningDeviceSettings deviceConfig = _scannerConfig;
+                        IImagingDeviceConfig deviceConfig = _scannerConfig;
                         if (_scannerConfig is null)
                         {
                             deviceConfig = new ScanningDeviceSettings();
                         }
-                        scannerDevice.ScannerPictureSettings(config =>
-                            config.ColorFormat(deviceConfig.ColorType)
+                        scannerDevice.ScannerPictureSettings(pictureConfig =>
+                            pictureConfig
+                                .ColorFormat(ScanningDeviceSettings.ColorTypeFromFormat(deviceConfig.ColorFormat))
                                 .Resolution(deviceConfig.Resolution)
                                 .Brightness(deviceConfig.Brightness)
                                 .Contrast(deviceConfig.Contrast)
@@ -508,31 +514,22 @@ namespace Mosey.Services
         }
     }
 
-    public class ScanningDeviceSettings : IImagingDeviceSettings
+    public class ScanningDeviceSettings : IImagingDeviceConfig
     {
-        public ColorFormat ColorFormat { get; set; }
+        public ImageColorFormat ColorFormat { get; set; } = ImageColorFormat.Color;
         public ColorType ColorType { get { return ColorTypeFromFormat(ColorFormat); } }
         public int Resolution { get; set; }
         public int Brightness { get; set; }
         public int Contrast { get; set; }
 
-        public ScanningDeviceSettings()
-        {
-            UseDefaults();
-        }
+        public ScanningDeviceSettings() { }
 
-        public ScanningDeviceSettings(ColorFormat colorFormat, int resolution, int brightness, int contrast)
+        public ScanningDeviceSettings(ImageColorFormat colorFormat, int resolution, int brightness, int contrast)
         {
             ColorFormat = colorFormat;
             Resolution = resolution;
             Brightness = brightness;
             Contrast = contrast;
-        }
-
-        public void UseDefaults()
-        {
-            // Load default stored settings
-            Common.Configuration.Bind("Image", this);
         }
 
         /// <summary>
@@ -541,18 +538,28 @@ namespace Mosey.Services
         /// </summary>
         /// <param name="colorFormat"></param>
         /// <returns></returns>
-        public static ColorType ColorTypeFromFormat(ColorFormat colorFormat)
+        public static ColorType ColorTypeFromFormat(ImageColorFormat colorFormat)
         {
-            // ColorTypes properties are internal and not accessible for comparison
+            // ColorType properties are internal and not accessible for comparison
             switch (colorFormat)
             {
-                case ColorFormat.BlackAndWhite:
+                case ImageColorFormat.BlackAndWhite:
                     return ColorType.BlackAndWhite;
-                case ColorFormat.Greyscale:
+                case ImageColorFormat.Greyscale:
                     return ColorType.Greyscale;
                 default:
                     return ColorType.Color;
             }
         }
+    }
+
+    public class ImageFileConfig : IImageFileConfig
+    {
+        public string Path { get; set; }
+        public string Prefix { get; set; }
+        public string Format { get; set; }
+        public List<string> SupportedFormats { get; set; }
+        public string DateFormat { get; set; }
+        public string TimeFormat { get; set; }
     }
 }

@@ -56,7 +56,7 @@
                     </Button>
                     <TextBox Text="{Binding Path=ImageSavePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Stretch" CustomControls:Margin.Right="{StaticResource Narrow}" />
                 </DockPanel>
-                <Controls:ToggleSwitch OnLabel="Delay scanning by interval duration" OffLabel="Do not delay scanning" />
+                <Controls:ToggleSwitch OnLabel="Delay scanning by interval duration" OffLabel="Do not delay scanning" IsChecked="{Binding Path=ScanningDelay, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                 <DockPanel Margin="{StaticResource Margin.Horizontal.Default}" CustomControls:Margin.Top="{StaticResource Wide}">
                     <TextBlock Text="Default scan interval (minutes)" DockPanel.Dock="Left" Margin="0" CustomControls:Margin.Top="{StaticResource Tiny}" VerticalAlignment="Center" />
                     <Controls:NumericUpDown Value="{Binding Path=ScanInterval, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Right" />
@@ -65,8 +65,8 @@
                     <TextBlock Text="Default total repetitions" DockPanel.Dock="Left" Margin="0" CustomControls:Margin.Top="{StaticResource Tiny}" VerticalAlignment="Center" />
                     <Controls:NumericUpDown Value="{Binding Path=ScanRepetitions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Right" />
                 </DockPanel>
-                <Controls:ToggleSwitch OnLabel="Enable scanners when connected" OffLabel="Disable scanners when connected" />
-                <Controls:ToggleSwitch OnLabel="Enable new scanners during scanning" OffLabel="Disable new scanners during scaning" />
+                <Controls:ToggleSwitch OnLabel="Enable scanners when connected" OffLabel="Disable scanners when connected" IsChecked="{Binding Path=ScannersEnableOnConnect, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Controls:ToggleSwitch OnLabel="Enable new scanners during scanning" OffLabel="Disable new scanners during scanning" IsChecked="{Binding Path=ScannersEnableOnConnectWhenScanning, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             </StackPanel>
             <Button DockPanel.Dock="Bottom" Style="{StaticResource ButtonHorizontal}" CustomControls:Margin.Top="{StaticResource XXL}" VerticalAlignment="Bottom" Content="Reset all to default" Foreground="{StaticResource Color.Error}" />
         </DockPanel>

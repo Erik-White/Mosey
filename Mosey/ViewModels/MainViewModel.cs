@@ -6,28 +6,26 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Schedulers;
 using System.Collections.Generic;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Mosey.Models;
-using Mosey.Services;
 
 namespace Mosey.ViewModels
 {
     public class MainViewModel : ViewModelBase, IViewModelParent<IViewModel>, IDisposable
     {
         private ILogger<MainViewModel> _log;
-        private IConfiguration _appSettings;
         private IIntervalTimer _uiTimer;
         private IIntervalTimer _scanTimer;
         private IImagingDevices<IImagingDevice> _scannerDevices;
         private IFolderBrowserDialog _folderBrowserDialog;
         private IViewModel _settingsViewModel;
 
-        private readonly object _scannerDevicesLock = new object();
-        private IImagingDeviceSettings _imageConfig;
-        private ImageFileConfig _imageFileConfig;
+        private IImagingDeviceConfig _imageConfig;
+        private IImageFileConfig _imageFileConfig;
         private IIntervalTimerConfig _scanTimerConfig;
-        private IIntervalTimerConfig _uiTimerConfig;
+        private ITimerConfig _uiTimerConfig;
+
+        private readonly object _scannerDevicesLock = new object();
         private static StaTaskScheduler _staQueue = new StaTaskScheduler(numberOfThreads: 1);
         private static SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         private CancellationTokenSource _cancelScanTokenSource = new CancellationTokenSource();
@@ -72,7 +70,7 @@ namespace Mosey.ViewModels
         {
             get
             {
-                return _scanTimerConfig.Delay;
+                return (int)_scanTimerConfig.Delay.TotalMinutes;
             }
             set
             {
@@ -80,7 +78,7 @@ namespace Mosey.ViewModels
                 {
                     value = 1;
                 }
-                _scanTimerConfig.Delay = value;
+                _scanTimerConfig.Delay = TimeSpan.FromMinutes(value);
                 RaisePropertyChanged("ScanDelay");
             }
         }
@@ -89,7 +87,7 @@ namespace Mosey.ViewModels
         {
             get
             {
-                return _scanTimerConfig.Interval;
+                return (int)_scanTimerConfig.Interval.TotalMinutes;
             }
             set
             {
@@ -97,7 +95,7 @@ namespace Mosey.ViewModels
                 {
                     value = 1;
                 }
-                _scanTimerConfig.Interval = value;
+                _scanTimerConfig.Interval = TimeSpan.FromMinutes(value);
                 RaisePropertyChanged("ScanInterval");
             }
         }
@@ -211,31 +209,38 @@ namespace Mosey.ViewModels
 
         public MainViewModel(
             ILogger<MainViewModel> logger,
-            IConfiguration appSettings,
             IIntervalTimer intervalTimer,
             IImagingDevices<IImagingDevice> imagingDevices,
             IFolderBrowserDialog folderBrowserDialog,
-            IViewModel settingsViewModel
+            IViewModel settingsViewModel,
+            ITimerConfig uiTimerConfig,
+            IIntervalTimerConfig scanTimerConfig,
+            IImagingDeviceConfig imageConfig,
+            IImageFileConfig imageFileConfig
         )
         {
             _log = logger;
-            _appSettings = appSettings;
             _scanTimer = intervalTimer;
             _uiTimer = (IIntervalTimer)intervalTimer.Clone();
             _scannerDevices = imagingDevices;
             _folderBrowserDialog = folderBrowserDialog;
             _settingsViewModel = settingsViewModel;
 
+            _uiTimerConfig = uiTimerConfig;
+            _scanTimerConfig = scanTimerConfig;
+            _imageConfig = imageConfig;
+            _imageFileConfig = imageFileConfig;
+
             // Lock scanners collection across threads to prevent conflicts
             System.Windows.Data.BindingOperations.EnableCollectionSynchronization(_scannerDevices, _scannerDevicesLock);
 
-            // Load configuration options from JSON file
+            // Set configuration options
             SetConfiguration();
 
             _scanTimer.Tick += ScanTimer_Tick;
             _scanTimer.Complete += ScanTimer_Complete;
             _uiTimer.Tick += UITimer_Tick;
-            _uiTimer.Start(TimeSpan.FromMilliseconds(_uiTimerConfig.Delay), TimeSpan.FromMilliseconds(_uiTimerConfig.Interval), _uiTimerConfig.Repetitions);
+            _uiTimer.Start(_uiTimerConfig.Delay, _uiTimerConfig.Interval);
 
             // Start a task loop to update the scanners collection
             RefreshDevicesAsync();
@@ -245,23 +250,19 @@ namespace Mosey.ViewModels
         {
             return new MainViewModel(
                 logger: _log,
-                appSettings: _appSettings,
                 intervalTimer: _scanTimer,
                 imagingDevices: _scannerDevices,
                 folderBrowserDialog: _folderBrowserDialog,
-                //settingsViewModelFactory: _settingsViewModelFactory
-                settingsViewModel: _settingsViewModel
+                settingsViewModel: _settingsViewModel,
+                uiTimerConfig: _uiTimerConfig,
+                scanTimerConfig: _scanTimerConfig,
+                imageConfig: _imageConfig,
+                imageFileConfig: _imageFileConfig
                 );
         }
 
         private void SetConfiguration()
         {
-            // TODO: Load device image config in ViewModel
-            //_imageConfig = Common.Configuration.GetSection("Image").Get<ImagingDeviceSettings>();
-            _scanTimerConfig = _appSettings.GetSection("Timers:Scan").Get<IntervalTimerConfig>();
-            _uiTimerConfig = _appSettings.GetSection("Timers:UI").Get<IntervalTimerConfig>();
-            _imageFileConfig = _appSettings.GetSection("Image:File").Get<ImageFileConfig>();
-
             _folderBrowserDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString();
             _folderBrowserDialog.SelectedPath = _folderBrowserDialog.InitialDirectory;
 
@@ -391,7 +392,7 @@ namespace Mosey.ViewModels
         {
             _cancelScanTokenSource = new CancellationTokenSource();
 
-            _scanTimer.Start(TimeSpan.FromMinutes(ScanDelay), TimeSpan.FromMinutes(ScanInterval), ScanRepetitions);
+            _scanTimer.Start(_scanTimerConfig.Delay, _scanTimerConfig.Interval, _scanTimerConfig.Repetitions);
 
             RaisePropertyChanged("IsScanRunning");
             RaisePropertyChanged("ScanFinishTime");
@@ -418,7 +419,7 @@ namespace Mosey.ViewModels
             RaisePropertyChanged("IsScanRunning");
             RaisePropertyChanged("ScanFinishTime");
             RaisePropertyChanged("StartStopScanCommand");
-            _log.LogInformation($"Scan timer complete at {DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat))} with {ScanRepetitionsCount} repetitions.");
+            _log.LogInformation($"Scanning complete at {DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat))} with {ScanRepetitionsCount} repetitions.");
         }
 
         private void UITimer_Tick(object sender, EventArgs e)
@@ -454,7 +455,7 @@ namespace Mosey.ViewModels
                     await Task.Factory.StartNew(() =>
                     {
                         Task.Delay(TimeSpan.FromSeconds(intervalSeconds)).Wait();
-                        ScannerDevices.RefreshDevices();
+                        ScannerDevices.RefreshDevices(_imageConfig, true);
                     }, cancellationToken, TaskCreationOptions.None, _staQueue);
                 }
                 finally
@@ -581,16 +582,6 @@ namespace Mosey.ViewModels
             _folderBrowserDialog.ShowDialog();
 
             RaisePropertyChanged("ImageSavePath");
-        }
-
-        public class ImageFileConfig
-        {
-            public string Path { get; set; }
-            public string Prefix { get; set; }
-            public string Format { get; set; }
-            public List<string> SupportedFormats { get; set; }
-            public string DateFormat { get; set; }
-            public string TimeFormat { get; set; }
         }
 
         public void Dispose()

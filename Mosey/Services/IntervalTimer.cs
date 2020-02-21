@@ -36,6 +36,13 @@ namespace Mosey.Services
             Repetitions = repetitions;
         }
 
+        public IntervalTimer(IIntervalTimerConfig config)
+        {
+            Delay = config.Delay;
+            Interval = config.Interval;
+            Repetitions = config.Repetitions;
+        }
+
         /// <summary>
         /// Starts a timer using the current properties
         /// </summary>
