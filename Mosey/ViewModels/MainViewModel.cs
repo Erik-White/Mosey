@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Schedulers;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Mosey.Configuration;
 using Mosey.Models;
 
 namespace Mosey.ViewModels
@@ -20,6 +22,7 @@ namespace Mosey.ViewModels
         private IFolderBrowserDialog _folderBrowserDialog;
         private IViewModel _settingsViewModel;
 
+        private IOptionsSnapshot<AppSettings> _appSettings;
         private IImagingDeviceConfig _imageConfig;
         private IImageFileConfig _imageFileConfig;
         private IIntervalTimerConfig _scanTimerConfig;
@@ -213,10 +216,7 @@ namespace Mosey.ViewModels
             IImagingDevices<IImagingDevice> imagingDevices,
             IFolderBrowserDialog folderBrowserDialog,
             IViewModel settingsViewModel,
-            ITimerConfig uiTimerConfig,
-            IIntervalTimerConfig scanTimerConfig,
-            IImagingDeviceConfig imageConfig,
-            IImageFileConfig imageFileConfig
+            IOptionsSnapshot<AppSettings> appSettings
         )
         {
             _log = logger;
@@ -226,10 +226,13 @@ namespace Mosey.ViewModels
             _folderBrowserDialog = folderBrowserDialog;
             _settingsViewModel = settingsViewModel;
 
-            _uiTimerConfig = uiTimerConfig;
-            _scanTimerConfig = scanTimerConfig;
-            _imageConfig = imageConfig;
-            _imageFileConfig = imageFileConfig;
+            _appSettings = appSettings;
+            AppSettings userSettings = appSettings.Get("UserSettings");
+
+            _uiTimerConfig = userSettings.UITimer;
+            _scanTimerConfig = userSettings.ScanTimer;
+            _imageConfig = userSettings.Image;
+            _imageFileConfig = userSettings.ImageFile;
 
             // Lock scanners collection across threads to prevent conflicts
             System.Windows.Data.BindingOperations.EnableCollectionSynchronization(_scannerDevices, _scannerDevicesLock);
@@ -254,10 +257,7 @@ namespace Mosey.ViewModels
                 imagingDevices: _scannerDevices,
                 folderBrowserDialog: _folderBrowserDialog,
                 settingsViewModel: _settingsViewModel,
-                uiTimerConfig: _uiTimerConfig,
-                scanTimerConfig: _scanTimerConfig,
-                imageConfig: _imageConfig,
-                imageFileConfig: _imageFileConfig
+                appSettings: _appSettings
                 );
         }
 
@@ -501,7 +501,7 @@ namespace Mosey.ViewModels
         {
             string scannerIDStr = string.Empty;
             string saveDateTime = DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat));
-            string saveDirectory = _imageFileConfig.Path;
+            string saveDirectory = _imageFileConfig.Directory;
             List<string> imagePaths = new List<string>();
 
             //Default to user's Pictures directory if none is specified

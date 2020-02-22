@@ -551,15 +551,25 @@ namespace Mosey.Services
                     return ColorType.Color;
             }
         }
+
+        public object Clone()
+        {
+            return MemberwiseClone();
+        }
     }
 
     public class ImageFileConfig : IImageFileConfig
     {
-        public string Path { get; set; }
+        public string Directory { get; set; }
         public string Prefix { get; set; }
         public string Format { get; set; }
         public List<string> SupportedFormats { get; set; }
         public string DateFormat { get; set; }
         public string TimeFormat { get; set; }
+
+        public object Clone()
+        {
+            return MemberwiseClone();
+        }
     }
 }

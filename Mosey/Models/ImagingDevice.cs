@@ -28,7 +28,7 @@ namespace Mosey.Models
         Greyscale
     }
 
-    public interface IImagingDeviceConfig
+    public interface IImagingDeviceConfig : IConfig
     {
         ImageColorFormat ColorFormat { get; set; }
         int Resolution { get; set; }
@@ -36,9 +36,9 @@ namespace Mosey.Models
         int Contrast { get; set; }
     }
 
-    public interface IImageFileConfig
+    public interface IImageFileConfig : IConfig
     {
-        string Path { get; set; }
+        string Directory { get; set; }
         string Prefix { get; set; }
         string Format { get; set; }
         List<string> SupportedFormats { get; set; }

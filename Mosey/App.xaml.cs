@@ -3,7 +3,7 @@ using System.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Mosey.Configuration;
 using Mosey.Models;
 using Mosey.Services;
 using Mosey.ViewModels;
@@ -16,12 +16,14 @@ namespace Mosey
     public partial class App : Application
     {
         private IConfiguration _appConfig;
+        private IConfiguration _userConfig;
 
         protected override void OnStartup(StartupEventArgs e) 
         {
             base.OnStartup(e);
 
             _appConfig = CreateConfiguration("appsettings.json");
+            _userConfig = CreateConfiguration("usersettings.json");
 
             var serviceProvider = new ServiceCollection()
                 // Logging to file
@@ -33,17 +35,18 @@ namespace Mosey
                 })
 
                 // Configuration
-                .Configure<IntervalTimerConfig>(_appConfig.GetSection("Timers:Scan"))
-                .Configure<TimerConfig>(_appConfig.GetSection("Timers:UI"))
-                .Configure<ImageFileConfig>(_appConfig.GetSection("Image:File"))
-                .Configure<ScanningDeviceSettings>(_appConfig.GetSection("Image"))
-
-                // Inject strongly typed configuration classes
-                // This method removes the need for the Microsoft.Extensions.Options dependencies that come with IOptions
-                .AddScoped<ITimerConfig>(c => c.GetService<IOptions<TimerConfig>>().Value)
-                .AddScoped<IIntervalTimerConfig>(c => c.GetService<IOptions<IntervalTimerConfig>>().Value)
-                .AddScoped<IImageFileConfig>(c => c.GetService<IOptions<ImageFileConfig>>().Value)
-                .AddScoped<IImagingDeviceConfig>(c => c.GetService<IOptions<ScanningDeviceSettings>>().Value)
+                .Configure<AppSettings>(_appConfig)
+                .Configure<AppSettings>("UserSettings", _userConfig)
+                .PostConfigureAll<AppSettings>(
+                    config =>
+                    {
+                        if (string.IsNullOrEmpty(config.ImageFile.Directory))
+                        {
+                            // Ensure default directory is user's Pictures folder
+                            config.ImageFile.Directory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString();
+                        }
+                    }
+                )
 
                 // Services
                 .AddTransient<IIntervalTimer, IntervalTimer>()

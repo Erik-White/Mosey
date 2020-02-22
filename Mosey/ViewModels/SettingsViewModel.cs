@@ -3,6 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Windows.Input;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Mosey.Configuration;
 using Mosey.Models;
 
 namespace Mosey.ViewModels
@@ -11,37 +13,48 @@ namespace Mosey.ViewModels
     {
         private ILogger<SettingsViewModel> _log;
         private IFolderBrowserDialog _folderBrowserDialog;
-        private IImagingDeviceConfig _imageConfig;
-        private IImageFileConfig _imageFileConfig;
-        private IIntervalTimerConfig _scanTimerConfig;
-
-        private int _scanInterval;
+        private IOptionsSnapshot<AppSettings> _appSettings;
+        private AppSettings _userSettings;
 
         #region Properties
         public string ImageSavePath
         {
             get
             {
-                return _folderBrowserDialog.SelectedPath ?? _folderBrowserDialog.InitialDirectory;
+                //return _folderBrowserDialog.SelectedPath ?? _folderBrowserDialog.InitialDirectory;
+                return _userSettings.ImageFile.Directory ?? _appSettings.Value.ImageFile.Directory;
             }
             set
             {
-                _folderBrowserDialog.SelectedPath = value;
-                RaisePropertyChanged("ImageSavePath");
+                //_folderBrowserDialog.SelectedPath = value;
+                _userSettings.ImageFile.Directory = value;
+                RaisePropertyChanged(nameof(ImageSavePath));
             }
         }
 
-        private bool _scannersEnableOnConnect;
         public bool ScannersEnableOnConnect
         {
             get
             {
-                return _scannersEnableOnConnect;
+                return _userSettings.Device.EnableWhenConnected;
             }
             set
             {
-                _scannersEnableOnConnect = value;
-                RaisePropertyChanged("ScannersEnableOnConnect");
+                _userSettings.Device.EnableWhenConnected = value;
+                RaisePropertyChanged(nameof(ScannersEnableOnConnect));
+            }
+        }
+
+        public bool ScannersEnableWhenScanning
+        {
+            get
+            {
+                return _userSettings.Device.EnableWhenScanning;
+            }
+            set
+            {
+                _userSettings.Device.EnableWhenScanning = value;
+                RaisePropertyChanged(nameof(ScannersEnableWhenScanning));
             }
         }
 
@@ -49,12 +62,12 @@ namespace Mosey.ViewModels
         {
             get
             {
-                return (int)_scanTimerConfig.Interval.TotalMinutes;
+                return (int)_userSettings.ScanTimer.Interval.TotalMinutes;
             }
             set
             {
-                _scanTimerConfig.Interval = TimeSpan.FromMinutes(value);
-                RaisePropertyChanged("ScanInterval");
+                _userSettings.ScanTimer.Interval = TimeSpan.FromMinutes(value);
+                RaisePropertyChanged(nameof(ScanInterval));
             }
         }
 
@@ -62,12 +75,12 @@ namespace Mosey.ViewModels
         {
             get
             {
-                return (int)_scanTimerConfig.Repetitions;
+                return _userSettings.ScanTimer.Repetitions;
             }
             set
             {
-                _scanTimerConfig.Repetitions = value;
-                RaisePropertyChanged("ScanInterval");
+                _userSettings.ScanTimer.Repetitions = value;
+                RaisePropertyChanged(nameof(ScanRepetitions));
             }
         }
 
@@ -75,19 +88,19 @@ namespace Mosey.ViewModels
         {
             get
             {
-                return _scanTimerConfig.Delay != TimeSpan.Zero;
+                return _userSettings.ScanTimer.Delay != TimeSpan.Zero;
             }
             set
             {
                 if (value)
                 {
-                    _scanTimerConfig.Delay = _scanTimerConfig.Interval;
+                    _userSettings.ScanTimer.Delay = _userSettings.ScanTimer.Interval;
                 }
                 else
                 {
-                    _scanTimerConfig.Delay = TimeSpan.Zero;
+                    _userSettings.ScanTimer.Delay = TimeSpan.Zero;
                 }
-                RaisePropertyChanged("ScanningDelay");
+                RaisePropertyChanged(nameof(ScanningDelay));
             }
         }
         #endregion Properties
@@ -95,18 +108,14 @@ namespace Mosey.ViewModels
         public SettingsViewModel(
             ILogger<SettingsViewModel> logger,
             IFolderBrowserDialog folderBrowserDialog,
-            IIntervalTimerConfig scanTimerConfig,
-            IImagingDeviceConfig imageConfig,
-            IImageFileConfig imageFileConfig
+            IOptionsSnapshot<AppSettings> appSettings
             )
         {
             _log = logger;
             _folderBrowserDialog = folderBrowserDialog;
-            _scanTimerConfig = scanTimerConfig;
-            _imageConfig = imageConfig;
-            _imageFileConfig = imageFileConfig;
 
-            _scannersEnableOnConnect = true;
+            _appSettings = appSettings;
+            _userSettings = appSettings.Get("UserSettings");
         }
 
         public override IViewModel Create()
@@ -114,9 +123,7 @@ namespace Mosey.ViewModels
             return new SettingsViewModel(
                 logger: _log,
                 folderBrowserDialog: _folderBrowserDialog,
-                scanTimerConfig: _scanTimerConfig,
-                imageConfig: _imageConfig,
-                imageFileConfig: _imageFileConfig
+                appSettings: _appSettings
                 );
         }
 
@@ -132,7 +139,34 @@ namespace Mosey.ViewModels
                 return _SelectFolderCommand;
             }
         }
+
+        private ICommand _ResetOptionsCommand;
+        public ICommand ResetOptionsCommand
+        {
+            get
+            {
+                if (_ResetOptionsCommand == null)
+                    _ResetOptionsCommand = new RelayCommand(o => ResetUserOptions());
+
+                return _ResetOptionsCommand;
+            }
+        }
         #endregion Commands
+
+        /// <summary>
+        /// Return all user options to the default values
+        /// </summary>
+        private void ResetUserOptions()
+        {
+            _userSettings = _appSettings.Value.Copy();
+
+            RaisePropertyChanged(nameof(ImageSavePath));
+            RaisePropertyChanged(nameof(ScanningDelay));
+            RaisePropertyChanged(nameof(ScanInterval));
+            RaisePropertyChanged(nameof(ScanRepetitions));
+            RaisePropertyChanged(nameof(ScannersEnableOnConnect));
+            RaisePropertyChanged(nameof(ScannersEnableWhenScanning));
+        }
 
         /// <summary>
         /// Display a dialog window that allows the user to select a default image save location
@@ -140,14 +174,13 @@ namespace Mosey.ViewModels
         private void OpenFolderDialog()
         {
             _folderBrowserDialog.Title = "Choose the default image file save location";
-            if (ImageSavePath != Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString())
+            if (ImageSavePath != _appSettings.Value.ImageFile.Directory)
             {
                 // Go up one directory level, otherwise the dialog starts inside the selected directory
                 _folderBrowserDialog.InitialDirectory = Directory.GetParent(ImageSavePath).FullName;
             }
             _folderBrowserDialog.ShowDialog();
-
-            RaisePropertyChanged("ImageSavePath");
+            ImageSavePath = _folderBrowserDialog.SelectedPath;
         }
     }
 }

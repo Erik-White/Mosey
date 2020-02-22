@@ -66,9 +66,9 @@
                     <Controls:NumericUpDown Value="{Binding Path=ScanRepetitions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Right" />
                 </DockPanel>
                 <Controls:ToggleSwitch OnLabel="Enable scanners when connected" OffLabel="Disable scanners when connected" IsChecked="{Binding Path=ScannersEnableOnConnect, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                <Controls:ToggleSwitch OnLabel="Enable new scanners during scanning" OffLabel="Disable new scanners during scanning" IsChecked="{Binding Path=ScannersEnableOnConnectWhenScanning, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Controls:ToggleSwitch OnLabel="Enable new scanners during scanning" OffLabel="Disable new scanners during scanning" IsChecked="{Binding Path=ScannersEnableWhenScanning, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             </StackPanel>
-            <Button DockPanel.Dock="Bottom" Style="{StaticResource ButtonHorizontal}" CustomControls:Margin.Top="{StaticResource XXL}" VerticalAlignment="Bottom" Content="Reset all to default" Foreground="{StaticResource Color.Error}" />
+            <Button Command="{Binding ResetOptionsCommand}" DockPanel.Dock="Bottom" Style="{StaticResource ButtonHorizontal}" CustomControls:Margin.Top="{StaticResource XXL}" VerticalAlignment="Bottom" Content="Reset all to default" Foreground="{StaticResource Color.Error}" />
         </DockPanel>
     </ScrollViewer>
 </UserControl>

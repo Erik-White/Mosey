@@ -234,5 +234,10 @@ namespace Mosey.Services
         public TimeSpan Delay { get; set; }
         public TimeSpan Interval { get; set; }
         public int Repetitions { get; set; }
+
+        public object Clone()
+        {
+            return MemberwiseClone();
+        }
     }
 }
