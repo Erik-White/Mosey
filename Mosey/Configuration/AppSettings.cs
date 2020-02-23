@@ -16,12 +16,14 @@ namespace Mosey.Configuration
 
         public AppSettings Copy()
         {
-            AppSettings copy = new AppSettings();
-            copy.ImageFile = (ImageFileConfig)ImageFile.Clone();
-            copy.ScanTimer = (IntervalTimerConfig)ScanTimer.Clone();
-            copy.UITimer = (IntervalTimerConfig)UITimer.Clone();
-            copy.Image = (ScanningDeviceSettings)Image.Clone();
-            copy.Device = (DeviceConfig)Device.Clone();
+            AppSettings copy = new AppSettings
+            {
+                ImageFile = (ImageFileConfig)ImageFile.Clone(),
+                ScanTimer = (IntervalTimerConfig)ScanTimer.Clone(),
+                UITimer = (IntervalTimerConfig)UITimer.Clone(),
+                Image = (ScanningDeviceSettings)Image.Clone(),
+                Device = (DeviceConfig)Device.Clone()
+            };
 
             return copy;
         }

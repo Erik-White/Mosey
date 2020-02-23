@@ -424,6 +424,8 @@ namespace Mosey.ViewModels
 
         private void UITimer_Tick(object sender, EventArgs e)
         {
+            RaisePropertyChanged(nameof(ScanInterval));
+            RaisePropertyChanged(nameof(ScanRepetitions));
             RaisePropertyChanged("ScanNextTime");
         }
 

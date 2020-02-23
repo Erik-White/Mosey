@@ -36,7 +36,7 @@ namespace Mosey
 
                 // Configuration
                 .Configure<AppSettings>(_appConfig)
-                .Configure<AppSettings>("UserSettings", _userConfig)
+                .ConfigureWritable<AppSettings>(_userConfig, name: "UserSettings", file: "usersettings.json")
                 .PostConfigureAll<AppSettings>(
                     config =>
                     {

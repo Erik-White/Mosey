@@ -1,76 +1,74 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using System;
+using System.IO;
+using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace Mosey.Configuration
 {
-    // see https://stackoverflow.com/a/53077453
     public interface IWritableOptions<out T> : IOptionsSnapshot<T> where T : class, new()
     {
         void Update(Action<T> applyChanges);
     }
 
-    /*
     public class WritableOptions<T> : IWritableOptions<T> where T : class, new()
     {
-        private readonly IHostingEnvironment _environment;
-        private readonly IOptionsMonitor<T> _options;
-        private readonly string _section;
+        private readonly IOptionsSnapshot<T> _options;
         private readonly string _file;
 
         public WritableOptions(
-            IHostingEnvironment environment,
-            IOptionsMonitor<T> options,
-            string section,
+            IOptionsSnapshot<T> options,
             string file)
         {
-            _environment = environment;
             _options = options;
-            _section = section;
             _file = file;
         }
 
-        public T Value => _options.CurrentValue;
+        public T Value => _options.Value;
         public T Get(string name) => _options.Get(name);
 
         public void Update(Action<T> applyChanges)
         {
-            var fileProvider = _environment.ContentRootFileProvider;
-            var fileInfo = fileProvider.GetFileInfo(_file);
-            var physicalPath = fileInfo.PhysicalPath;
+            var physicalPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _file);
 
-            var jObject = JsonConvert.DeserializeObject<JObject>(File.ReadAllText(physicalPath));
-            var sectionObject = jObject.TryGetValue(_section, out JToken section) ?
-                JsonConvert.DeserializeObject<T>(section.ToString()) : (Value ?? new T());
+            var optionInstance = JsonSerializer.Deserialize<T>(File.ReadAllText(physicalPath)) ?? new T();
 
-            applyChanges(sectionObject);
+            applyChanges(optionInstance);
 
-            jObject[_section] = JObject.Parse(JsonConvert.SerializeObject(sectionObject));
-            File.WriteAllText(physicalPath, JsonConvert.SerializeObject(jObject, Formatting.Indented));
+            JsonSerializerOptions jsonOptions = new JsonSerializerOptions
+            {
+                WriteIndented = true
+            };
+
+            File.WriteAllText(physicalPath, JsonSerializer.Serialize(optionInstance, jsonOptions));
         }
     }
 
     public static class ServiceCollectionExtensions
     {
-        public static void ConfigureWritable<T>(
+        public static IServiceCollection ConfigureWritable<T>(
             this IServiceCollection services,
-            IConfigurationSection section,
+            IConfiguration config,
+            string name = null,
             string file = "appsettings.json") where T : class, new()
         {
-            services.Configure<T>(section);
+            if (string.IsNullOrEmpty(name))
+            {
+                services.Configure<T>(config);
+            }
+            else
+            {
+                services.Configure<T>(name, config);
+            }
+
             services.AddTransient<IWritableOptions<T>>(provider =>
             {
-                var environment = provider.GetService<IHostingEnvironment>();
-                var options = provider.GetService<IOptionsMonitor<T>>();
-                return new WritableOptions<T>(environment, options, section.Key, file);
+                var options = provider.GetService<IOptionsSnapshot<T>>();
+                return new WritableOptions<T>(options, file);
             });
+
+            return services;
         }
     }
-    */
 }

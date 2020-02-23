@@ -1,19 +1,19 @@
 ﻿{
   "ScanTimer": {
     "Delay": "0.00:00:00",
-    "Interval": "0.06:30:00",
-    "Repetitions": "100"
+    "Interval": "0.00:30:00",
+    "Repetitions": 100
   },
   "UITimer": {
     "Delay": "0.00:00:00",
     "Interval": "0.00:00:00.5",
-    "Repetitions": "-1"
+    "Repetitions": -1
   },
   "Image": {
     "ColorFormat": "Color",
-    "Resolution": "300",
-    "Brightness": "1",
-    "Contrast": "1"
+    "Resolution": 300,
+    "Brightness": 1,
+    "Contrast": 1
   },
   "ImageFile": {
     "Directory": "",

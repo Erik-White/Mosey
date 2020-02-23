@@ -13,7 +13,7 @@ namespace Mosey.ViewModels
     {
         private ILogger<SettingsViewModel> _log;
         private IFolderBrowserDialog _folderBrowserDialog;
-        private IOptionsSnapshot<AppSettings> _appSettings;
+        private IWritableOptions<AppSettings> _appSettings;
         private AppSettings _userSettings;
 
         #region Properties
@@ -21,13 +21,12 @@ namespace Mosey.ViewModels
         {
             get
             {
-                //return _folderBrowserDialog.SelectedPath ?? _folderBrowserDialog.InitialDirectory;
                 return _userSettings.ImageFile.Directory ?? _appSettings.Value.ImageFile.Directory;
             }
             set
             {
-                //_folderBrowserDialog.SelectedPath = value;
                 _userSettings.ImageFile.Directory = value;
+                _appSettings.Update(c => c.ImageFile.Directory = value);
                 RaisePropertyChanged(nameof(ImageSavePath));
             }
         }
@@ -41,6 +40,7 @@ namespace Mosey.ViewModels
             set
             {
                 _userSettings.Device.EnableWhenConnected = value;
+                _appSettings.Update(c => c.Device.EnableWhenConnected = value);
                 RaisePropertyChanged(nameof(ScannersEnableOnConnect));
             }
         }
@@ -54,6 +54,7 @@ namespace Mosey.ViewModels
             set
             {
                 _userSettings.Device.EnableWhenScanning = value;
+                _appSettings.Update(c => c.Device.EnableWhenScanning = value);
                 RaisePropertyChanged(nameof(ScannersEnableWhenScanning));
             }
         }
@@ -67,6 +68,7 @@ namespace Mosey.ViewModels
             set
             {
                 _userSettings.ScanTimer.Interval = TimeSpan.FromMinutes(value);
+                _appSettings.Update(c => c.ScanTimer.Interval = _userSettings.ScanTimer.Interval);
                 RaisePropertyChanged(nameof(ScanInterval));
             }
         }
@@ -80,6 +82,7 @@ namespace Mosey.ViewModels
             set
             {
                 _userSettings.ScanTimer.Repetitions = value;
+                _appSettings.Update(c => c.ScanTimer.Repetitions = value);
                 RaisePropertyChanged(nameof(ScanRepetitions));
             }
         }
@@ -100,6 +103,8 @@ namespace Mosey.ViewModels
                 {
                     _userSettings.ScanTimer.Delay = TimeSpan.Zero;
                 }
+
+                _appSettings.Update(c => c.ScanTimer.Delay = _userSettings.ScanTimer.Delay);
                 RaisePropertyChanged(nameof(ScanningDelay));
             }
         }
@@ -108,7 +113,7 @@ namespace Mosey.ViewModels
         public SettingsViewModel(
             ILogger<SettingsViewModel> logger,
             IFolderBrowserDialog folderBrowserDialog,
-            IOptionsSnapshot<AppSettings> appSettings
+            IWritableOptions<AppSettings> appSettings
             )
         {
             _log = logger;
