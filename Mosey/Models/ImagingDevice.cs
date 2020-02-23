@@ -19,6 +19,9 @@ namespace Mosey.Models
         void GetImage();
         void SaveImage();
         IEnumerable<string> SaveImage(string fileName, string directory, string fileFormat);
+        IList<KeyValuePair<string, object>> DeviceSettings { get; }
+        IImagingDeviceConfig ImageSettings { get; set; }
+        IList<int> SupportedResolutions { get; }
     }
 
     public enum ImageColorFormat

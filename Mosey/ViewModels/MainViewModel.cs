@@ -542,6 +542,12 @@ namespace Mosey.ViewModels
                     {
                         scannerIDStr = scanner.ID.ToString();
 
+                        // Set desired resolution
+                        if (_userDeviceConfig.UseHighestResolution)
+                        {
+                            scanner.ImageSettings.Resolution = scanner.SupportedResolutions.Max();
+                        }
+
                         // Run the scanner and retrieve the image(s) to memory
                         scanner.GetImage();
                         _log.LogDebug($"Retrieved image on {scanner.Name} (#{scannerIDStr}) at {saveDateTime}");

@@ -67,6 +67,7 @@
                 </DockPanel>
                 <Controls:ToggleSwitch OnLabel="Enable scanners when connected" OffLabel="Disable scanners when connected" IsChecked="{Binding Path=ScannersEnableOnConnect, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <Controls:ToggleSwitch OnLabel="Enable new scanners during scanning" OffLabel="Disable new scanners during scanning" IsChecked="{Binding Path=ScannersEnableWhenScanning, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Controls:ToggleSwitch OnLabel="Scan using highest available resolution" OffLabel="Scan with custom resolution" IsChecked="{Binding Path=ScanHighestResolution, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="False" />
             </StackPanel>
             <Button Command="{Binding ResetOptionsCommand}" DockPanel.Dock="Bottom" Style="{StaticResource ButtonHorizontal}" CustomControls:Margin.Top="{StaticResource XXL}" VerticalAlignment="Bottom" Content="Reset all to default" Foreground="{StaticResource Color.Error}" />
         </DockPanel>

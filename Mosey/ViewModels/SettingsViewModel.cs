@@ -59,6 +59,20 @@ namespace Mosey.ViewModels
             }
         }
 
+        public bool ScanHighestResolution
+        {
+            get
+            {
+                return _userSettings.Device.UseHighestResolution;
+            }
+            set
+            {
+                _userSettings.Device.UseHighestResolution = value;
+                _appSettings.Update(c => c.Device.UseHighestResolution = value);
+                RaisePropertyChanged(nameof(ScanHighestResolution));
+            }
+        }
+
         public int ScanInterval
         {
             get

@@ -273,9 +273,10 @@ namespace Mosey.Services
         public string Name { get { return _scannerSettings.Name; } }
         public int ID { get { return GetSimpleID(_scannerSettings.Id); } }
         public string DeviceID { get { return _scannerSettings.Id; } }
-        public List<KeyValuePair<string, object>> DeviceSettings { get { return _scannerSettings.ScannerDeviceSettings.ToList<KeyValuePair<string, object>>(); } }
+        public IList<KeyValuePair<string, object>> DeviceSettings { get { return _scannerSettings.ScannerDeviceSettings.ToList(); } }
         public IList<byte[]> Images { get; protected internal set; } = new List<byte[]>();
-        public ScanningDeviceSettings ImageSettings { get; set; }
+        public IList<int> SupportedResolutions { get { return _scannerSettings.SupportedResolutions; } }
+        public IImagingDeviceConfig ImageSettings { get; set; }
         public bool IsEnabled
         {
             get { return _isEnabled; }
@@ -313,7 +314,6 @@ namespace Mosey.Services
         private bool _isImaging;
         private int _scanRetries = 10;
         private ScannerSettings _scannerSettings;
-        private IImagingDeviceConfig _scannerConfig;
 
         public ScanningDevice(ScannerSettings settings)
         {
@@ -323,7 +323,7 @@ namespace Mosey.Services
         public ScanningDevice(ScannerSettings settings, IImagingDeviceConfig config)
         {
             _scannerSettings = settings;
-            _scannerConfig = config;
+            ImageSettings = config;
         }
 
         public void GetImage()
@@ -358,10 +358,17 @@ namespace Mosey.Services
                     using (ScannerDevice scannerDevice = new ScannerDevice(_scannerSettings))
                     {
                         // Configure the device
-                        IImagingDeviceConfig deviceConfig = _scannerConfig;
-                        if (_scannerConfig is null)
+                        IImagingDeviceConfig deviceConfig = ImageSettings;
+                        if (ImageSettings is null)
                         {
-                            deviceConfig = new ScanningDeviceSettings();
+                            deviceConfig = new ScanningDeviceSettings
+                            {
+                                Brightness = 1,
+                                Contrast = 1,
+                                ColorFormat = ImageColorFormat.Color,
+                                // Select the highest resolution available
+                                Resolution = SupportedResolutions.Max()
+                            };
                         }
                         scannerDevice.ScannerPictureSettings(pictureConfig =>
                             pictureConfig

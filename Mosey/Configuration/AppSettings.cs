@@ -33,6 +33,7 @@ namespace Mosey.Configuration
     {
         public bool EnableWhenConnected { get; set; }
         public bool EnableWhenScanning { get; set; }
+        public bool UseHighestResolution { get; set; }
 
         public object Clone()
         {

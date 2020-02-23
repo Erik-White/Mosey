@@ -26,6 +26,7 @@
   },
   "Device": {
     "EnableWhenConnected": true,
-    "EnableWhenScanning": false
+    "EnableWhenScanning": false,
+    "UseHighestResolution": true
   }
 }
