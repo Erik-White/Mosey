@@ -27,6 +27,7 @@ namespace Mosey.ViewModels
         private IImageFileConfig _imageFileConfig;
         private IIntervalTimerConfig _scanTimerConfig;
         private ITimerConfig _uiTimerConfig;
+        private DeviceConfig _userDeviceConfig;
 
         private readonly object _scannerDevicesLock = new object();
         private static StaTaskScheduler _staQueue = new StaTaskScheduler(numberOfThreads: 1);
@@ -261,6 +262,7 @@ namespace Mosey.ViewModels
             _scanTimerConfig = (IIntervalTimerConfig)userSettings.ScanTimer.Clone();
             _imageConfig = (IImagingDeviceConfig)userSettings.Image.Clone();
             _imageFileConfig = (IImageFileConfig)userSettings.ImageFile.Clone();
+            _userDeviceConfig = userSettings.Device;
 
             // Lock scanners collection across threads to prevent conflicts
             System.Windows.Data.BindingOperations.EnableCollectionSynchronization(_scannerDevices, _scannerDevicesLock);
@@ -450,7 +452,9 @@ namespace Mosey.ViewModels
 
         private void RefreshDevices()
         {
-            ScannerDevices.RefreshDevices(_imageConfig, true);
+            bool enableDevices = !IsScanRunning ? _userDeviceConfig.EnableWhenConnected : _userDeviceConfig.EnableWhenScanning;
+            ScannerDevices.RefreshDevices(_imageConfig, enableDevices);
+
             RaisePropertyChanged(nameof(ScannerDevices));
             RaisePropertyChanged(nameof(StartScanCommand));
             RaisePropertyChanged(nameof(StartStopScanCommand));
@@ -471,12 +475,14 @@ namespace Mosey.ViewModels
 
                 try
                 {
+                    bool enableDevices = !IsScanRunning ? _userDeviceConfig.EnableWhenConnected : _userDeviceConfig.EnableWhenScanning;
+
                     // Use a dedicated thread for refresh tasks
                     // The apartment state MUST be single threaded for COM interop
                     await Task.Factory.StartNew(() =>
                     {
                         Task.Delay(TimeSpan.FromSeconds(intervalSeconds)).Wait();
-                        ScannerDevices.RefreshDevices(_imageConfig, true);
+                        ScannerDevices.RefreshDevices(_imageConfig, enableDevices);
                     }, cancellationToken, TaskCreationOptions.None, _staQueue);
                 }
                 finally
