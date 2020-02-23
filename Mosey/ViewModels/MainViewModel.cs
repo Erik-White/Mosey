@@ -44,7 +44,7 @@ namespace Mosey.ViewModels
             set
             {
                 _imageFileConfig.Format = value;
-                RaisePropertyChanged("ImageFormat");
+                RaisePropertyChanged(nameof(ImageFormat));
             }
         }
 
@@ -82,7 +82,7 @@ namespace Mosey.ViewModels
                     value = 1;
                 }
                 _scanTimerConfig.Delay = TimeSpan.FromMinutes(value);
-                RaisePropertyChanged("ScanDelay");
+                RaisePropertyChanged(nameof(ScanDelay));
             }
         }
 
@@ -99,7 +99,7 @@ namespace Mosey.ViewModels
                     value = 1;
                 }
                 _scanTimerConfig.Interval = TimeSpan.FromMinutes(value);
-                RaisePropertyChanged("ScanInterval");
+                RaisePropertyChanged(nameof(ScanInterval));
             }
         }
 
@@ -116,7 +116,7 @@ namespace Mosey.ViewModels
                     value = 1;
                 }
                 _scanTimerConfig.Repetitions = value;
-                RaisePropertyChanged("ScanRepetitions");
+                RaisePropertyChanged(nameof(ScanRepetitions));
             }
         }
 
@@ -189,7 +189,7 @@ namespace Mosey.ViewModels
             set
             {
                 _scannerDevices = value;
-                RaisePropertyChanged("ScannerDevices");
+                RaisePropertyChanged(nameof(ScannerDevices));
             }
         }
 
@@ -410,9 +410,9 @@ namespace Mosey.ViewModels
 
             _scanTimer.Start(_scanTimerConfig.Delay, _scanTimerConfig.Interval, _scanTimerConfig.Repetitions);
 
-            RaisePropertyChanged("IsScanRunning");
-            RaisePropertyChanged("ScanFinishTime");
-            RaisePropertyChanged("StartStopScanCommand");
+            RaisePropertyChanged(nameof(IsScanRunning));
+            RaisePropertyChanged(nameof(ScanFinishTime));
+            RaisePropertyChanged(nameof(StartStopScanCommand));
         }
         public void StopScan()
         {
@@ -425,8 +425,8 @@ namespace Mosey.ViewModels
             ScanAsync(_cancelScanTokenSource.Token);
 
             // Update progress
-            RaisePropertyChanged("ScanNextTime");
-            RaisePropertyChanged("ScanRepetitionsCount");
+            RaisePropertyChanged(nameof(ScanNextTime));
+            RaisePropertyChanged(nameof(ScanRepetitionsCount));
         }
 
         private void ScanTimer_Complete(object sender, EventArgs e)
@@ -445,15 +445,15 @@ namespace Mosey.ViewModels
 
         private void UITimer_Tick(object sender, EventArgs e)
         {
-            RaisePropertyChanged("ScanNextTime");
+            RaisePropertyChanged(nameof(ScanNextTime));
         }
 
         private void RefreshDevices()
         {
             ScannerDevices.RefreshDevices(_imageConfig, true);
-            RaisePropertyChanged("ScannerDevices");
-            RaisePropertyChanged("StartScanCommand");
-            RaisePropertyChanged("StartStopScanCommand");
+            RaisePropertyChanged(nameof(ScannerDevices));
+            RaisePropertyChanged(nameof(StartScanCommand));
+            RaisePropertyChanged(nameof(StartStopScanCommand));
         }
 
         private async void RefreshDevicesAsync(int intervalSeconds = 1, CancellationToken cancellationToken = default(CancellationToken))
@@ -481,9 +481,9 @@ namespace Mosey.ViewModels
                 }
                 finally
                 {
-                    RaisePropertyChanged("ScannerDevices");
-                    RaisePropertyChanged("StartScanCommand");
-                    RaisePropertyChanged("StartStopScanCommand");
+                    RaisePropertyChanged(nameof(ScannerDevices));
+                    RaisePropertyChanged(nameof(StartScanCommand));
+                    RaisePropertyChanged(nameof(StartStopScanCommand));
                     _semaphore.Release();
                 }
             }
