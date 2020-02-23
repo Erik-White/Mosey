@@ -32,16 +32,16 @@ namespace Mosey.Configuration
         {
             var physicalPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _file);
 
-            var optionInstance = JsonSerializer.Deserialize<T>(File.ReadAllText(physicalPath)) ?? new T();
+            var optionsInstance = JsonSerializer.Deserialize<T>(File.ReadAllText(physicalPath)) ?? new T();
 
-            applyChanges(optionInstance);
+            applyChanges(optionsInstance);
 
             JsonSerializerOptions jsonOptions = new JsonSerializerOptions
             {
                 WriteIndented = true
             };
 
-            File.WriteAllText(physicalPath, JsonSerializer.Serialize(optionInstance, jsonOptions));
+            File.WriteAllText(physicalPath, JsonSerializer.Serialize(optionsInstance, jsonOptions));
         }
     }
 

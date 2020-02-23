@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -43,7 +44,11 @@ namespace Mosey
                         if (string.IsNullOrEmpty(config.ImageFile.Directory))
                         {
                             // Ensure default directory is user's Pictures folder
-                            config.ImageFile.Directory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString();
+                            config.ImageFile.Directory = Path.Combine
+                            (
+                                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
+                                System.Reflection.Assembly.GetExecutingAssembly().GetName().Name
+                            );
                         }
                     }
                 )

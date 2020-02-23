@@ -22,7 +22,7 @@ namespace Mosey.ViewModels
         private IFolderBrowserDialog _folderBrowserDialog;
         private IViewModel _settingsViewModel;
 
-        private IOptionsSnapshot<AppSettings> _appSettings;
+        private IOptionsMonitor<AppSettings> _appSettings;
         private IImagingDeviceConfig _imageConfig;
         private IImageFileConfig _imageFileConfig;
         private IIntervalTimerConfig _scanTimerConfig;
@@ -65,7 +65,7 @@ namespace Mosey.ViewModels
             set
             {
                 _folderBrowserDialog.SelectedPath = value;
-                RaisePropertyChanged("ImageSavePath");
+                RaisePropertyChanged(nameof(ImageSavePath));
             }
         }
 
@@ -216,7 +216,7 @@ namespace Mosey.ViewModels
             IImagingDevices<IImagingDevice> imagingDevices,
             IFolderBrowserDialog folderBrowserDialog,
             IViewModel settingsViewModel,
-            IOptionsSnapshot<AppSettings> appSettings
+            IOptionsMonitor<AppSettings> appSettings
         )
         {
             _log = logger;
@@ -227,19 +227,11 @@ namespace Mosey.ViewModels
             _settingsViewModel = settingsViewModel;
 
             _appSettings = appSettings;
-            AppSettings userSettings = appSettings.Get("UserSettings");
-
-            _uiTimerConfig = userSettings.UITimer;
-            _scanTimerConfig = userSettings.ScanTimer;
-            _imageConfig = userSettings.Image;
-            _imageFileConfig = userSettings.ImageFile;
-
-            // Lock scanners collection across threads to prevent conflicts
-            System.Windows.Data.BindingOperations.EnableCollectionSynchronization(_scannerDevices, _scannerDevicesLock);
 
             // Set configuration options
             SetConfiguration();
 
+            _appSettings.OnChange<AppSettings>(UpdateConfig);
             _scanTimer.Tick += ScanTimer_Tick;
             _scanTimer.Complete += ScanTimer_Complete;
             _uiTimer.Tick += UITimer_Tick;
@@ -263,10 +255,34 @@ namespace Mosey.ViewModels
 
         private void SetConfiguration()
         {
-            _folderBrowserDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString();
+            AppSettings userSettings = _appSettings.Get("UserSettings");
+
+            _uiTimerConfig = userSettings.UITimer;
+            _scanTimerConfig = (IIntervalTimerConfig)userSettings.ScanTimer.Clone();
+            _imageConfig = (IImagingDeviceConfig)userSettings.Image.Clone();
+            _imageFileConfig = (IImageFileConfig)userSettings.ImageFile.Clone();
+
+            // Lock scanners collection across threads to prevent conflicts
+            System.Windows.Data.BindingOperations.EnableCollectionSynchronization(_scannerDevices, _scannerDevicesLock);
+
+            _folderBrowserDialog.InitialDirectory = _imageFileConfig.Directory;
             _folderBrowserDialog.SelectedPath = _folderBrowserDialog.InitialDirectory;
 
             ScannerDevices.EnableAll();
+        }
+
+        private void UpdateConfig(AppSettings settings)
+        {
+            if (!IsScanRunning)
+            {
+                _scanTimerConfig = (IIntervalTimerConfig)settings.ScanTimer.Clone();
+                _imageConfig = (IImagingDeviceConfig)settings.Image.Clone();
+                _imageFileConfig = (IImageFileConfig)settings.ImageFile.Clone();
+
+                RaisePropertyChanged(nameof(ScanInterval));
+                RaisePropertyChanged(nameof(ScanRepetitions));
+                RaisePropertyChanged(nameof(ImageSavePath));
+            }
         }
 
         #region Commands
@@ -415,17 +431,20 @@ namespace Mosey.ViewModels
 
         private void ScanTimer_Complete(object sender, EventArgs e)
         {
-            RaisePropertyChanged("ScanRepetitionsCount");
-            RaisePropertyChanged("IsScanRunning");
-            RaisePropertyChanged("ScanFinishTime");
-            RaisePropertyChanged("StartStopScanCommand");
+            // Apply any changes to settings that were made during scanning
+            UpdateConfig(_appSettings.Get("UserSettings"));
+
+            // Update properties
+            RaisePropertyChanged(nameof(ScanRepetitionsCount));
+            RaisePropertyChanged(nameof(IsScanRunning));
+            RaisePropertyChanged(nameof(ScanFinishTime));
+            RaisePropertyChanged(nameof(StartStopScanCommand));
+
             _log.LogInformation($"Scanning complete at {DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat))} with {ScanRepetitionsCount} repetitions.");
         }
 
         private void UITimer_Tick(object sender, EventArgs e)
         {
-            RaisePropertyChanged(nameof(ScanInterval));
-            RaisePropertyChanged(nameof(ScanRepetitions));
             RaisePropertyChanged("ScanNextTime");
         }
 
@@ -506,16 +525,6 @@ namespace Mosey.ViewModels
             string saveDirectory = _imageFileConfig.Directory;
             List<string> imagePaths = new List<string>();
 
-            //Default to user's Pictures directory if none is specified
-            if (string.IsNullOrWhiteSpace(saveDirectory))
-            {
-                saveDirectory = Path.Combine
-                (
-                    Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
-                    System.Reflection.Assembly.GetExecutingAssembly().GetName().Name
-                );
-            }
-
             try
             {
                 // Order devices by ID to provide clearer feedback to users
@@ -576,14 +585,12 @@ namespace Mosey.ViewModels
         private void OpenFolderDialog()
         {
             _folderBrowserDialog.Title = "Choose the image file save location";
-            if (ImageSavePath != Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString())
-            {
-                // Go up one directory level, otherwise the dialog starts inside the selected directory
-                _folderBrowserDialog.InitialDirectory = Directory.GetParent(ImageSavePath).FullName;
-            }
+            // Go up one directory level, otherwise the dialog starts inside the selected directory
+            _folderBrowserDialog.InitialDirectory = Directory.GetParent(ImageSavePath).FullName;
+
             _folderBrowserDialog.ShowDialog();
 
-            RaisePropertyChanged("ImageSavePath");
+            RaisePropertyChanged(nameof(ImageSavePath));
         }
 
         public void Dispose()

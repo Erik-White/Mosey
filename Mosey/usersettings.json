@@ -10,7 +10,8 @@
     "Repetitions": -1
   },
   "Image": {
-    "ColorFormat": "Color",
+    "ColorType": {},
+    "ColorFormat": 0,
     "Resolution": 300,
     "Brightness": 1,
     "Contrast": 1
@@ -24,7 +25,7 @@
     "TimeFormat": "HHmm"
   },
   "Device": {
-    "EnableWhenConnected": "true",
-    "EnableWhenScanning": "false"
+    "EnableWhenConnected": true,
+    "EnableWhenScanning": false
   }
 }

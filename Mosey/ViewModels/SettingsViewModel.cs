@@ -163,7 +163,14 @@ namespace Mosey.ViewModels
         /// </summary>
         private void ResetUserOptions()
         {
+            // Copy default settings and write to disk
             _userSettings = _appSettings.Value.Copy();
+            _appSettings.Update(c => {
+                c.ScanTimer = _userSettings.ScanTimer;
+                c.ImageFile = _userSettings.ImageFile;
+                c.Image = _userSettings.Image;
+                c.Device = _userSettings.Device;
+            });
 
             RaisePropertyChanged(nameof(ImageSavePath));
             RaisePropertyChanged(nameof(ScanningDelay));
@@ -179,11 +186,11 @@ namespace Mosey.ViewModels
         private void OpenFolderDialog()
         {
             _folderBrowserDialog.Title = "Choose the default image file save location";
-            if (ImageSavePath != _appSettings.Value.ImageFile.Directory)
-            {
-                // Go up one directory level, otherwise the dialog starts inside the selected directory
-                _folderBrowserDialog.InitialDirectory = Directory.GetParent(ImageSavePath).FullName;
-            }
+            // Go up one directory level, otherwise the dialog starts inside the selected directory
+            _folderBrowserDialog.InitialDirectory = Directory.GetParent(ImageSavePath).FullName;
+            // Ensure SelectedPath reflects current value
+            _folderBrowserDialog.SelectedPath = ImageSavePath;
+
             _folderBrowserDialog.ShowDialog();
             ImageSavePath = _folderBrowserDialog.SelectedPath;
         }
