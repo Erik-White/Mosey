@@ -16,4 +16,9 @@ namespace Mosey.Models
         void Start(TimeSpan delay, TimeSpan interval);
         void Start(TimeSpan delay, TimeSpan interval, int repetitions);
     }
+
+    public interface IIntervalTimerConfig : ITimerConfig
+    {
+        int Repetitions { get; set; }
+    }
 }

@@ -1,33 +1,71 @@
-﻿using System.Windows;
+﻿using System;
+using System.IO;
+using System.Windows;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Mosey.Configuration;
 using Mosey.Models;
 using Mosey.Services;
+using Mosey.ViewModels;
 
 namespace Mosey
 {
     /// <summary>
-    /// Set up dependency injection and logging for application
+    /// Set up dependency injection, configuration and logging for application
     /// </summary>
     public partial class App : Application
     {
-        protected override void OnStartup(StartupEventArgs e)
+        private IConfiguration _appConfig;
+        private IConfiguration _userConfig;
+
+        protected override void OnStartup(StartupEventArgs e) 
         {
             base.OnStartup(e);
 
+            _appConfig = CreateConfiguration("appsettings.json");
+            _userConfig = CreateConfiguration("usersettings.json");
+
             var serviceProvider = new ServiceCollection()
-                // Register application logging
+                // Logging to file
                 .AddLogging(options =>
                 {
                     options.AddConsole();
                     options.AddDebug();
-                    options.AddFile("app.log", append: true);
+                    options.AddFile("mosey.log", append: true);
                 })
-                // Register dependencies
+
+                // Configuration
+                .Configure<AppSettings>(_appConfig)
+                .ConfigureWritable<AppSettings>(_userConfig, name: "UserSettings", file: "usersettings.json")
+                .PostConfigureAll<AppSettings>(
+                    config =>
+                    {
+                        if (string.IsNullOrEmpty(config.ImageFile.Directory))
+                        {
+                            // Ensure default directory is user's Pictures folder
+                            config.ImageFile.Directory = Path.Combine
+                            (
+                                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
+                                System.Reflection.Assembly.GetExecutingAssembly().GetName().Name
+                            );
+                        }
+                    }
+                )
+
+                // Services
                 .AddTransient<IIntervalTimer, IntervalTimer>()
-                .AddTransient<IFolderBrowserDialog, FolderBrowserDialog>()
+                .AddScoped<IFolderBrowserDialog, FolderBrowserDialog>()
+                .AddTransient<IImagingDevice, ScanningDevice>()
                 .AddSingleton<IImagingDevices<IImagingDevice>, ScanningDevices>()
-                .AddSingleton<System.ComponentModel.INotifyPropertyChanged, ViewModels.MainViewModel>()
+
+                // ViewModels
+                .AddSingleton<IViewModel, SettingsViewModel>()
+                .AddSingleton<MainViewModel>()
+
+                // Windows
+                .AddTransient<Views.Settings>()
+                .AddTransient<Views.MainWindow>()
 
                 // Finalize
                 .BuildServiceProvider();
@@ -36,30 +74,26 @@ namespace Mosey
             logger.LogDebug("Starting application");
 
             // Locate MainViewModel dependencies and create new window
-            var viewModel = serviceProvider.GetService<System.ComponentModel.INotifyPropertyChanged>();
-            var window = new Views.MainWindow { DataContext = viewModel };
+            var window = serviceProvider.GetRequiredService<Views.MainWindow>();
+            window.DataContext = serviceProvider.GetRequiredService<MainViewModel>();
             window.Show();
         }
-        // TODO: Ensure scanner COM objects get released and disposed correctly
-        // May not be necessary if ScanningDevices is disposable
+
+        private static IConfiguration CreateConfiguration(string fileName, bool optional = false)
+        {
+            // Register settings file
+            IConfiguration config = new ConfigurationBuilder()
+                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                .AddJsonFile(fileName, optional: optional, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .Build();
+
+            return config;
+        }
+
         protected override void OnExit(ExitEventArgs e)
         {
             base.OnExit(e);
         }
-
-
-        /*
-        //Dispose on unhandled exception
-        this.DispatcherUnhandledException += (sender, args) => 
-        { 
-            if (disposableViewModel != null) disposableViewModel.Dispose(); 
-        };
-
-        //Dispose on exit
-        this.Exit += (sender, args) =>
-        { 
-            if (disposableViewModel != null) disposableViewModel.Dispose();
-        };
-        */
     }
 }

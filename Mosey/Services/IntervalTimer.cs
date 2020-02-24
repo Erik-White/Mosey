@@ -31,7 +31,16 @@ namespace Mosey.Services
 
         public IntervalTimer(TimeSpan delay, TimeSpan interval, int repetitions)
         {
-            Start(delay, interval, repetitions);
+            Delay = delay;
+            Interval = interval;
+            Repetitions = repetitions;
+        }
+
+        public IntervalTimer(IIntervalTimerConfig config)
+        {
+            Delay = config.Delay;
+            Interval = config.Interval;
+            Repetitions = config.Repetitions;
         }
 
         /// <summary>
@@ -90,10 +99,10 @@ namespace Mosey.Services
         protected virtual void OnComplete(EventArgs e)
         {
             Complete?.Invoke(this, EventArgs.Empty);
-        }
+        } 
 
         /// <summary>
-        /// Timer callback method. Continues the timer until the maximum repetitions is reached
+        /// Timer callback method. Continues the timer until the maximum repetition count is reached
         /// </summary>
         /// <param name="state"></param>
         private void TimerInterval(object state)
@@ -103,6 +112,10 @@ namespace Mosey.Services
                 // Notify event subscribers
                 OnTick(EventArgs.Empty);
                 Resume();
+                if(RepetitionsCount == Repetitions)
+                {
+                    Stop();
+                }
             }
             else
             {
@@ -213,6 +226,22 @@ namespace Mosey.Services
         ~IntervalTimer()
         {
             Dispose(false);
+        }
+    }
+
+    public class IntervalTimerConfig : IIntervalTimerConfig
+    {
+        // System.Text.Json doesn't support TimeSpan [de]serialization
+        // It is planned for .NET Core 5
+        [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonTimeSpanConverter))]
+        public TimeSpan Delay { get; set; }
+        [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonTimeSpanConverter))]
+        public TimeSpan Interval { get; set; }
+        public int Repetitions { get; set; }
+
+        public object Clone()
+        {
+            return MemberwiseClone();
         }
     }
 }
