@@ -27,6 +27,16 @@
   "Device": {
     "EnableWhenConnected": true,
     "EnableWhenScanning": false,
-    "UseHighestResolution": true
+    "UseHighestResolution": false,
+    "StandardResolutions": [
+      100,
+      200,
+      300,
+      400,
+      600,
+      800,
+      1000,
+      1200
+    ]
   }
 }

@@ -280,6 +280,7 @@ namespace Mosey.ViewModels
                 _scanTimerConfig = (IIntervalTimerConfig)settings.ScanTimer.Clone();
                 _imageConfig = (IImagingDeviceConfig)settings.Image.Clone();
                 _imageFileConfig = (IImageFileConfig)settings.ImageFile.Clone();
+                _userDeviceConfig = settings.Device;
 
                 RaisePropertyChanged(nameof(ScanInterval));
                 RaisePropertyChanged(nameof(ScanRepetitions));
@@ -420,6 +421,9 @@ namespace Mosey.ViewModels
         {
             _scanTimer.Stop();
             _cancelScanTokenSource.Cancel();
+
+            // Apply any changes to settings that were made during scanning
+            UpdateConfig(_appSettings.Get("UserSettings"));
         }
 
         private void ScanTimer_Tick(object sender, EventArgs e)
@@ -541,6 +545,9 @@ namespace Mosey.ViewModels
                     if (scanner.IsConnected && scanner.IsEnabled && !scanner.IsImaging)
                     {
                         scannerIDStr = scanner.ID.ToString();
+
+                        // Update image config in case of changes
+                        scanner.ImageSettings = _imageConfig;
 
                         // Set desired resolution
                         if (_userDeviceConfig.UseHighestResolution)

@@ -370,6 +370,17 @@ namespace Mosey.Services
                                 Resolution = SupportedResolutions.Max()
                             };
                         }
+
+                        // Check that the selected resolution is supported by this device
+                        if (!SupportedResolutions.Contains(deviceConfig.Resolution))
+                        {
+                            // Find the closest supported resolution instead
+                            deviceConfig.Resolution = SupportedResolutions
+                                .OrderBy(v => v)
+                                .OrderBy(item => Math.Abs(deviceConfig.Resolution - item))
+                                .First();
+                        }
+
                         scannerDevice.ScannerPictureSettings(pictureConfig =>
                             pictureConfig
                                 .ColorFormat(ScanningDeviceSettings.ColorTypeFromFormat(deviceConfig.ColorFormat))

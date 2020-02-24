@@ -1,9 +1,8 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Windows.Input;
+using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Mosey.Configuration;
 using Mosey.Models;
 
@@ -30,6 +29,22 @@ namespace Mosey.ViewModels
                 RaisePropertyChanged(nameof(ImageSavePath));
             }
         }
+
+        public int DefaultResolution
+        {
+            get
+            {
+                return _userSettings.Image.Resolution;
+            }
+            set
+            {
+                _userSettings.Image.Resolution = value;
+                _appSettings.Update(c => c.Image.Resolution = value);
+                RaisePropertyChanged(nameof(DefaultResolution));
+            }
+        }
+
+        public IEnumerable<int> StandardResolutions { get { return _userSettings.Device.StandardResolutions; } }
 
         public bool ScannersEnableOnConnect
         {

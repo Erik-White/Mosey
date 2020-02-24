@@ -32,6 +32,13 @@
                         <Setter Property="Foreground" Value="{StaticResource FontColor.Dark}" />
                         <Setter Property="FontSize" Value="{StaticResource FontSize.Default}" />
                     </Style>
+                    <Style TargetType="ComboBox" BasedOn="{StaticResource ComboBoxNormal}">
+                        <Style.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
                     <Style TargetType="Controls:ToggleSwitch" BasedOn="{StaticResource ToggleSwitchBase}">
                         <Setter Property="Margin" Value="0" />
                         <Setter Property="Margin" Value="{StaticResource Margin.Horizontal.Default}" />
@@ -67,7 +74,8 @@
                 </DockPanel>
                 <Controls:ToggleSwitch OnLabel="Enable scanners when connected" OffLabel="Disable scanners when connected" IsChecked="{Binding Path=ScannersEnableOnConnect, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <Controls:ToggleSwitch OnLabel="Enable new scanners during scanning" OffLabel="Disable new scanners during scanning" IsChecked="{Binding Path=ScannersEnableWhenScanning, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                <Controls:ToggleSwitch OnLabel="Scan using highest available resolution" OffLabel="Scan with custom resolution" IsChecked="{Binding Path=ScanHighestResolution, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="False" />
+                <Controls:ToggleSwitch OnLabel="Scan using highest available resolution" OffLabel="Scan with selected resolution" IsChecked="{Binding Path=ScanHighestResolution, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="True" />
+                <ComboBox Text="Select resolution" ItemsSource="{Binding StandardResolutions}" SelectedValue="{Binding DefaultResolution, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Path=ScanHighestResolution, Converter={Converters:BoolToInvertedBoolConverter}}" IsSynchronizedWithCurrentItem="True" IsEditable="False" HorizontalAlignment="Right" />
             </StackPanel>
             <Button Command="{Binding ResetOptionsCommand}" DockPanel.Dock="Bottom" Style="{StaticResource ButtonHorizontal}" CustomControls:Margin.Top="{StaticResource XXL}" VerticalAlignment="Bottom" Content="Reset all to default" Foreground="{StaticResource Color.Error}" />
         </DockPanel>
