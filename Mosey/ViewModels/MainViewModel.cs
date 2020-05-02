@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Mosey.Configuration;
 using Mosey.Models;
+using System.Printing.IndexedProperties;
 
 namespace Mosey.ViewModels
 {
@@ -35,7 +36,7 @@ namespace Mosey.ViewModels
         private CancellationTokenSource _cancelScanTokenSource = new CancellationTokenSource();
         private bool _disposed;
 
-        #region Properties
+         #region Properties
         public string ImageFormat
         {
             get
@@ -70,11 +71,15 @@ namespace Mosey.ViewModels
             }
         }
 
+        private TimeSpan _scanDelay;
         public int ScanDelay
         {
             get
             {
-                return (int)_scanTimerConfig.Delay.TotalMinutes;
+                // Use the default setting if no value is set
+                _scanDelay = _scanDelay > TimeSpan.Zero ? _scanDelay : _scanTimerConfig.Delay;
+
+                return (int)_scanDelay.TotalMinutes;
             }
             set
             {
@@ -82,16 +87,20 @@ namespace Mosey.ViewModels
                 {
                     value = 1;
                 }
-                _scanTimerConfig.Delay = TimeSpan.FromMinutes(value);
+                _scanDelay = TimeSpan.FromMinutes(value);
                 RaisePropertyChanged(nameof(ScanDelay));
             }
         }
 
+        private TimeSpan _scanInterval;
         public int ScanInterval
         {
             get
             {
-                return (int)_scanTimerConfig.Interval.TotalMinutes;
+                // Use the default setting if no value is set
+                _scanInterval = _scanInterval > TimeSpan.Zero ? _scanInterval : _scanTimerConfig.Interval;
+
+                return (int)_scanInterval.TotalMinutes;
             }
             set
             {
@@ -99,16 +108,20 @@ namespace Mosey.ViewModels
                 {
                     value = 1;
                 }
-                _scanTimerConfig.Interval = TimeSpan.FromMinutes(value);
+                _scanInterval = TimeSpan.FromMinutes(value);
                 RaisePropertyChanged(nameof(ScanInterval));
             }
         }
 
+        private int _scanRepetitions;
         public int ScanRepetitions
         {
             get
             {
-                return _scanTimerConfig.Repetitions;
+                // Use the default setting if no value is set
+                _scanRepetitions = _scanRepetitions > 0 ? _scanRepetitions : _scanTimerConfig.Repetitions;
+
+                return _scanRepetitions;
             }
             set
             {
@@ -116,7 +129,7 @@ namespace Mosey.ViewModels
                 {
                     value = 1;
                 }
-                _scanTimerConfig.Repetitions = value;
+                _scanRepetitions = value;
                 RaisePropertyChanged(nameof(ScanRepetitions));
             }
         }
@@ -258,11 +271,9 @@ namespace Mosey.ViewModels
         {
             AppSettings userSettings = _appSettings.Get("UserSettings");
 
+            // Load saved configuration values
             _uiTimerConfig = userSettings.UITimer;
-            _scanTimerConfig = (IIntervalTimerConfig)userSettings.ScanTimer.Clone();
-            _imageConfig = (IImagingDeviceConfig)userSettings.Image.Clone();
-            _imageFileConfig = (IImageFileConfig)userSettings.ImageFile.Clone();
-            _userDeviceConfig = userSettings.Device;
+            UpdateConfig(userSettings);
 
             // Lock scanners collection across threads to prevent conflicts
             System.Windows.Data.BindingOperations.EnableCollectionSynchronization(_scannerDevices, _scannerDevicesLock);
@@ -411,7 +422,7 @@ namespace Mosey.ViewModels
         {
             _cancelScanTokenSource = new CancellationTokenSource();
 
-            _scanTimer.Start(_scanTimerConfig.Delay, _scanTimerConfig.Interval, _scanTimerConfig.Repetitions);
+            _scanTimer.Start(_scanDelay, _scanInterval, ScanRepetitions);
 
             RaisePropertyChanged(nameof(IsScanRunning));
             RaisePropertyChanged(nameof(ScanFinishTime));
@@ -421,9 +432,6 @@ namespace Mosey.ViewModels
         {
             _scanTimer.Stop();
             _cancelScanTokenSource.Cancel();
-
-            // Apply any changes to settings that were made during scanning
-            UpdateConfig(_appSettings.Get("UserSettings"));
         }
 
         private void ScanTimer_Tick(object sender, EventArgs e)
@@ -532,7 +540,7 @@ namespace Mosey.ViewModels
         {
             string scannerIDStr = string.Empty;
             string saveDateTime = DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat));
-            string saveDirectory = _imageFileConfig.Directory;
+            string saveDirectory = ImageSavePath;
             List<string> imagePaths = new List<string>();
 
             try

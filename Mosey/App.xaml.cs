@@ -55,7 +55,7 @@ namespace Mosey
 
                 // Services
                 .AddTransient<IIntervalTimer, IntervalTimer>()
-                .AddScoped<IFolderBrowserDialog, FolderBrowserDialog>()
+                .AddTransient<IFolderBrowserDialog, FolderBrowserDialog>()
                 .AddTransient<IImagingDevice, ScanningDevice>()
                 .AddSingleton<IImagingDevices<IImagingDevice>, ScanningDevices>()
 
