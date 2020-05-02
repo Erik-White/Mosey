@@ -63,7 +63,7 @@
                     </Button>
                     <TextBox Text="{Binding Path=ImageSavePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Stretch" CustomControls:Margin.Right="{StaticResource Narrow}" />
                 </DockPanel>
-                <Controls:ToggleSwitch OnLabel="Delay scanning by interval duration" OffLabel="Do not delay scanning" IsChecked="{Binding Path=ScanningDelay, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <Controls:ToggleSwitch OnLabel="Delay scanning by interval duration" OffLabel="{Binding RelativeSource={RelativeSource Self}, Path=OnLabel}" IsChecked="{Binding Path=ScanningDelay, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                 <DockPanel Margin="{StaticResource Margin.Horizontal.Default}" CustomControls:Margin.Top="{StaticResource Wide}">
                     <TextBlock Text="Default scan interval (minutes)" DockPanel.Dock="Left" Margin="0" CustomControls:Margin.Top="{StaticResource Tiny}" VerticalAlignment="Center" />
                     <Controls:NumericUpDown Value="{Binding Path=ScanInterval, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Right" />
@@ -72,8 +72,8 @@
                     <TextBlock Text="Default total repetitions" DockPanel.Dock="Left" Margin="0" CustomControls:Margin.Top="{StaticResource Tiny}" VerticalAlignment="Center" />
                     <Controls:NumericUpDown Value="{Binding Path=ScanRepetitions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Right" />
                 </DockPanel>
-                <Controls:ToggleSwitch OnLabel="Enable scanners when connected" OffLabel="Disable scanners when connected" IsChecked="{Binding Path=ScannersEnableOnConnect, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                <Controls:ToggleSwitch OnLabel="Enable new scanners during scanning" OffLabel="Disable new scanners during scanning" IsChecked="{Binding Path=ScannersEnableWhenScanning, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Controls:ToggleSwitch OnLabel="Enable scanners when connected" OffLabel="{Binding RelativeSource={RelativeSource Self}, Path=OnLabel}" IsChecked="{Binding Path=ScannersEnableOnConnect, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Controls:ToggleSwitch OnLabel="Enable new scanners during scanning" OffLabel="{Binding RelativeSource={RelativeSource Self}, Path=OnLabel}" IsChecked="{Binding Path=ScannersEnableWhenScanning, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <Controls:ToggleSwitch OnLabel="Scan using highest available resolution" OffLabel="Scan with selected resolution" IsChecked="{Binding Path=ScanHighestResolution, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="True" />
                 <ComboBox Text="Select resolution" ItemsSource="{Binding StandardResolutions}" SelectedValue="{Binding DefaultResolution, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Path=ScanHighestResolution, Converter={Converters:BoolToInvertedBoolConverter}}" IsSynchronizedWithCurrentItem="True" IsEditable="False" HorizontalAlignment="Right" />
             </StackPanel>

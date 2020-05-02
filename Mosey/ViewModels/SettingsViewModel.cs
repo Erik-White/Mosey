@@ -207,6 +207,7 @@ namespace Mosey.ViewModels
             RaisePropertyChanged(nameof(ScanRepetitions));
             RaisePropertyChanged(nameof(ScannersEnableOnConnect));
             RaisePropertyChanged(nameof(ScannersEnableWhenScanning));
+            RaisePropertyChanged(nameof(ScanHighestResolution));
         }
 
         /// <summary>
