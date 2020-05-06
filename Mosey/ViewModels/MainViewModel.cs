@@ -12,6 +12,7 @@ using Mosey.Configuration;
 using Mosey.Models;
 using Mosey.Models.Dialog;
 using AsyncAwaitBestPractices.MVVM;
+using Mosey.Services;
 
 namespace Mosey.ViewModels
 {
@@ -227,24 +228,23 @@ namespace Mosey.ViewModels
         #endregion Properties
 
         public MainViewModel(
-            ILogger<MainViewModel> logger,
             IIntervalTimer intervalTimer,
             IImagingDevices<IImagingDevice> imagingDevices,
-            IDialogManager dialogManager,
-            IFolderBrowserDialog folderBrowserDialog,
+            UIServices uiServices,
             IViewModel settingsViewModel,
-            IOptionsMonitor<AppSettings> appSettings
+            IOptionsMonitor<AppSettings> appSettings,
+            ILogger<MainViewModel> logger
         )
         {
-            _log = logger;
             _scanTimer = intervalTimer;
             _uiTimer = (IIntervalTimer)intervalTimer.Clone();
             _scannerDevices = imagingDevices;
-            _dialogManager = dialogManager;
-            _folderBrowserDialog = folderBrowserDialog;
+            _dialogManager = uiServices.DialogManager;
+            _folderBrowserDialog = uiServices.FolderBrowserDialog;
             _settingsViewModel = settingsViewModel;
 
             _appSettings = appSettings;
+            _log = logger;
 
             // Set configuration options
             SetConfiguration();
@@ -262,13 +262,15 @@ namespace Mosey.ViewModels
         public override IViewModel Create()
         {
             return new MainViewModel(
-                logger: _log,
                 intervalTimer: _scanTimer,
                 imagingDevices: _scannerDevices,
-                dialogManager: _dialogManager,
-                folderBrowserDialog: _folderBrowserDialog,
+                uiServices: new UIServices(
+                    dialogManager: _dialogManager,
+                    folderBrowserDialog: _folderBrowserDialog
+                    ),
                 settingsViewModel: _settingsViewModel,
-                appSettings: _appSettings
+                appSettings: _appSettings,
+                logger: _log
                 );
         }
 

@@ -62,6 +62,9 @@ namespace Mosey
                 .AddTransient<IImagingDevice, ScanningDevice>()
                 .AddSingleton<IImagingDevices<IImagingDevice>, ScanningDevices>()
 
+                // Aggregate services
+                .AddTransient<UIServices>()
+
                 // ViewModels
                 .AddSingleton<IViewModel, SettingsViewModel>()
                 .AddSingleton<MainViewModel>()
