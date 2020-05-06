@@ -10,7 +10,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Mosey.Configuration;
 using Mosey.Models;
-using System.Printing.IndexedProperties;
+using Mosey.Models.Dialog;
+using AsyncAwaitBestPractices.MVVM;
 
 namespace Mosey.ViewModels
 {
@@ -20,6 +21,7 @@ namespace Mosey.ViewModels
         private IIntervalTimer _uiTimer;
         private IIntervalTimer _scanTimer;
         private IImagingDevices<IImagingDevice> _scannerDevices;
+        private IDialogManager _dialogManager;
         private IFolderBrowserDialog _folderBrowserDialog;
         private IViewModel _settingsViewModel;
 
@@ -228,6 +230,7 @@ namespace Mosey.ViewModels
             ILogger<MainViewModel> logger,
             IIntervalTimer intervalTimer,
             IImagingDevices<IImagingDevice> imagingDevices,
+            IDialogManager dialogManager,
             IFolderBrowserDialog folderBrowserDialog,
             IViewModel settingsViewModel,
             IOptionsMonitor<AppSettings> appSettings
@@ -237,6 +240,7 @@ namespace Mosey.ViewModels
             _scanTimer = intervalTimer;
             _uiTimer = (IIntervalTimer)intervalTimer.Clone();
             _scannerDevices = imagingDevices;
+            _dialogManager = dialogManager;
             _folderBrowserDialog = folderBrowserDialog;
             _settingsViewModel = settingsViewModel;
 
@@ -261,6 +265,7 @@ namespace Mosey.ViewModels
                 logger: _log,
                 intervalTimer: _scanTimer,
                 imagingDevices: _scannerDevices,
+                dialogManager: _dialogManager,
                 folderBrowserDialog: _folderBrowserDialog,
                 settingsViewModel: _settingsViewModel,
                 appSettings: _appSettings
@@ -373,13 +378,13 @@ namespace Mosey.ViewModels
             }
         }
 
-        private ICommand _StopScanCommand;
-        public ICommand StopScanCommand
+        private IAsyncCommand _StopScanCommand;
+        public IAsyncCommand StopScanCommand
         {
             get
             {
                 if (_StopScanCommand == null)
-                    _StopScanCommand = new RelayCommand(o => StopScan(), o => IsScanRunning);
+                    _StopScanCommand = new AsyncCommand(() => StopScanWithDialog(), _ => IsScanRunning);
 
                 return _StopScanCommand;
             }
@@ -421,17 +426,86 @@ namespace Mosey.ViewModels
         public void StartScan()
         {
             _cancelScanTokenSource = new CancellationTokenSource();
-
             _scanTimer.Start(_scanDelay, _scanInterval, ScanRepetitions);
 
             RaisePropertyChanged(nameof(IsScanRunning));
             RaisePropertyChanged(nameof(ScanFinishTime));
             RaisePropertyChanged(nameof(StartStopScanCommand));
         }
+
+        /// <summary>
+        /// Halts scanning and scan timer
+        /// </summary>
         public void StopScan()
         {
-            _scanTimer.Stop();
             _cancelScanTokenSource.Cancel();
+            _scanTimer.Stop();
+        }
+
+        /// <summary>
+        /// Stops scanning based on user input
+        /// </summary>
+        public async Task StopScanWithDialog()
+        {
+            bool dialogResult = await StopScanDialog(cancellationToken: _cancelScanTokenSource.Token);
+
+            if (dialogResult)
+            {
+                StopScan();
+            }
+        }
+
+        /// <summary>
+        /// Triggers a dialogue to confirm if the user wants to stop scanning
+        /// </summary>
+        /// <param name="timeout">Removes the dialogue if it is still running after this amount of milliseconds</param>
+        /// <param name="cancellationToken">Removes the dialogue if it is still running</param>
+        /// <returns><c>true</c> if the user confirms to stop scanning</returns>
+        protected async Task<bool> StopScanDialog(int timeout = 5000, CancellationToken cancellationToken = default)
+        {
+            DialogResult dialogResult = DialogResult.Negative;
+
+            try
+            {
+                // Ensure the dialog is closed if still open once scanning completed
+                using (var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+                {
+                    // Remove the dialogue after a timeout if no input is recieved
+                    linkedTokenSource.CancelAfter(timeout);
+
+                    IDialogSettings dialogSettings = new Services.Dialog.DialogSettings
+                    {
+                        AffirmativeButtonText = "Stop scanning",
+                        NegativeButtonText = "Continue scanning",
+                        // Using CancellationToken currently results in threading access error, see:
+                        // https://github.com/MahApps/MahApps.Metro/issues/3214
+                        //CancellationToken = linkedTokenSource.Token
+                    };
+
+                    // Show the dialogue until user input is recieved, or scanning is otherwise stopped
+                    dialogResult = await _dialogManager.ShowMessageAsync(
+                        this,
+                        "Stop scanning",
+                        "Are you sure you want to cancel scanning?",
+                        DialogStyle.AffirmativeAndNegative,
+                        dialogSettings
+                        );
+                }
+            }
+            catch (OperationCanceledException ex)
+            {
+                if (ex.CancellationToken.IsCancellationRequested)
+                {
+                    _log.LogDebug(ex, "Stop scanning dialog closed before user input recieved");
+                }
+                else
+                {
+                    _log.LogError(ex, "Stop scanning dialog failed to return");
+                    throw;
+                }
+            }
+
+            return dialogResult == DialogResult.Affirmative;
         }
 
         private void ScanTimer_Tick(object sender, EventArgs e)
@@ -445,6 +519,8 @@ namespace Mosey.ViewModels
 
         private void ScanTimer_Complete(object sender, EventArgs e)
         {
+            _cancelScanTokenSource.Cancel();
+
             // Apply any changes to settings that were made during scanning
             UpdateConfig(_appSettings.Get("UserSettings"));
 
@@ -507,7 +583,7 @@ namespace Mosey.ViewModels
             }
         }
 
-        private async void ScanAsync(CancellationToken cancellationToken = default(CancellationToken))
+        private async void ScanAsync(CancellationToken cancellationToken = default)
         {
             // Ensure device refresh is complete
             await _semaphore.WaitAsync();
@@ -536,7 +612,7 @@ namespace Mosey.ViewModels
             }
         }
 
-        public List<string> Scan(CancellationToken cancellationToken = default(CancellationToken))
+        public List<string> Scan(CancellationToken cancellationToken = default)
         {
             string scannerIDStr = string.Empty;
             string saveDateTime = DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat));
