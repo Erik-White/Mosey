@@ -1,8 +1,8 @@
 ﻿using System;
 using Microsoft.WindowsAPICodePack.Dialogs;
-using Mosey.Models;
+using Mosey.Models.Dialog;
 
-namespace Mosey.Services
+namespace Mosey.Services.Dialog
 {
     /// <summary>
     /// A dialog window that allows selection of a single directory
@@ -13,12 +13,18 @@ namespace Mosey.Services
         private string _selectedPath;
         private string _initialDirectory;
 
+        /// <summary>
+        /// Text displayed in the dialog window title bar
+        /// </summary>
         public string Title
         {
             get { return _title ?? string.Empty; }
             set { _title = value; }
         }
 
+        /// <summary>
+        /// Initial file browsing directory
+        /// </summary>
         public string InitialDirectory
         {
             get

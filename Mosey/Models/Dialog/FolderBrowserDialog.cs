@@ -1,12 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
-namespace Mosey.Models
+namespace Mosey.Models.Dialog
 {
-    public interface IDialog
-    {
-        string Title { get; set; }
-    }
-
+    /// <summary>
+    /// Provide an interface to allow user to select file system objects
+    /// </summary>
     public interface IFileBrowserDialog : IDialog
     {
         string InitialDirectory { get; set; }
