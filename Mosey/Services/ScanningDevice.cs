@@ -128,25 +128,66 @@ namespace Mosey.Services
             }
         }
 
+        /// <summary>
+        /// Attempts to create a <see cref="ScanningDevice"/> instance using the <paramref name="deviceID"/>
+        /// Returns <see langword="null"/> if no matching device can be found
+        /// </summary>
+        /// <param name="deviceID">A unique <see cref="IDevice.DeviceID"/> to match to a device listed by the WIA driver</param>
+        /// <returns>A <see cref="ScanningDevice"/> instance matching the <paramref name="deviceID"/></returns>
         public ScanningDevice AddDevice(string deviceID)
         {
             return AddDevice(deviceID, null);
         }
 
-        public ScanningDevice AddDevice(string deviceID, IImagingDeviceConfig config)
+        /// <summary>
+        /// Attempts to create a <see cref="ScanningDevice"/> instance using the <paramref name="deviceID"/>
+        /// Returns <see langword="null"/> if no matching device can be found
+        /// </summary>
+        /// <param name="deviceID">A unique <see cref="IDevice.DeviceID"/> to match to a device listed by the WIA driver</param>
+        /// <param name="config"><see cref="IImagingDeviceConfig"/> settings for the returned <see cref="ScanningDevice"/></param>
+        /// <param name="connectRetries">The number of attempts to retry connecting to the WIA driver</param>
+        /// <returns>A <see cref="ScanningDevice"/> instance matching the <paramref name="deviceID"/></returns>
+        public ScanningDevice AddDevice(string deviceID, IImagingDeviceConfig config, int connectRetries = 1)
         {
-            // Attempt to create a new ScanningDevice from the deviceID
-            ScannerSettings settings = SystemDevices.GetScannerDevices().Where(x => x.Id == deviceID).FirstOrDefault();
+            _semaphore.Wait();
+            ScannerSettings settings = null;
 
-            if (settings is null)
+            // Wait until the WIA device manager is ready
+            while (connectRetries > 0)
+            {
+                try
+                {
+                    // Attempt to create a new ScanningDevice from the deviceID
+                    settings = SystemDevices.GetScannerDevices().Where(x => x.Id == deviceID).FirstOrDefault();
+                    break;
+                }
+                catch (Exception ex) when (ex is COMException | ex is NullReferenceException)
+                {
+                    if (--connectRetries > 0)
+                    {
+                        // Wait until the scanner is ready if it is warming up, busy etc
+                        // Also retry if the WIA driver does not respond in time (NullReference)
+                        System.Threading.Thread.Sleep(1000);
+                        continue;
+                    }
+                    throw;
+                }
+                finally
+                {
+                    _semaphore.Release();
+                }
+            }
+            if (settings != null)
+            {
+                ScanningDevice device = new ScanningDevice(settings, config);
+                AddDevice(device);
+
+                return device;
+            }
+            else
             {
                 return null;
             }
-            ScanningDevice device = new ScanningDevice(settings, config);
-
-            AddDevice(device);
-
-            return device;
         }
 
         public void SetDeviceEnabled(IImagingDevice device, bool enabled)
