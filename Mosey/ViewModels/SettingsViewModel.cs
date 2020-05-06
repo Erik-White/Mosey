@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Mosey.Configuration;
 using Mosey.Models;
+using Mosey.Models.Dialog;
 
 namespace Mosey.ViewModels
 {

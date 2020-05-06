@@ -6,7 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Mosey.Configuration;
 using Mosey.Models;
+using Mosey.Models.Dialog;
 using Mosey.Services;
+using Mosey.Services.Dialog;
 using Mosey.ViewModels;
 
 namespace Mosey
@@ -56,6 +58,7 @@ namespace Mosey
                 // Services
                 .AddTransient<IIntervalTimer, IntervalTimer>()
                 .AddTransient<IFolderBrowserDialog, FolderBrowserDialog>()
+                .AddScoped<IDialogManager, DialogManager>()
                 .AddTransient<IImagingDevice, ScanningDevice>()
                 .AddSingleton<IImagingDevices<IImagingDevice>, ScanningDevices>()
 

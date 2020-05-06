@@ -11,6 +11,7 @@
         xmlns:Converters="clr-namespace:Mosey.ViewModels.Converters"
         xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         xmlns:CustomControls="clr-namespace:Mosey.Models.Controls"
+        xmlns:Dialog="clr-namespace:MahApps.Metro.Controls.Dialogs;assembly=MahApps.Metro"
         xmlns:IconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         mc:Ignorable="d"
         WindowStartupLocation="CenterScreen"
@@ -21,6 +22,7 @@
         Style="{StaticResource StyleBase}"
         GlowBrush="{DynamicResource AccentColorBrush}"
         UseLayoutRounding="True"
+        Dialog:DialogParticipation.Register="{Binding}"
         >
     <!--
     Data context is set at window instantiation
