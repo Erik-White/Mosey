@@ -11,8 +11,8 @@ using Microsoft.Extensions.Options;
 using Mosey.Configuration;
 using Mosey.Models;
 using Mosey.Models.Dialog;
-using AsyncAwaitBestPractices.MVVM;
 using Mosey.Services;
+using AsyncAwaitBestPractices.MVVM;
 
 namespace Mosey.ViewModels
 {
@@ -157,7 +157,7 @@ namespace Mosey.ViewModels
             {
                 if (_scanTimer != null)
                 {
-                    return _scanTimer.Enabled;
+                    return _scanTimer.Enabled || _scannerDevices.IsImagingInProgress;
                 }
                 else
                 {
@@ -170,7 +170,7 @@ namespace Mosey.ViewModels
         {
             get
             {
-                if (IsScanRunning)
+                if (IsScanRunning && _scanTimer.RepetitionsCount != 0)
                 {
                     DateTime scanNext = _scanTimer.StartTime.Add((_scanTimer.RepetitionsCount) * _scanTimer.Interval);
                     return scanNext.Subtract(DateTime.Now);
@@ -234,7 +234,7 @@ namespace Mosey.ViewModels
             IViewModel settingsViewModel,
             IOptionsMonitor<AppSettings> appSettings,
             ILogger<MainViewModel> logger
-        )
+            )
         {
             _scanTimer = intervalTimer;
             _uiTimer = (IIntervalTimer)intervalTimer.Clone();
@@ -256,7 +256,7 @@ namespace Mosey.ViewModels
             _uiTimer.Start(_uiTimerConfig.Delay, _uiTimerConfig.Interval);
 
             // Start a task loop to update the scanners collection
-            RefreshDevicesAsync();
+            _ = RefreshDevicesAsync();
         }
 
         public override IViewModel Create()
@@ -323,7 +323,7 @@ namespace Mosey.ViewModels
         {
             get
             {
-                _ManualScanCommand = new RelayCommand(o => ScanAsync(), o => !ScannerDevices.IsEmpty && !ScannerDevices.IsImagingInProgress && !IsScanRunning);
+                _ManualScanCommand = new RelayCommand(o => _ = ScanAsync(), o => !ScannerDevices.IsEmpty && !ScannerDevices.IsImagingInProgress && !IsScanRunning);
 
                 return _ManualScanCommand;
             }
@@ -417,6 +417,11 @@ namespace Mosey.ViewModels
         }
         #endregion Commands
 
+        /// <summary>
+        /// Add an <see cref="IViewModel"/> to this parent collection
+        /// </summary>
+        /// <param name="viewModelFactory"></param>
+        /// <returns>A new <see cref="IViewModel"/> instance</returns>
         public IViewModel AddChildViewModel(IFactory<IViewModel> viewModelFactory)
         {
             var viewModel = viewModelFactory.Create();
@@ -425,6 +430,9 @@ namespace Mosey.ViewModels
             return viewModel;
         }
 
+        /// <summary>
+        /// Begin repeated scanning with an <see cref="IIntervalTimer"/>
+        /// </summary>
         public void StartScan()
         {
             _cancelScanTokenSource = new CancellationTokenSource();
@@ -509,18 +517,33 @@ namespace Mosey.ViewModels
 
             return dialogResult == DialogResult.Affirmative;
         }
-
-        private void ScanTimer_Tick(object sender, EventArgs e)
+        
+        /// <summary>
+        /// Initiate scanning with <see cref="ScanAsync"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void ScanTimer_Tick(object sender, EventArgs e)
         {
-            ScanAsync(_cancelScanTokenSource.Token);
+            await ScanAsync(_cancelScanTokenSource.Token);
 
             // Update progress
             RaisePropertyChanged(nameof(ScanNextTime));
             RaisePropertyChanged(nameof(ScanRepetitionsCount));
         }
 
-        private void ScanTimer_Complete(object sender, EventArgs e)
+        /// <summary>
+        /// Tidy up after scanning is completed
+        /// Raised by <see cref="_scanTimer"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void ScanTimer_Complete(object sender, EventArgs e)
         {
+            // Wait for scanning to complete
+            await _semaphore.WaitAsync();
+
+            // Ensure all other scanning related operations are stopped
             _cancelScanTokenSource.Cancel();
 
             // Apply any changes to settings that were made during scanning
@@ -533,13 +556,23 @@ namespace Mosey.ViewModels
             RaisePropertyChanged(nameof(StartStopScanCommand));
 
             _log.LogInformation($"Scanning complete at {DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat))} with {ScanRepetitionsCount} repetitions.");
+            _semaphore.Release();
         }
 
+        /// <summary>
+        /// Update user interface components
+        /// Raised by <see cref="_uiTimer"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void UITimer_Tick(object sender, EventArgs e)
         {
             RaisePropertyChanged(nameof(ScanNextTime));
         }
 
+        /// <summary>
+        /// Update <see cref="ScannerDevices"/> with any newly connected scanners
+        /// </summary>
         private void RefreshDevices()
         {
             bool enableDevices = !IsScanRunning ? _userDeviceConfig.EnableWhenConnected : _userDeviceConfig.EnableWhenScanning;
@@ -550,7 +583,13 @@ namespace Mosey.ViewModels
             RaisePropertyChanged(nameof(StartStopScanCommand));
         }
 
-        private async void RefreshDevicesAsync(int intervalSeconds = 1, CancellationToken cancellationToken = default(CancellationToken))
+        /// <summary>
+        /// Starts a loop that continually refreshes the list of available scanners
+        /// </summary>
+        /// <param name="intervalSeconds">The duration between refreshes</param>
+        /// <param name="cancellationToken">Used to stop the refresh loop</param>
+        /// <returns></returns>
+        private async Task RefreshDevicesAsync(int intervalSeconds = 1, CancellationToken cancellationToken = default(CancellationToken))
         {
             while (true)
             {
@@ -585,35 +624,11 @@ namespace Mosey.ViewModels
             }
         }
 
-        private async void ScanAsync(CancellationToken cancellationToken = default)
-        {
-            // Ensure device refresh is complete
-            await _semaphore.WaitAsync();
-
-            try
-            {
-                // The apartment state MUST be single threaded for COM interop
-                // Runtime callable wrappers must be disposed manually to prevent problems with early disposal of COM servers
-                using (StaTaskScheduler staQueue = new StaTaskScheduler(numberOfThreads: 1, disableComObjectEagerCleanup: true))
-                {
-                    await Task.Factory.StartNew(() =>
-                    {
-                        // Obtain images from scanners
-                        Scan(cancellationToken);
-                    }, cancellationToken, TaskCreationOptions.LongRunning, staQueue)
-                    .ContinueWith(t =>
-                    {
-                        // Manually clear (RCWs) to prevent memory leaks
-                        System.Runtime.InteropServices.Marshal.CleanupUnusedObjectsInCurrentContext();
-                    }, staQueue);
-                }
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
-        }
-
+        /// <summary>
+        /// Initiate scanning with all available <see cref="ScanningDevice"/>s
+        /// </summary>
+        /// <param name="cancellationToken">Used to stop current scanning operations</param>
+        /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
         public List<string> Scan(CancellationToken cancellationToken = default)
         {
             string scannerIDStr = string.Empty;
@@ -682,6 +697,44 @@ namespace Mosey.ViewModels
             }
 
             return imagePaths;
+        }
+
+        /// <summary>
+        /// Initiate scanning with all available <see cref="ScanningDevice"/>s
+        /// </summary>
+        /// <param name="cancellationToken">Used to stop current scanning operations</param>
+        /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
+        private async Task<List<string>> ScanAsync(CancellationToken cancellationToken = default)
+        {
+            List<string> results = new List<string>();
+
+            // Ensure device refresh or other operations are complete
+            await _semaphore.WaitAsync();
+
+            try
+            {
+                // The apartment state MUST be single threaded for COM interop
+                // Runtime callable wrappers must be disposed manually to prevent problems with early disposal of COM servers
+                using (StaTaskScheduler staQueue = new StaTaskScheduler(numberOfThreads: 1, disableComObjectEagerCleanup: true))
+                {
+                    await Task.Factory.StartNew(() =>
+                    {
+                        // Obtain images from scanners
+                        results = Scan(cancellationToken);
+                    }, cancellationToken, TaskCreationOptions.LongRunning, staQueue)
+                    .ContinueWith(t =>
+                    {
+                        // Manually clear (RCWs) to prevent memory leaks
+                        System.Runtime.InteropServices.Marshal.CleanupUnusedObjectsInCurrentContext();
+                    }, staQueue);
+                }
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+
+            return results;
         }
 
         /// <summary>
