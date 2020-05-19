@@ -5,9 +5,12 @@ using System.ComponentModel;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Drawing;
 using Microsoft.Extensions.Configuration;
 using DNTScanner.Core;
 using Mosey.Models;
+using System.Drawing.Imaging;
+using System.Windows.Media.Imaging;
 
 namespace Mosey.Services
 {
@@ -479,56 +482,78 @@ namespace Mosey.Services
             }
         }
 
+        /// <summary>
+        /// Write an image captured with <see cref="GetImage"/> to disk
+        /// Images are stored in the user's <see cref="Environment.SpecialFolder.MyPictures"/> directory as PNGs
+        /// </summary>
         public void SaveImage()
         {
-            SaveImage("image");
+            string directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(), System.Reflection.Assembly.GetExecutingAssembly().GetName().Name);
+            SaveImage("image", directory, "png");
         }
 
-        public IEnumerable<string> SaveImage(string fileName, string directory = "", string fileFormat = "")
+        /// <summary>
+        /// Write an image captured with <see cref="GetImage"/> to disk
+        /// </summary>
+        /// <param name="fileName">The image file name, the file extension ignored and instead inferred from <paramref name="fileFormat"/></param>
+        /// <param name="directory">The directory path to use when storing the image</param>
+        /// <param name="fileFormat">The image format file extension <see cref="string"/> used to store the image</param>
+        /// <returns>A collection of file path <see cref="string"/>s for the newly created images</returns>
+        public IEnumerable<string> SaveImage(string fileName, string directory, string fileFormat = "png")
+        {
+            // Parse the file extension and ensure it is valid
+            var imageFormat = new ImageFormat().FromString(fileFormat);
+
+            return SaveImage(fileName, directory, imageFormat);
+        }
+
+        /// <summary>
+        /// Write an image captured with <see cref="GetImage"/> to disk
+        /// Images are stored losslessly (in supported formats) with a colour depth of 24 bit per pixel
+        /// </summary>
+        /// <param name="fileName">The image file name, the file extension ignored and instead inferred from <paramref name="fileFormat"/></param>
+        /// <param name="directory">The directory path to use when storing the image</param>
+        /// <param name="fileFormat">The <see cref="ImageFormat"/> used to store the image</param>
+        /// <returns>A collection of file path <see cref="string"/>s for the newly created images</returns>
+        public IEnumerable<string> SaveImage(string fileName, string directory, ImageFormat fileFormat = ImageFormat.Png)
         {
             if (Images == null | Images.Count == 0)
             {
                 throw new InvalidOperationException($"No images available. Please call the {nameof(GetImage)} method first.");
             }
-
-            // Check that the file extension is valid
-            ImageFormat imageFormat = ImageFormatFromString(fileFormat);
-
-            // Save to the user's Pictures folder if none is set
-            if (string.IsNullOrWhiteSpace(directory))
+            if (string.IsNullOrWhiteSpace(directory) || string.IsNullOrWhiteSpace(directory))
             {
-                directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(), System.Reflection.Assembly.GetExecutingAssembly().GetName().Name);
+                throw new ArgumentException("A valid filename and directory must be supplied");
             }
+
+            // Get full filename and path
             Directory.CreateDirectory(directory);
-
             fileName = Path.Combine(directory, fileName);
-            fileName = Path.ChangeExtension(fileName, imageFormat.ToString().ToLower());
+            fileName = Path.ChangeExtension(fileName, fileFormat.ToString().ToLower());
 
-            // Write all images to disk
-            foreach (byte[] image in Images)
+            // Use lossless compression with highest quality
+            using (EncoderParameters encoderParameters = new EncoderParameters(3))
+            using (EncoderParameter encoderCompression = new EncoderParameter(Encoder.Compression, (long)EncoderValue.CompressionLZW))
+            using (EncoderParameter encoderQuality = new EncoderParameter(Encoder.Quality, 100L))
+            using (EncoderParameter encoderColorDepth = new EncoderParameter(Encoder.ColorDepth, 24L))
             {
-                File.WriteAllBytes(fileName, image);
+                ImageCodecInfo codecInfo = ImageCodecInfo.GetImageDecoders().First(codec => codec.FormatID == fileFormat.ToSystemImageFormat().Guid);
+                encoderParameters.Param[0] = encoderCompression;
+                encoderParameters.Param[1] = encoderQuality;
+                encoderParameters.Param[2] = encoderColorDepth;
+
+                foreach (byte[] bitmap in Images)
+                {
+                    // Write all images to disk
+                    using (Image image = Image.FromStream(new MemoryStream(bitmap)))
+                    {
+                        image.Save(fileName, codecInfo, encoderParameters);
+                    }
+                }
                 yield return fileName;
             }
         }
 
-        /// <summary>
-        /// Convert a file extension string to an ImageFormat enum.
-        /// Allows conversion of type from json settings file
-        /// </summary>
-        /// <param name="imageFormatStr"></param>
-        /// <returns>An ImageFormat enum</returns>
-        public static ImageFormat ImageFormatFromString(string imageFormatStr)
-        {
-            if (Enum.TryParse(imageFormatStr, ignoreCase: true, out ImageFormat imageFormat))
-            {
-                return imageFormat;
-            }
-            else
-            {
-                throw new FileFormatException($"{imageFormatStr} is not a valid image file extension.");
-            }
-        }
 
         private static int GetSimpleID(string deviceID)
         {
@@ -629,6 +654,38 @@ namespace Mosey.Services
         public object Clone()
         {
             return MemberwiseClone();
+        }
+    }
+    public static class ImageFormatExtensions
+    {
+        /// <summary>
+        /// Convert a file extension string to an <see cref="ScanningDevice.ImageFormat"/> <see cref="Enum"/>.
+        /// </summary>
+        /// <param name="value">An <see cref="ScanningDevice.ImageFormat"/> instance</param>
+        /// <param name="imageFormatStr">A file extension <see cref="string"/></param>
+        /// <returns>An <see cref="ScanningDevice.ImageFormat"/> <see cref="Enum"/></returns>
+        public static ScanningDevice.ImageFormat FromString(this ScanningDevice.ImageFormat value, string imageFormatStr)
+        {
+            if (Enum.TryParse(imageFormatStr, ignoreCase: true, out value))
+            {
+                return value;
+            }
+            else
+            {
+                throw new ArgumentException($"{imageFormatStr} is not a supported image file extension.");
+            }
+        }
+
+        /// <summary>
+        /// Convert to a <see cref="System.Drawing.Imaging.ImageFormat"/> instance.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns>A <see cref="System.Drawing.Imaging.ImageFormat"/> instance</returns>
+        public static System.Drawing.Imaging.ImageFormat ToSystemImageFormat(this ScanningDevice.ImageFormat value)
+        {
+            return (System.Drawing.Imaging.ImageFormat)typeof(System.Drawing.Imaging.ImageFormat)
+                    .GetProperty(value.ToString(), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.IgnoreCase)
+                    .GetValue(null);
         }
     }
 }
