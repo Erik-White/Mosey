@@ -5,12 +5,11 @@ using System.ComponentModel;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Drawing;
+using System.Drawing.Imaging;
 using Microsoft.Extensions.Configuration;
 using DNTScanner.Core;
 using Mosey.Models;
-using System.Drawing.Imaging;
-using System.Windows.Media.Imaging;
+using Mosey.Services.Imaging.Extensions;
 
 namespace Mosey.Services
 {
@@ -435,7 +434,7 @@ namespace Mosey.Services
                             );
 
                         // Replace any existing images
-                        Images = new List<byte[]>();
+                        ClearImages();
 
                         // Retrieve image(s) from scanner
                         scannerDevice.PerformScan(format);
@@ -443,11 +442,13 @@ namespace Mosey.Services
                         // Store images for processing etc
                         foreach (byte[] image in scannerDevice.ExtractScannedImageFiles())
                         {
-                            Images.Add(image.ToArray());
+                            // Convert image to PNG format before storing byte array
+                            // Greatly reduces memory footprint compared to raw BMP
+                            Images.Add(image.AsFormat(ImageFormat.Png.ToDrawingImageFormat()));
                         }
                     }
 
-                    // Cancel loop if successful
+                    // Cancel retry loop if successful
                     break;
                 }
                 catch (Exception ex) when (ex is COMException | ex is NullReferenceException)
@@ -513,9 +514,9 @@ namespace Mosey.Services
         /// </summary>
         /// <param name="fileName">The image file name, the file extension ignored and instead inferred from <paramref name="fileFormat"/></param>
         /// <param name="directory">The directory path to use when storing the image</param>
-        /// <param name="fileFormat">The <see cref="ImageFormat"/> used to store the image</param>
+        /// <param name="imageFormat">The <see cref="ImageFormat"/> used to store the image</param>
         /// <returns>A collection of file path <see cref="string"/>s for the newly created images</returns>
-        public IEnumerable<string> SaveImage(string fileName, string directory, ImageFormat fileFormat = ImageFormat.Png)
+        public IEnumerable<string> SaveImage(string fileName, string directory, ImageFormat imageFormat = ImageFormat.Png)
         {
             if (Images == null | Images.Count == 0)
             {
@@ -529,31 +530,27 @@ namespace Mosey.Services
             // Get full filename and path
             Directory.CreateDirectory(directory);
             fileName = Path.Combine(directory, fileName);
-            fileName = Path.ChangeExtension(fileName, fileFormat.ToString().ToLower());
+            fileName = Path.ChangeExtension(fileName, imageFormat.ToString().ToLower());
 
             // Use lossless compression with highest quality
-            using (EncoderParameters encoderParameters = new EncoderParameters(3))
-            using (EncoderParameter encoderCompression = new EncoderParameter(Encoder.Compression, (long)EncoderValue.CompressionLZW))
-            using (EncoderParameter encoderQuality = new EncoderParameter(Encoder.Quality, 100L))
-            using (EncoderParameter encoderColorDepth = new EncoderParameter(Encoder.ColorDepth, 24L))
+            using (EncoderParameters encoderParameters = new EncoderParameters().AddParams(
+                compression: EncoderValue.CompressionLZW,
+                quality: 100,
+                colorDepth: 32
+                ))
             {
-                ImageCodecInfo codecInfo = ImageCodecInfo.GetImageDecoders().First(codec => codec.FormatID == fileFormat.ToSystemImageFormat().Guid);
-                encoderParameters.Param[0] = encoderCompression;
-                encoderParameters.Param[1] = encoderQuality;
-                encoderParameters.Param[2] = encoderColorDepth;
-
-                foreach (byte[] bitmap in Images)
+                // Write all images to disk
+                foreach (var imageBytes in Images)
                 {
-                    // Write all images to disk
-                    using (Image image = Image.FromStream(new MemoryStream(bitmap)))
-                    {
-                        image.Save(fileName, codecInfo, encoderParameters);
-                    }
+                    imageBytes.ToImage().Save(
+                        fileName,
+                        imageFormat.ToDrawingImageFormat().CodecInfo(),
+                        encoderParameters
+                        );
+                    yield return fileName;
                 }
-                yield return fileName;
             }
         }
-
 
         private static int GetSimpleID(string deviceID)
         {
@@ -656,6 +653,7 @@ namespace Mosey.Services
             return MemberwiseClone();
         }
     }
+
     public static class ImageFormatExtensions
     {
         /// <summary>
@@ -681,7 +679,7 @@ namespace Mosey.Services
         /// </summary>
         /// <param name="value"></param>
         /// <returns>A <see cref="System.Drawing.Imaging.ImageFormat"/> instance</returns>
-        public static System.Drawing.Imaging.ImageFormat ToSystemImageFormat(this ScanningDevice.ImageFormat value)
+        public static System.Drawing.Imaging.ImageFormat ToDrawingImageFormat(this ScanningDevice.ImageFormat value)
         {
             return (System.Drawing.Imaging.ImageFormat)typeof(System.Drawing.Imaging.ImageFormat)
                     .GetProperty(value.ToString(), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.IgnoreCase)
