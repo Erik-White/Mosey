@@ -31,7 +31,7 @@
     </Window.DataContext>
     -->
     <Window.Resources>
-        <CollectionViewSource x:Key="ScannerDevicesOrdered" Source="{Binding Path=ScannerDevices}">
+        <CollectionViewSource x:Key="DevicesCollectionOrdered" Source="{Binding Path=Devices}">
             <CollectionViewSource.SortDescriptions>
                 <scm:SortDescription PropertyName="ID" Direction="Ascending" />
             </CollectionViewSource.SortDescriptions>
@@ -256,8 +256,8 @@
                 </Grid>
             </Border>
             <!--#region Display scanners and their properties -->
-            <ScrollViewer DockPanel.Dock="Top" Visibility="{Binding ScannerDevices.IsEmpty, Converter={StaticResource BoolToInvertedVisibilityConverter}}" Margin="{StaticResource Margin.Vertical.Default}" VerticalScrollBarVisibility="Visible" VerticalAlignment="Stretch">
-                <ItemsControl ItemsSource="{Binding Source={StaticResource ScannerDevicesOrdered}}">
+            <ScrollViewer DockPanel.Dock="Top" Visibility="{Binding DevicesCollection.IsEmpty, Converter={StaticResource BoolToInvertedVisibilityConverter}}" Margin="{StaticResource Margin.Vertical.Default}" VerticalScrollBarVisibility="Visible" VerticalAlignment="Stretch">
+                <ItemsControl ItemsSource="{Binding Source={StaticResource DevicesCollectionOrdered}}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Grid VerticalAlignment="Stretch">
@@ -328,7 +328,7 @@
                 </ItemsControl>
             </ScrollViewer>
             <!-- Display a message if no scanners found -->
-            <StackPanel DockPanel.Dock="Top" Visibility="{Binding ScannerDevices.IsEmpty, Converter={StaticResource BoolToVisibilityConverter}}" HorizontalAlignment="Center">
+            <StackPanel DockPanel.Dock="Top" Visibility="{Binding DevicesCollection.IsEmpty, Converter={StaticResource BoolToVisibilityConverter}}" HorizontalAlignment="Center">
                 <TextBlock Text="Waiting for scanners" Style="{StaticResource TextBlockHeading}" />
                 <Label Style="{StaticResource IconExtraLarge}">
                     <IconPacks:Material Kind="Brightness5" Spin="True" SpinDuration="1.8" Height="80" Width="80" />

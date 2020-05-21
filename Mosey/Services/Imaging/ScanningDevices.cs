@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.Configuration;
 using DNTScanner.Core;
 using Mosey.Models;
+using System.Collections.ObjectModel;
 
 namespace Mosey.Services.Imaging
 {
@@ -13,11 +14,13 @@ namespace Mosey.Services.Imaging
     /// Items are not removed from the collection when it is refreshed
     /// Instead, their status is updated to indicate that they may not be connected
     /// </summary>
-    public class ScanningDevices : ObservableItemsCollection<IImagingDevice>, IImagingDevices<IImagingDevice>
+    public class ScanningDevices : IImagingDevices<IImagingDevice>
     {
         public int ConnectRetries { get; set; } = 10;
-        public bool IsImagingInProgress { get { return this.Any(x => x.IsImaging is true); } }
-        public bool IsEmpty { get { return (Count == 0); } }
+        public IEnumerable<IImagingDevice> Devices { get { return _devices; } }
+        public bool IsImagingInProgress { get { return _devices.Any(x => x.IsImaging is true); } }
+        public bool IsEmpty { get { return (_devices.Count == 0); } }
+        private ICollection<IImagingDevice> _devices = new ObservableItemsCollection<IImagingDevice>();
         private static System.Threading.SemaphoreSlim _semaphore = new System.Threading.SemaphoreSlim(1, 1);
 
         public ScanningDevices()
@@ -38,7 +41,7 @@ namespace Mosey.Services.Imaging
         public void GetDevices(IImagingDeviceConfig deviceConfig)
         {
             // Empty the collection
-            Clear();
+            _devices.Clear();
 
             // Populate a new collection of scanners using specified image settings
             foreach (ScanningDevice device in SystemScanners(deviceConfig, ConnectRetries))
@@ -51,7 +54,7 @@ namespace Mosey.Services.Imaging
         public void RefreshDevices()
         {
             // Get a new collection of devices if none already present
-            if (Count == 0)
+            if (_devices.Count == 0)
             {
                 GetDevices();
             }
@@ -67,7 +70,7 @@ namespace Mosey.Services.Imaging
             if (deviceProperties.Count == 0)
             {
                 // No devices detected, any current devices have been disconnected
-                foreach (ScanningDevice device in this)
+                foreach (ScanningDevice device in _devices)
                 {
                     device.IsConnected = false;
                 }
@@ -80,7 +83,7 @@ namespace Mosey.Services.Imaging
             {
                 string deviceID = properties["Unique Device ID"].ToString();
 
-                if (!this.Where(d => d.DeviceID == deviceID).Any())
+                if (!_devices.Where(d => d.DeviceID == deviceID).Any())
                 {
                     // Create a new device and add it to the collection
                     ScanningDevice device = AddDevice(deviceID, deviceConfig);
@@ -88,12 +91,12 @@ namespace Mosey.Services.Imaging
                 }
                 else
                 {
-                    ScanningDevice existingDevice = (ScanningDevice)this.Where(d => d.DeviceID == deviceID && !d.IsConnected).FirstOrDefault();
+                    ScanningDevice existingDevice = (ScanningDevice)_devices.Where(d => d.DeviceID == deviceID && !d.IsConnected).FirstOrDefault();
                     if (existingDevice != null)
                     {
                         // Remove the existing device from the collection
                         bool enabled = existingDevice.IsEnabled;
-                        Remove(existingDevice);
+                        _devices.Remove(existingDevice);
 
                         // Replace with the new and updated device
                         ScanningDevice device = AddDevice(deviceID, deviceConfig);
@@ -102,7 +105,7 @@ namespace Mosey.Services.Imaging
                 }
 
                 // If the device is in the collection but no longer found
-                IEnumerable<IImagingDevice> devicesRemoved = this.Where(l1 => !deviceProperties.Any(l2 => l1.DeviceID == l2["Unique Device ID"].ToString()));
+                IEnumerable<IImagingDevice> devicesRemoved = _devices.Where(l1 => !deviceProperties.Any(l2 => l1.DeviceID == l2["Unique Device ID"].ToString()));
                 if (devicesRemoved.Count() > 0)
                 {
                     foreach (ScanningDevice device in devicesRemoved)
@@ -113,11 +116,16 @@ namespace Mosey.Services.Imaging
             }
         }
 
+        /// <summary>
+        /// Add a <see cref="ScanningDevice"/> to the collection.
+        /// </summary>
+        /// <param name="device">A <see cref="ScanningDevice"/> instance</param>
+        /// <exception cref="ArgumentException">If a device with the same <see cref="IDevice.ID"/> already exists in the collection</exception>
         public void AddDevice(ScanningDevice device)
         {
-            if (!Contains(device))
+            if (!_devices.Contains(device))
             {
-                Add(device);
+                _devices.Add(device);
             }
             else
             {
@@ -189,12 +197,12 @@ namespace Mosey.Services.Imaging
 
         public void SetDeviceEnabled(IImagingDevice device, bool enabled)
         {
-            this.Where(x => x.DeviceID == device.DeviceID).First().IsEnabled = enabled;
+            _devices.Where(x => x.DeviceID == device.DeviceID).First().IsEnabled = enabled;
         }
 
         public void SetDeviceEnabled(string deviceID, bool enabled)
         {
-            this.Where(x => x.DeviceID == deviceID).First().IsEnabled = enabled;
+            _devices.Where(x => x.DeviceID == deviceID).First().IsEnabled = enabled;
         }
 
         public void EnableAll()
@@ -210,7 +218,7 @@ namespace Mosey.Services.Imaging
         private void SetByEnabled(bool enabled)
         {
             // Set the IsEnabled property on all members of the collection
-            foreach (IImagingDevice device in this)
+            foreach (IImagingDevice device in _devices)
             {
                 device.IsEnabled = enabled;
             }
@@ -218,7 +226,7 @@ namespace Mosey.Services.Imaging
 
         public IEnumerable<IImagingDevice> GetByEnabled(bool enabled)
         {
-            return this.Where(x => x.IsEnabled = enabled).AsEnumerable();
+            return _devices.Where(x => x.IsEnabled = enabled).AsEnumerable();
         }
 
         /// <summary>

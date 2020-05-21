@@ -2,8 +2,9 @@
 
 namespace Mosey.Models
 {
-    public interface IDeviceCollection<T> : IEnumerable<T> where T : IDevice
+    public interface IDeviceCollection<T> where T : IDevice
     {
+        IEnumerable<T> Devices { get; }
         void EnableAll();
         void DisableAll();
         void SetDeviceEnabled(T device, bool enabled);
