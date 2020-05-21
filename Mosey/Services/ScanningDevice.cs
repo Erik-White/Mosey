@@ -5,9 +5,11 @@ using System.ComponentModel;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Drawing.Imaging;
 using Microsoft.Extensions.Configuration;
 using DNTScanner.Core;
 using Mosey.Models;
+using Mosey.Services.Imaging.Extensions;
 
 namespace Mosey.Services
 {
@@ -432,7 +434,7 @@ namespace Mosey.Services
                             );
 
                         // Replace any existing images
-                        Images = new List<byte[]>();
+                        ClearImages();
 
                         // Retrieve image(s) from scanner
                         scannerDevice.PerformScan(format);
@@ -440,11 +442,13 @@ namespace Mosey.Services
                         // Store images for processing etc
                         foreach (byte[] image in scannerDevice.ExtractScannedImageFiles())
                         {
-                            Images.Add(image.ToArray());
+                            // Convert image to PNG format before storing byte array
+                            // Greatly reduces memory footprint compared to raw BMP
+                            Images.Add(image.AsFormat(ImageFormat.Png.ToDrawingImageFormat()));
                         }
                     }
 
-                    // Cancel loop if successful
+                    // Cancel retry loop if successful
                     break;
                 }
                 catch (Exception ex) when (ex is COMException | ex is NullReferenceException)
@@ -479,54 +483,72 @@ namespace Mosey.Services
             }
         }
 
+        /// <summary>
+        /// Write an image captured with <see cref="GetImage"/> to disk
+        /// Images are stored in the user's <see cref="Environment.SpecialFolder.MyPictures"/> directory as PNGs
+        /// </summary>
         public void SaveImage()
         {
-            SaveImage("image");
+            string directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(), System.Reflection.Assembly.GetExecutingAssembly().GetName().Name);
+            SaveImage("image", directory, "png");
         }
 
-        public IEnumerable<string> SaveImage(string fileName, string directory = "", string fileFormat = "")
+        /// <summary>
+        /// Write an image captured with <see cref="GetImage"/> to disk
+        /// </summary>
+        /// <param name="fileName">The image file name, the file extension ignored and instead inferred from <paramref name="fileFormat"/></param>
+        /// <param name="directory">The directory path to use when storing the image</param>
+        /// <param name="fileFormat">The image format file extension <see cref="string"/> used to store the image</param>
+        /// <returns>A collection of file path <see cref="string"/>s for the newly created images</returns>
+        public IEnumerable<string> SaveImage(string fileName, string directory, string fileFormat = "png")
+        {
+            // Parse the file extension and ensure it is valid
+            var imageFormat = new ImageFormat().FromString(fileFormat);
+
+            return SaveImage(fileName, directory, imageFormat);
+        }
+
+        /// <summary>
+        /// Write an image captured with <see cref="GetImage"/> to disk
+        /// Images are stored losslessly (in supported formats) with a colour depth of 24 bit per pixel
+        /// </summary>
+        /// <param name="fileName">The image file name, the file extension ignored and instead inferred from <paramref name="fileFormat"/></param>
+        /// <param name="directory">The directory path to use when storing the image</param>
+        /// <param name="imageFormat">The <see cref="ImageFormat"/> used to store the image</param>
+        /// <returns>A collection of file path <see cref="string"/>s for the newly created images</returns>
+        public IEnumerable<string> SaveImage(string fileName, string directory, ImageFormat imageFormat = ImageFormat.Png)
         {
             if (Images == null | Images.Count == 0)
             {
                 throw new InvalidOperationException($"No images available. Please call the {nameof(GetImage)} method first.");
             }
-
-            // Check that the file extension is valid
-            ImageFormat imageFormat = ImageFormatFromString(fileFormat);
-
-            // Save to the user's Pictures folder if none is set
-            if (string.IsNullOrWhiteSpace(directory))
+            if (string.IsNullOrWhiteSpace(directory) || string.IsNullOrWhiteSpace(directory))
             {
-                directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(), System.Reflection.Assembly.GetExecutingAssembly().GetName().Name);
+                throw new ArgumentException("A valid filename and directory must be supplied");
             }
-            Directory.CreateDirectory(directory);
 
+            // Get full filename and path
+            Directory.CreateDirectory(directory);
             fileName = Path.Combine(directory, fileName);
             fileName = Path.ChangeExtension(fileName, imageFormat.ToString().ToLower());
 
-            // Write all images to disk
-            foreach (byte[] image in Images)
+            // Use lossless compression with highest quality
+            using (EncoderParameters encoderParameters = new EncoderParameters().AddParams(
+                compression: EncoderValue.CompressionLZW,
+                quality: 100,
+                colorDepth: 24
+                ))
             {
-                File.WriteAllBytes(fileName, image);
-                yield return fileName;
-            }
-        }
-
-        /// <summary>
-        /// Convert a file extension string to an ImageFormat enum.
-        /// Allows conversion of type from json settings file
-        /// </summary>
-        /// <param name="imageFormatStr"></param>
-        /// <returns>An ImageFormat enum</returns>
-        public static ImageFormat ImageFormatFromString(string imageFormatStr)
-        {
-            if (Enum.TryParse(imageFormatStr, ignoreCase: true, out ImageFormat imageFormat))
-            {
-                return imageFormat;
-            }
-            else
-            {
-                throw new FileFormatException($"{imageFormatStr} is not a valid image file extension.");
+                // Write all images to disk
+                foreach (var imageBytes in Images)
+                {
+                    imageBytes.ToImage().Save(
+                        fileName,
+                        imageFormat.ToDrawingImageFormat().CodecInfo(),
+                        encoderParameters
+                        );
+                    yield return fileName;
+                }
             }
         }
 
