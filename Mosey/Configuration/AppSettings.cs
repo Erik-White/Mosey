@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Mosey.Models;
 using Mosey.Services;
+using Mosey.Services.Imaging;
 
 namespace Mosey.Configuration
 {
