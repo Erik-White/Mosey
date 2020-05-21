@@ -536,7 +536,7 @@ namespace Mosey.Services
             using (EncoderParameters encoderParameters = new EncoderParameters().AddParams(
                 compression: EncoderValue.CompressionLZW,
                 quality: 100,
-                colorDepth: 32
+                colorDepth: 24
                 ))
             {
                 // Write all images to disk
