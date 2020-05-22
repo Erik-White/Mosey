@@ -3,45 +3,38 @@ using System.Collections.Generic;
 using System.Text;
 using DNTScanner.Core;
 using Mosey.Models;
+using Mosey.Services.Imaging.Extensions;
 
 namespace Mosey.Services.Imaging
 {
+    /// <summary>
+    /// Device settings used by a <see cref="ScanningDevice"/> when capturing an image.
+    /// </summary>
     public class ScanningDeviceSettings : IImagingDeviceConfig
     {
         public ImageColorFormat ColorFormat { get; set; } = ImageColorFormat.Color;
-        public ColorType ColorType { get { return ColorTypeFromFormat(ColorFormat); } }
         public int Resolution { get; set; }
         public int Brightness { get; set; }
         public int Contrast { get; set; }
 
+        /// <summary>
+        /// Initialize a new <see cref="ScannerDeviceSettings"/> instance.
+        /// </summary>
         public ScanningDeviceSettings() { }
 
+        /// <summary>
+        /// Initialize a new <see cref="ScannerDeviceSettings"/> instance.
+        /// </summary>
+        /// <param name="colorFormat">Image <see cref="ImageColorFormat"/></param>
+        /// <param name="resolution">Image resolution</param>
+        /// <param name="brightness">Image brightness</param>
+        /// <param name="contrast">Image contrast</param>
         public ScanningDeviceSettings(ImageColorFormat colorFormat, int resolution, int brightness, int contrast)
         {
             ColorFormat = colorFormat;
             Resolution = resolution;
             Brightness = brightness;
             Contrast = contrast;
-        }
-
-        /// <summary>
-        /// Returns a ColorType class from a ColorFormat Enum.
-        /// Allows conversion of type from json settings file
-        /// </summary>
-        /// <param name="colorFormat"></param>
-        /// <returns></returns>
-        public static ColorType ColorTypeFromFormat(ImageColorFormat colorFormat)
-        {
-            // ColorType properties are internal and not accessible for comparison
-            switch (colorFormat)
-            {
-                case ImageColorFormat.BlackAndWhite:
-                    return ColorType.BlackAndWhite;
-                case ImageColorFormat.Greyscale:
-                    return ColorType.Greyscale;
-                default:
-                    return ColorType.Color;
-            }
         }
 
         public object Clone()

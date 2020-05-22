@@ -1,54 +1,70 @@
-﻿using System;
+﻿using DNTScanner.Core;
+using Mosey.Models;
+using Mosey.Services.Imaging.Extensions;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using DNTScanner.Core;
-using Mosey.Models;
-using Mosey.Services.Imaging.Extensions;
 
 namespace Mosey.Services.Imaging
 {
-
-
     /// <summary>
-    /// Provides functionality for WIA enabled scanners
+    /// Represents a physical scanning device connected to the system.
     /// </summary>
-    public class ScanningDevice : IImagingDevice
+    public class ScanningDevice : PropertyChangedBase, IImagingDevice
     {
         public string Name { get { return _scannerSettings.Name; } }
         public int ID { get { return GetSimpleID(_scannerSettings.Id); } }
         public string DeviceID { get { return _scannerSettings.Id; } }
         public IList<KeyValuePair<string, object>> DeviceSettings { get { return _scannerSettings.ScannerDeviceSettings.ToList(); } }
+        
         public IList<byte[]> Images { get; protected internal set; } = new List<byte[]>();
-        public IList<int> SupportedResolutions { get { return _scannerSettings.SupportedResolutions; } }
         public IImagingDeviceConfig ImageSettings { get; set; }
-        public bool IsEnabled
-        {
-            get { return _isEnabled; }
-            set { SetField(ref _isEnabled, value); }
-        }
+
+        /// <inheritdoc cref="ScannerSettings.IsAutomaticDocumentFeeder"/>
+        public bool IsAutomaticDocumentFeeder { get { return _scannerSettings.IsAutomaticDocumentFeeder; } }
+
         public bool IsConnected
         {
             get { return _isConnected; }
             protected internal set { SetField(ref _isConnected, value); }
         }
+
+        /// <inheritdoc cref="ScannerSettings.IsDuplex"/>
+        public bool IsDuplex { get { return _scannerSettings.IsDuplex; } }
+
+        public bool IsEnabled
+        {
+            get { return _isEnabled; }
+            set { SetField(ref _isEnabled, value); }
+        }
+
+        /// <inheritdoc cref="ScannerSettings.IsFlatbed"/>
+        public bool IsFlatbed { get { return _scannerSettings.IsFlatbed; } }
+
         public bool IsImaging
         {
             get { return _isImaging; }
             private set { SetField(ref _isImaging, value); }
         }
-        public bool IsAutomaticDocumentFeeder { get { return _scannerSettings.IsAutomaticDocumentFeeder; } }
-        public bool IsDuplex { get { return _scannerSettings.IsDuplex; } }
-        public bool IsFlatbed { get { return _scannerSettings.IsFlatbed; } }
+
+        /// <summary>
+        /// 
+        /// </summary>
         public int ScanRetries
         {
             get { return _scanRetries; }
             set { SetField(ref _scanRetries, value); }
         }
+
+        /// <inheritdoc cref="ScannerSettings.SupportedResolutions"/>
+        public IList<int> SupportedResolutions { get { return _scannerSettings.SupportedResolutions; } }
+
+        /// <summary>
+        /// The image format used for encoding images captured by the <see cref="ScanningDevice"/>.
+        /// </summary>
         public enum ImageFormat
         {
             Bmp,
@@ -57,32 +73,41 @@ namespace Mosey.Services.Imaging
             Jpeg,
             Tiff
         }
-        public event PropertyChangedEventHandler PropertyChanged;
-        private bool _isEnabled;
+
         private bool _isConnected = true;
+        private bool _isEnabled;
         private bool _isImaging;
-        private int _scanRetries = 10;
+        private int _scanRetries = 5;
         private ScannerSettings _scannerSettings;
 
+        /// <summary>
+        /// Initialize a new instance using a <see cref="ScannerSettings"/> instance that represents a physical scanner.
+        /// </summary>
+        /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
         public ScanningDevice(ScannerSettings settings)
         {
             _scannerSettings = settings;
         }
 
+        /// <summary>
+        /// Initialize a new instance using a <see cref="ScannerSettings"/> instance that represents a physical scanner.
+        /// </summary>
+        /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
+        /// <param name="config">Device settings used when capturing an image</param>
         public ScanningDevice(ScannerSettings settings, IImagingDeviceConfig config)
         {
             _scannerSettings = settings;
             ImageSettings = config;
         }
 
-        public void GetImage()
-        {
-            GetImage(WiaImageFormat.Bmp);
-        }
-
         public void ClearImages()
         {
             Images = new List<byte[]>();
+        }
+
+        public void GetImage()
+        {
+            GetImage(WiaImageFormat.Bmp);
         }
 
         public void GetImage(WiaImageFormat format)
@@ -103,47 +128,25 @@ namespace Mosey.Services.Imaging
             {
                 try
                 {
-                    // Connect to the specified device and create a COM object representation
-                    using (ScannerDevice scannerDevice = new ScannerDevice(_scannerSettings))
+                    var deviceConfig = ImageSettings;
+                    // Default settings if none provided
+                    deviceConfig ??= new ScanningDeviceSettings
                     {
-                        // Configure the device
-                        IImagingDeviceConfig deviceConfig = ImageSettings;
-                        if (ImageSettings is null)
-                        {
-                            deviceConfig = new ScanningDeviceSettings
-                            {
-                                Brightness = 1,
-                                Contrast = 1,
-                                ColorFormat = ImageColorFormat.Color,
-                                // Select the highest resolution available
-                                Resolution = SupportedResolutions.Max()
-                            };
-                        }
+                        Brightness = 1,
+                        Contrast = 1,
+                        ColorFormat = ImageColorFormat.Color,
+                        Resolution = SupportedResolutions.Max()
+                    };
 
-                        // Check that the selected resolution is supported by this device
-                        if (!SupportedResolutions.Contains(deviceConfig.Resolution))
-                        {
-                            // Find the closest supported resolution instead
-                            deviceConfig.Resolution = SupportedResolutions
-                                .OrderBy(v => v)
-                                .OrderBy(item => Math.Abs(deviceConfig.Resolution - item))
-                                .First();
-                        }
-
-                        scannerDevice.ScannerPictureSettings(pictureConfig =>
-                            pictureConfig
-                                .ColorFormat(ScanningDeviceSettings.ColorTypeFromFormat(deviceConfig.ColorFormat))
-                                .Resolution(deviceConfig.Resolution)
-                                .Brightness(deviceConfig.Brightness)
-                                .Contrast(deviceConfig.Contrast)
-                                .StartPosition(left: 0, top: 0)
-                            );
-
-                        // Replace any existing images
-                        ClearImages();
-
+                    // Connect to the specified device and create a COM object representation
+                    //using (var scannerDevice = new ScannerDevice(_scannerSettings))
+                    using (var scannerDevice = ConfiguredScannerDevice(_scannerSettings, deviceConfig))
+                    {
                         // Retrieve image(s) from scanner
                         scannerDevice.PerformScan(format);
+
+                        // Remove any existing images
+                        ClearImages();
 
                         // Store images for processing etc
                         foreach (byte[] image in scannerDevice.ExtractScannedImageFiles())
@@ -258,6 +261,64 @@ namespace Mosey.Services.Imaging
             }
         }
 
+        public bool Equals(IImagingDevice device)
+        {
+            return null != device && DeviceID == device.DeviceID;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as ScanningDevice);
+        }
+
+        public override int GetHashCode()
+        {
+            return DeviceID.GetHashCode();
+        }
+
+        /// <summary>
+        /// Create and configure a new <see cref="ScannerDevice"/> instance.
+        /// </summary>
+        /// <remarks>
+        /// If the resolution specified in <paramref name="config"/> is not available,
+        /// the closest value in <see cref="ScannerSettings.SupportedResolutions"/> will be used.
+        /// </remarks>
+        /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
+        /// <param name="config">Device settings used when capturing an image</param>
+        /// <returns>A <see cref="ScannerDevice"/> instance configured using <paramref name="config"/></returns>
+        private static ScannerDevice ConfiguredScannerDevice(ScannerSettings settings, IImagingDeviceConfig config)
+        {
+            var device = new ScannerDevice(settings);
+            var supportedResolutions = settings.SupportedResolutions;
+
+            // Check that the selected resolution is supported by this device
+            if (!supportedResolutions.Contains(config.Resolution))
+            {
+                // Find the closest supported resolution instead
+                config.Resolution = supportedResolutions
+                    .OrderBy(v => v)
+                    .OrderBy(item => Math.Abs(config.Resolution - item))
+                    .First();
+            }
+
+            // Apply device config
+            device.ScannerPictureSettings(pictureConfig =>
+                pictureConfig
+                    .ColorFormat(config.ColorFormat.ToColorType())
+                    .Resolution(config.Resolution)
+                    .Brightness(config.Brightness)
+                    .Contrast(config.Contrast)
+                    .StartPosition(left: 0, top: 0)
+                );
+
+            return device;
+        }
+
+        /// <summary>
+        /// A simplified version of the unique device identifier, <see cref="DeviceID"/>
+        /// </summary>
+        /// <param name="deviceID">A unique device identifier</param>
+        /// <returns></returns>
         private static int GetSimpleID(string deviceID)
         {
             // Get the last two characters of the device instance path
@@ -272,32 +333,6 @@ namespace Mosey.Services.Imaging
                 // Return the numeric representation of the characters instead
                 return shortID.GetHashCode();
             }
-        }
-
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
-        protected bool SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
-        {
-            if (EqualityComparer<T>.Default.Equals(field, value)) return false;
-            field = value;
-            OnPropertyChanged(propertyName);
-            return true;
-        }
-
-        public bool Equals(IImagingDevice device)
-        {
-            return null != device && DeviceID == device.DeviceID;
-        }
-
-        public override bool Equals(object obj)
-        {
-            return Equals(obj as ScanningDevice);
-        }
-
-        public override int GetHashCode()
-        {
-            return DeviceID.GetHashCode();
         }
     }
 }

@@ -34,6 +34,9 @@ namespace Mosey.Models
     /// </summary>
     public interface IImagingDevice : IEquatable<IImagingDevice>, INotifyPropertyChanged, IDevice
     {
+        /// <summary>
+        /// A collection of properties detailing the device's abilities.
+        /// </summary>
         IList<KeyValuePair<string, object>> DeviceSettings { get; }
 
         /// <summary>
