@@ -77,6 +77,7 @@
                 <Controls:ToggleSwitch OnLabel="Scan using highest available resolution" OffLabel="Scan with selected resolution" IsChecked="{Binding Path=ScanHighestResolution, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="True" />
                 <ComboBox Text="Select resolution" ItemsSource="{Binding StandardResolutions}" SelectedValue="{Binding DefaultResolution, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Path=ScanHighestResolution, Converter={Converters:BoolToInvertedBoolConverter}}" IsSynchronizedWithCurrentItem="True" IsEditable="False" HorizontalAlignment="Right" />
             </StackPanel>
+            <Label DockPanel.Dock="Bottom" Content="{Binding Version}" ContentStringFormat="Version {0}" HorizontalAlignment="Center" FontSize="{StaticResource FontSize.Small}" />
             <Button Command="{Binding ResetOptionsCommand}" DockPanel.Dock="Bottom" Style="{StaticResource ButtonHorizontal}" CustomControls:Margin.Top="{StaticResource XXL}" VerticalAlignment="Bottom" Content="Reset all to default" Foreground="{StaticResource Color.Error}" />
         </DockPanel>
     </ScrollViewer>

@@ -138,6 +138,14 @@ namespace Mosey.ViewModels
                 RaisePropertyChanged(nameof(ScanningDelay));
             }
         }
+
+        public string Version
+        {
+            get
+            {
+                return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            }
+        }
         #endregion Properties
 
         public SettingsViewModel(
