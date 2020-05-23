@@ -13,10 +13,12 @@ using Mosey.Models;
 using Mosey.Models.Dialog;
 using Mosey.Services;
 using AsyncAwaitBestPractices.MVVM;
+using Mosey.Services.Dialog;
+using AsyncAwaitBestPractices;
 
 namespace Mosey.ViewModels
 {
-    public class MainViewModel : ViewModelBase, IViewModelParent<IViewModel>, IDisposable
+    public class MainViewModel : ViewModelBase, IViewModelParent<IViewModel>, IClosing, IDisposable
     {
         private ILogger<MainViewModel> _log;
         private IIntervalTimer _uiTimer;
@@ -71,6 +73,20 @@ namespace Mosey.ViewModels
             {
                 _folderBrowserDialog.SelectedPath = value;
                 RaisePropertyChanged(nameof(ImageSavePath));
+            }
+        }
+
+        private bool _isWaiting;
+        public bool IsWaiting
+        {
+            get
+            {
+                return _isWaiting;
+            }
+            set
+            {
+                _isWaiting = value;
+                RaisePropertyChanged(nameof(IsWaiting));
             }
         }
 
@@ -394,7 +410,7 @@ namespace Mosey.ViewModels
             get
             {
                 if (_StopScanCommand == null)
-                    _StopScanCommand = new AsyncCommand(() => StopScanWithDialog(), _ => IsScanRunning);
+                    _StopScanCommand = new AsyncCommand(() => StopScanWithDialog(), _ => IsScanRunning && !_cancelScanTokenSource.IsCancellationRequested);
 
                 return _StopScanCommand;
             }
@@ -465,10 +481,7 @@ namespace Mosey.ViewModels
         /// </summary>
         public async Task StopScanWithDialog()
         {
-            bool dialogResult = await StopScanDialog(cancellationToken: _cancelScanTokenSource.Token);
-
-            if (dialogResult)
-            {
+            if (await StopScanDialog(cancellationToken: _cancelScanTokenSource.Token)){
                 StopScan();
             }
         }
@@ -759,6 +772,32 @@ namespace Mosey.ViewModels
             RaisePropertyChanged(nameof(ImageSavePath));
         }
 
+        public bool OnClosing()
+        {
+            return false;
+        }
+
+        public async void OnClosingAsync()
+        {
+            if (IsScanRunning)
+            {
+                // Check with user before exiting
+                bool dialogResult = await StopScanDialog(cancellationToken: _cancelScanTokenSource.Token);
+                if (dialogResult)
+                {
+                    // Wait for current scan operation to complete, then exit
+                    IsWaiting = true;
+                    await _semaphore?.WaitAsync();
+                    System.Windows.Application.Current.Shutdown();
+                }
+            }
+            else
+            {
+                // Exit immediately
+                System.Windows.Application.Current.Shutdown();
+            }
+        }
+
         public void Dispose()
         {
             Dispose(true);
@@ -775,23 +814,11 @@ namespace Mosey.ViewModels
                     _scanTimer.Complete -= ScanTimer_Complete;
                     _uiTimer.Tick -= UITimer_Tick;
 
-                    if (_staQueue != null)
-                    {
-                        _staQueue.Dispose();
-                    }
-                    if (_cancelScanTokenSource != null)
-                    {
-                        _cancelScanTokenSource.Cancel();
-                        _cancelScanTokenSource.Dispose();
-                    }
-                    if (_scanTimer != null)
-                    {
-                        _scanTimer.Dispose();
-                    }
-                    if (_uiTimer != null)
-                    {
-                        _uiTimer.Dispose();
-                    }
+                    _cancelScanTokenSource?.Cancel();
+                    _cancelScanTokenSource?.Dispose();
+                    _scanTimer?.Dispose();
+                    _uiTimer?.Dispose();
+                    _staQueue?.Dispose();
                 }
                 _disposed = true;
             }
