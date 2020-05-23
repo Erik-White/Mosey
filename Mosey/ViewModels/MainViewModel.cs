@@ -21,7 +21,7 @@ namespace Mosey.ViewModels
         private ILogger<MainViewModel> _log;
         private IIntervalTimer _uiTimer;
         private IIntervalTimer _scanTimer;
-        private IImagingDevices<IImagingDevice> _scannerDevices;
+        private IImagingDevices<IImagingDevice> _DevicesCollection;
         private IDialogManager _dialogManager;
         private IFolderBrowserDialog _folderBrowserDialog;
         private IViewModel _settingsViewModel;
@@ -33,7 +33,7 @@ namespace Mosey.ViewModels
         private ITimerConfig _uiTimerConfig;
         private DeviceConfig _userDeviceConfig;
 
-        private readonly object _scannerDevicesLock = new object();
+        private readonly object _DevicesCollectionLock = new object();
         private static StaTaskScheduler _staQueue = new StaTaskScheduler(numberOfThreads: 1);
         private static SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         private CancellationTokenSource _cancelScanTokenSource = new CancellationTokenSource();
@@ -157,7 +157,7 @@ namespace Mosey.ViewModels
             {
                 if (_scanTimer != null)
                 {
-                    return _scanTimer.Enabled || _scannerDevices.IsImagingInProgress;
+                    return _scanTimer.Enabled || _DevicesCollection.IsImagingInProgress;
                 }
                 else
                 {
@@ -197,16 +197,24 @@ namespace Mosey.ViewModels
             }
         }
 
-        public IImagingDevices<IImagingDevice> ScannerDevices
+        public IImagingDevices<IImagingDevice> DevicesCollection
         {
             get
             {
-                return _scannerDevices;
+                return _DevicesCollection;
             }
             set
             {
-                _scannerDevices = value;
-                RaisePropertyChanged(nameof(ScannerDevices));
+                _DevicesCollection = value;
+                RaisePropertyChanged(nameof(DevicesCollection));
+            }
+        }
+
+        public ObservableItemsCollection<IImagingDevice> Devices
+        {
+            get
+            {
+                return (ObservableItemsCollection<IImagingDevice>)_DevicesCollection.Devices;
             }
         }
 
@@ -238,7 +246,7 @@ namespace Mosey.ViewModels
         {
             _scanTimer = intervalTimer;
             _uiTimer = (IIntervalTimer)intervalTimer.Clone();
-            _scannerDevices = imagingDevices;
+            _DevicesCollection = imagingDevices;
             _dialogManager = uiServices.DialogManager;
             _folderBrowserDialog = uiServices.FolderBrowserDialog;
             _settingsViewModel = settingsViewModel;
@@ -263,7 +271,7 @@ namespace Mosey.ViewModels
         {
             return new MainViewModel(
                 intervalTimer: _scanTimer,
-                imagingDevices: _scannerDevices,
+                imagingDevices: _DevicesCollection,
                 uiServices: new UIServices(
                     dialogManager: _dialogManager,
                     folderBrowserDialog: _folderBrowserDialog
@@ -283,12 +291,12 @@ namespace Mosey.ViewModels
             UpdateConfig(userSettings);
 
             // Lock scanners collection across threads to prevent conflicts
-            System.Windows.Data.BindingOperations.EnableCollectionSynchronization(_scannerDevices, _scannerDevicesLock);
+            System.Windows.Data.BindingOperations.EnableCollectionSynchronization(_DevicesCollection.Devices, _DevicesCollectionLock);
 
             _folderBrowserDialog.InitialDirectory = _imageFileConfig.Directory;
             _folderBrowserDialog.SelectedPath = _folderBrowserDialog.InitialDirectory;
 
-            ScannerDevices.EnableAll();
+            DevicesCollection.EnableAll();
         }
 
         private void UpdateConfig(AppSettings settings)
@@ -312,7 +320,7 @@ namespace Mosey.ViewModels
         {
             get
             {
-                _EnableScannersCommand = new RelayCommand(o => _scannerDevices.EnableAll(), o => !ScannerDevices.IsEmpty && !IsScanRunning);
+                _EnableScannersCommand = new RelayCommand(o => _DevicesCollection.EnableAll(), o => !DevicesCollection.IsEmpty && !IsScanRunning);
 
                 return _EnableScannersCommand;
             }
@@ -323,7 +331,7 @@ namespace Mosey.ViewModels
         {
             get
             {
-                _ManualScanCommand = new RelayCommand(o => _ = ScanAsync(), o => !ScannerDevices.IsEmpty && !ScannerDevices.IsImagingInProgress && !IsScanRunning);
+                _ManualScanCommand = new RelayCommand(o => _ = ScanAsync(), o => !DevicesCollection.IsEmpty && !DevicesCollection.IsImagingInProgress && !IsScanRunning);
 
                 return _ManualScanCommand;
             }
@@ -334,7 +342,7 @@ namespace Mosey.ViewModels
         {
             get
             {
-                _StartScanCommand = new RelayCommand(o => StartScan(), o => !ScannerDevices.IsEmpty && !ScannerDevices.IsImagingInProgress && !IsScanRunning && !_scanTimer.Paused);
+                _StartScanCommand = new RelayCommand(o => StartScan(), o => !DevicesCollection.IsEmpty && !DevicesCollection.IsImagingInProgress && !IsScanRunning && !_scanTimer.Paused);
 
                 return _StartScanCommand;
             }
@@ -398,7 +406,7 @@ namespace Mosey.ViewModels
             get
             {
                 if (_RefreshScannersCommand == null)
-                    _RefreshScannersCommand = new RelayCommand(o => RefreshDevices(), o => !ScannerDevices.IsImagingInProgress && !IsScanRunning);
+                    _RefreshScannersCommand = new RelayCommand(o => RefreshDevices(), o => !DevicesCollection.IsImagingInProgress && !IsScanRunning);
 
                 return _RefreshScannersCommand;
             }
@@ -571,14 +579,14 @@ namespace Mosey.ViewModels
         }
 
         /// <summary>
-        /// Update <see cref="ScannerDevices"/> with any newly connected scanners
+        /// Update <see cref="DevicesCollection"/> with any newly connected scanners
         /// </summary>
         private void RefreshDevices()
         {
             bool enableDevices = !IsScanRunning ? _userDeviceConfig.EnableWhenConnected : _userDeviceConfig.EnableWhenScanning;
-            ScannerDevices.RefreshDevices(_imageConfig, enableDevices);
+            DevicesCollection.RefreshDevices(_imageConfig, enableDevices);
 
-            RaisePropertyChanged(nameof(ScannerDevices));
+            RaisePropertyChanged(nameof(DevicesCollection));
             RaisePropertyChanged(nameof(StartScanCommand));
             RaisePropertyChanged(nameof(StartStopScanCommand));
         }
@@ -611,12 +619,12 @@ namespace Mosey.ViewModels
                     await Task.Factory.StartNew(() =>
                     {
                         Task.Delay(TimeSpan.FromSeconds(intervalSeconds)).Wait();
-                        ScannerDevices.RefreshDevices(_imageConfig, enableDevices);
+                        DevicesCollection.RefreshDevices(_imageConfig, enableDevices);
                     }, cancellationToken, TaskCreationOptions.None, _staQueue);
                 }
                 finally
                 {
-                    RaisePropertyChanged(nameof(ScannerDevices));
+                    RaisePropertyChanged(nameof(DevicesCollection));
                     RaisePropertyChanged(nameof(StartScanCommand));
                     RaisePropertyChanged(nameof(StartStopScanCommand));
                     _semaphore.Release();
@@ -639,7 +647,7 @@ namespace Mosey.ViewModels
             try
             {
                 // Order devices by ID to provide clearer feedback to users
-                foreach (IImagingDevice scanner in ScannerDevices.OrderBy(o => o.DeviceID).ToList())
+                foreach (IImagingDevice scanner in DevicesCollection.Devices.OrderBy(o => o.DeviceID).ToList())
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 

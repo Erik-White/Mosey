@@ -36,5 +36,17 @@ namespace Mosey.Services.Imaging.Extensions
                     .GetProperty(value.ToString(), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.IgnoreCase)
                     .GetValue(null);
         }
+
+        /// <summary>
+        /// Convert to a <see cref="DNTScanner.Core.WiaImageFormat"/> instance.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns>A <see cref="ImageFormat"/> instance</returns>
+        public static DNTScanner.Core.WiaImageFormat ToWIAImageFormat(this ScanningDevice.ImageFormat value)
+        {
+            return (DNTScanner.Core.WiaImageFormat)typeof(DNTScanner.Core.WiaImageFormat)
+                    .GetProperty(value.ToString(), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.IgnoreCase)
+                    .GetValue(null);
+        }
     }
 }

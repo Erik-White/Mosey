@@ -9,6 +9,7 @@ using Mosey.Models;
 using Mosey.Models.Dialog;
 using Mosey.Services;
 using Mosey.Services.Dialog;
+using Mosey.Services.Imaging;
 using Mosey.ViewModels;
 
 namespace Mosey
