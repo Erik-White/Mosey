@@ -29,11 +29,6 @@ namespace Mosey.Services.Imaging
         private ICollection<IImagingDevice> _devices = new ObservableItemsCollection<IImagingDevice>();
 
         /// <summary>
-        /// Coordinates access to the WIA driver
-        /// </summary>
-        private static SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-
-        /// <summary>
         /// Initialize an empty collection.
         /// </summary>
         public ScanningDevices()
@@ -93,7 +88,7 @@ namespace Mosey.Services.Imaging
             ScanningDevice device = null;
 
             // Attempt to connect a device matching the deviceID
-            var settings = SystemDevices.ScannerSettings(ConnectRetries, _semaphore).Where(x => x.Id == deviceID).FirstOrDefault();
+            var settings = SystemDevices.ScannerSettings(ConnectRetries).Where(x => x.Id == deviceID).FirstOrDefault();
 
             if (settings != null)
             {
@@ -139,7 +134,7 @@ namespace Mosey.Services.Imaging
         /// <inheritdoc cref="RefreshDevices(IImagingDeviceConfig, bool)"/>
         public void RefreshDevices(IImagingDeviceConfig deviceConfig, bool enableDevices = true)
         {
-            IList<IDictionary<string, object>> deviceProperties = SystemDevices.ScannerProperties(connectRetries: ConnectRetries, semaphore: _semaphore);
+            IList<IDictionary<string, object>> deviceProperties = SystemDevices.ScannerProperties(connectRetries: ConnectRetries);
             if (deviceProperties.Count == 0)
             {
                 // No devices detected, any current devices have been disconnected
@@ -223,7 +218,7 @@ namespace Mosey.Services.Imaging
             _devices.Clear();
 
             // Populate a new collection of scanners using specified image settings
-            foreach (ScanningDevice device in SystemDevices.ScannerDevices(deviceConfig, ConnectRetries, _semaphore))
+            foreach (ScanningDevice device in SystemDevices.ScannerDevices(deviceConfig, ConnectRetries))
             {
                 device.IsEnabled = true;
                 AddDevice(device);

@@ -107,88 +107,65 @@ namespace Mosey.Services.Imaging
 
         public void GetImage()
         {
-            GetImage(WiaImageFormat.Bmp);
+            GetImage(ImageFormat.Bmp);
         }
 
-        public void GetImage(WiaImageFormat format)
+        /// <summary>
+        /// Retrieve an image from the physical imaging device.
+        /// </summary>
+        /// <param name="format">The image format used internally for storing the image</param>
+        /// <exception cref="COMException">If the scanner is not connected</exception>
+        /// <exception cref="ArgumentException">If the <see cref="ImageFormat"/> is not supported by the device</exception>
+        /// <exception cref="InvalidOperationException">If the operation fails during scanning</exception>
+        /// <remarks>
+        /// Images are converted to <see cref="ImageFormat.Png"/> before being stored as byte arrays.
+        /// </remarks>
+        public void GetImage(ImageFormat format)
         {
             if (!IsConnected)
             {
                 throw new COMException("The scanner is not connected.");
             }
-
-            if (!_scannerSettings.SupportedTransferFormats.ContainsKey(format.Value))
+            if (!_scannerSettings.SupportedTransferFormats.ContainsKey(format.ToWIAImageFormat().Value))
             {
                 throw new ArgumentException($"The image format {format} is not supported by this device.");
             }
 
-            // Wait until the scanner is ready
-            IsImaging = true;
-            while (_scanRetries > 0)
+            // Default settings if none provided
+            var deviceConfig = ImageSettings;
+            deviceConfig ??= new ScanningDeviceSettings
             {
-                try
+                Brightness = 1,
+                Contrast = 1,
+                ColorFormat = ImageColorFormat.Color,
+                Resolution = SupportedResolutions.Max()
+            };
+
+            IsImaging = true;
+            try
+            {
+                var images = SystemDevices.PerformScan(_scannerSettings, deviceConfig, format);
+
+                // Remove any existing images
+                ClearImages();
+
+                // Store images for processing etc
+                foreach (var image in images)
                 {
-                    var deviceConfig = ImageSettings;
-                    // Default settings if none provided
-                    deviceConfig ??= new ScanningDeviceSettings
-                    {
-                        Brightness = 1,
-                        Contrast = 1,
-                        ColorFormat = ImageColorFormat.Color,
-                        Resolution = SupportedResolutions.Max()
-                    };
-
-                    // Connect to the specified device and create a COM object representation
-                    //using (var scannerDevice = new ScannerDevice(_scannerSettings))
-                    using (var scannerDevice = ConfiguredScannerDevice(_scannerSettings, deviceConfig))
-                    {
-                        // Retrieve image(s) from scanner
-                        scannerDevice.PerformScan(format);
-
-                        // Remove any existing images
-                        ClearImages();
-
-                        // Store images for processing etc
-                        foreach (byte[] image in scannerDevice.ExtractScannedImageFiles())
-                        {
-                            // Convert image to PNG format before storing byte array
-                            // Greatly reduces memory footprint compared to raw BMP
-                            Images.Add(image.AsFormat(ImageFormat.Png.ToDrawingImageFormat()));
-                        }
-                    }
-
-                    // Cancel retry loop if successful
-                    break;
+                    // Convert image to PNG format before storing byte array
+                    // Greatly reduces memory footprint compared to raw BMP
+                    Images.Add(image.AsFormat(ImageFormat.Png.ToDrawingImageFormat()));
                 }
-                catch (Exception ex) when (ex is COMException | ex is NullReferenceException)
-                {
-                    if (--_scanRetries > 0)
-                    {
-                        // Wait until the scanner is ready if it is warming up, busy etc
-                        // Also retry if the WIA driver does not respond in time (NullReference)
-
-                        // Connecting a scanner when a scan is already in progress
-                        // COMException: The remote procedure call failed. (0x800706BE)
-                        // HResult	-2146233088	int
-
-                        System.Threading.Thread.Sleep(1000);
-                        continue;
-                    }
-
-                    // Mark the device as unreachable if the limit is reached
-                    IsConnected = false;
-                    throw;
-                }
-                catch (Exception ex) when (ex is InvalidOperationException)
-                {
-                    // Scanner has been disconnected or similar
-                    IsConnected = false;
-                    throw;
-                }
-                finally
-                {
-                    IsImaging = false;
-                }
+            }
+            catch (Exception ex) when (ex is InvalidOperationException)
+            {
+                // Scanner has been disconnected or similar
+                IsConnected = false;
+                throw;
+            }
+            finally
+            {
+                IsImaging = false;
             }
         }
 
@@ -199,7 +176,7 @@ namespace Mosey.Services.Imaging
         public void SaveImage()
         {
             string directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(), System.Reflection.Assembly.GetExecutingAssembly().GetName().Name);
-            SaveImage("image", directory, "png");
+            SaveImage("image", directory, ImageFormat.Png);
         }
 
         /// <summary>
@@ -274,44 +251,6 @@ namespace Mosey.Services.Imaging
         public override int GetHashCode()
         {
             return DeviceID.GetHashCode();
-        }
-
-        /// <summary>
-        /// Create and configure a new <see cref="ScannerDevice"/> instance.
-        /// </summary>
-        /// <remarks>
-        /// If the resolution specified in <paramref name="config"/> is not available,
-        /// the closest value in <see cref="ScannerSettings.SupportedResolutions"/> will be used.
-        /// </remarks>
-        /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
-        /// <param name="config">Device settings used when capturing an image</param>
-        /// <returns>A <see cref="ScannerDevice"/> instance configured using <paramref name="config"/></returns>
-        private static ScannerDevice ConfiguredScannerDevice(ScannerSettings settings, IImagingDeviceConfig config)
-        {
-            var device = new ScannerDevice(settings);
-            var supportedResolutions = settings.SupportedResolutions;
-
-            // Check that the selected resolution is supported by this device
-            if (!supportedResolutions.Contains(config.Resolution))
-            {
-                // Find the closest supported resolution instead
-                config.Resolution = supportedResolutions
-                    .OrderBy(v => v)
-                    .OrderBy(item => Math.Abs(config.Resolution - item))
-                    .First();
-            }
-
-            // Apply device config
-            device.ScannerPictureSettings(pictureConfig =>
-                pictureConfig
-                    .ColorFormat(config.ColorFormat.ToColorType())
-                    .Resolution(config.Resolution)
-                    .Brightness(config.Brightness)
-                    .Contrast(config.Contrast)
-                    .StartPosition(left: 0, top: 0)
-                );
-
-            return device;
         }
 
         /// <summary>
