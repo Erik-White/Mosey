@@ -788,6 +788,7 @@ namespace Mosey.ViewModels
                     // Wait for current scan operation to complete, then exit
                     IsWaiting = true;
                     await _semaphore?.WaitAsync();
+                    _log.LogInformation($"User closing application during scan. {ScanRepetitionsCount} of {ScanRepetitions} repetitions completed.");
                     System.Windows.Application.Current.Shutdown();
                 }
             }
