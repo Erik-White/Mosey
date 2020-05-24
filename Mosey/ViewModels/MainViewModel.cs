@@ -1,20 +1,18 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Windows.Input;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Threading.Tasks.Schedulers;
-using System.Collections.Generic;
+﻿using AsyncAwaitBestPractices.MVVM;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Mosey.Configuration;
 using Mosey.Models;
 using Mosey.Models.Dialog;
 using Mosey.Services;
-using AsyncAwaitBestPractices.MVVM;
-using Mosey.Services.Dialog;
-using AsyncAwaitBestPractices;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Threading.Tasks.Schedulers;
+using System.Windows.Input;
 
 namespace Mosey.ViewModels
 {
@@ -270,7 +268,7 @@ namespace Mosey.ViewModels
             _appSettings = appSettings;
             _log = logger;
 
-            // Set configuration options
+            // Initialise configuration options
             SetConfiguration();
 
             _appSettings.OnChange<AppSettings>(UpdateConfig);
@@ -313,6 +311,7 @@ namespace Mosey.ViewModels
             _folderBrowserDialog.SelectedPath = _folderBrowserDialog.InitialDirectory;
 
             DevicesCollection.EnableAll();
+            _log.LogDebug($"Configuration initialised with {nameof(SetConfiguration)}.");
         }
 
         private void UpdateConfig(AppSettings settings)
@@ -327,6 +326,7 @@ namespace Mosey.ViewModels
                 RaisePropertyChanged(nameof(ScanInterval));
                 RaisePropertyChanged(nameof(ScanRepetitions));
                 RaisePropertyChanged(nameof(ImageSavePath));
+                _log.LogDebug($"Configuration updated with {nameof(UpdateConfig)}.");
             }
         }
 
@@ -461,10 +461,12 @@ namespace Mosey.ViewModels
         {
             _cancelScanTokenSource = new CancellationTokenSource();
             _scanTimer.Start(_scanDelay, _scanInterval, ScanRepetitions);
+            _log.LogDebug("IntervalTimer started. Delay: {Delay} Interval: {Interval} Repetitions: {Repetitions}", _scanDelay, _scanInterval, ScanRepetitions);
 
             RaisePropertyChanged(nameof(IsScanRunning));
             RaisePropertyChanged(nameof(ScanFinishTime));
             RaisePropertyChanged(nameof(StartStopScanCommand));
+            _log.LogInformation("Scanning started with {ScanRepetitions} repetitions to complete.", ScanRepetitions);
         }
 
         /// <summary>
@@ -472,6 +474,7 @@ namespace Mosey.ViewModels
         /// </summary>
         public void StopScan()
         {
+            _log.LogInformation("Scanning stopped with {ScanRepetitionsCount} of {ScanRepetitions} repetitions completed.", ScanRepetitionsCount, ScanRepetitions);
             _cancelScanTokenSource.Cancel();
             _scanTimer.Stop();
         }
@@ -494,6 +497,7 @@ namespace Mosey.ViewModels
         /// <returns><c>true</c> if the user confirms to stop scanning</returns>
         protected async Task<bool> StopScanDialog(int timeout = 5000, CancellationToken cancellationToken = default)
         {
+            _log.LogDebug($"{nameof(StopScanDialog)} initiated.");
             DialogResult dialogResult = DialogResult.Negative;
 
             try
@@ -527,7 +531,7 @@ namespace Mosey.ViewModels
             {
                 if (ex.CancellationToken.IsCancellationRequested)
                 {
-                    _log.LogDebug(ex, "Stop scanning dialog closed before user input recieved");
+                    _log.LogDebug(ex, "Stop scanning dialog closed by CancellationToken before user input recieved");
                 }
                 else
                 {
@@ -535,6 +539,7 @@ namespace Mosey.ViewModels
                     throw;
                 }
             }
+            _log.LogDebug($"User input return from {nameof(StopScanDialog)}: {dialogResult}");
 
             return dialogResult == DialogResult.Affirmative;
         }
@@ -546,6 +551,7 @@ namespace Mosey.ViewModels
         /// <param name="e"></param>
         private async void ScanTimer_Tick(object sender, EventArgs e)
         {
+            _log.LogDebug($"{nameof(Scan)} event.");
             await ScanAsync(_cancelScanTokenSource.Token);
 
             // Update progress
@@ -561,6 +567,7 @@ namespace Mosey.ViewModels
         /// <param name="e"></param>
         private async void ScanTimer_Complete(object sender, EventArgs e)
         {
+            _log.LogDebug($"{nameof(ScanTimer_Complete)} event.");
             // Wait for scanning to complete
             await _semaphore.WaitAsync();
 
@@ -576,7 +583,7 @@ namespace Mosey.ViewModels
             RaisePropertyChanged(nameof(ScanFinishTime));
             RaisePropertyChanged(nameof(StartStopScanCommand));
 
-            _log.LogInformation($"Scanning complete at {DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat))} with {ScanRepetitionsCount} repetitions.");
+            _log.LogInformation("Scanning complete.");
             _semaphore.Release();
         }
 
@@ -596,12 +603,14 @@ namespace Mosey.ViewModels
         /// </summary>
         private void RefreshDevices()
         {
+            _log.LogDebug($"Device refresh initiated with {nameof(RefreshDevices)}");
             bool enableDevices = !IsScanRunning ? _userDeviceConfig.EnableWhenConnected : _userDeviceConfig.EnableWhenScanning;
             DevicesCollection.RefreshDevices(_imageConfig, enableDevices);
 
             RaisePropertyChanged(nameof(DevicesCollection));
             RaisePropertyChanged(nameof(StartScanCommand));
             RaisePropertyChanged(nameof(StartStopScanCommand));
+            _log.LogDebug($"Device refresh complete with {nameof(RefreshDevices)}");
         }
 
         /// <summary>
@@ -610,13 +619,15 @@ namespace Mosey.ViewModels
         /// <param name="intervalSeconds">The duration between refreshes</param>
         /// <param name="cancellationToken">Used to stop the refresh loop</param>
         /// <returns></returns>
-        private async Task RefreshDevicesAsync(int intervalSeconds = 1, CancellationToken cancellationToken = default(CancellationToken))
+        private async Task RefreshDevicesAsync(int intervalSeconds = 1, CancellationToken cancellationToken = default)
         {
+            _log.LogDebug($"Device refresh initiated with {nameof(RefreshDevicesAsync)}");
             while (true)
             {
                 // Exit at a safe point in the loop, if requested
                 if (cancellationToken.IsCancellationRequested)
                 {
+                    _log.LogDebug($"Device refresh in {nameof(RefreshDevicesAsync)} cancelled with CancellationToken.");
                     return;
                 }
 
@@ -625,6 +636,7 @@ namespace Mosey.ViewModels
 
                 try
                 {
+                    _log.LogTrace($"Initiating device refresh in {nameof(RefreshDevicesAsync)}");
                     bool enableDevices = !IsScanRunning ? _userDeviceConfig.EnableWhenConnected : _userDeviceConfig.EnableWhenScanning;
 
                     // Use a dedicated thread for refresh tasks
@@ -640,6 +652,7 @@ namespace Mosey.ViewModels
                     RaisePropertyChanged(nameof(DevicesCollection));
                     RaisePropertyChanged(nameof(StartScanCommand));
                     RaisePropertyChanged(nameof(StartStopScanCommand));
+                    _log.LogTrace($"Device refresh completed in {nameof(RefreshDevicesAsync)}");
                     _semaphore.Release();
                 }
             }
@@ -652,6 +665,7 @@ namespace Mosey.ViewModels
         /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
         public List<string> Scan(CancellationToken cancellationToken = default)
         {
+            _log.LogDebug($"Scan initiated with {nameof(Scan)} method.");
             string scannerIDStr = string.Empty;
             string saveDateTime = DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat));
             string saveDirectory = ImageSavePath;
@@ -678,8 +692,8 @@ namespace Mosey.ViewModels
                         }
 
                         // Run the scanner and retrieve the image(s) to memory
+                        _log.LogDebug("Attempting to retrieve image on {ScannerName} (#{DeviceID})", scanner.Name, scannerIDStr);
                         scanner.GetImage();
-                        _log.LogDebug($"Retrieved image on {scanner.Name} (#{scannerIDStr}) at {saveDateTime}");
 
                         if (scanner.Images.Count() > 0)
                         {
@@ -692,30 +706,31 @@ namespace Mosey.ViewModels
                             foreach (string image in savedImages)
                             {
                                 imagePaths.Add(image);
-                                _log.LogInformation($"Saved image file {image} from scanner #{scannerIDStr} at {saveDateTime}");
+                                _log.LogInformation("Saved image from scanner #{DeviceID} to file: {ImagePath}", scannerIDStr, image);
                             }
                         }
                         else
                         {
-                            _log.LogDebug($"Unable to retrieve image on {scanner.Name} (#{scannerIDStr}) at {saveDateTime}");
+                            _log.LogWarning("Unable to retrieve image from {DeviceName} (#{DeviceID})", scanner.Name, scannerIDStr);
                         }
                     }
                     if (!scanner.IsConnected)
                     {
-                        _log.LogDebug($"Connection to {scanner.Name} (#{scannerIDStr}) lost when attempting scan at {saveDateTime}");
+                        _log.LogError("Connection to {DeviceName} (#{DeviceID}) lost while attempting scan.", scanner.Name, scannerIDStr);
                     }
                 }
             }
             catch (OperationCanceledException ex)
             {
-                _log.LogInformation(ex, $"Scanning operation cancelled at {saveDateTime}");
+                _log.LogInformation(ex, $"Scanning operation cancelled.");
                 return imagePaths;
             }
             catch (Exception ex)
             {
-                _log.LogError(ex, $"Failed to scan image on scanner #{scannerIDStr} at {saveDateTime}");
+                _log.LogWarning(ex, "Failed to retrive image on scanner #{DeviceID}.", scannerIDStr);
                 throw;
             }
+            _log.LogDebug($"Scan completed with {nameof(Scan)} method.");
 
             return imagePaths;
         }
@@ -727,6 +742,7 @@ namespace Mosey.ViewModels
         /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
         private async Task<List<string>> ScanAsync(CancellationToken cancellationToken = default)
         {
+            _log.LogDebug($"Scan initiated with {nameof(ScanAsync)} method.");
             List<string> results = new List<string>();
 
             // Ensure device refresh or other operations are complete
@@ -754,6 +770,7 @@ namespace Mosey.ViewModels
             {
                 _semaphore.Release();
             }
+            _log.LogDebug($"Scan completed with {nameof(ScanAsync)} method.");
 
             return results;
         }
@@ -786,15 +803,18 @@ namespace Mosey.ViewModels
                 if (dialogResult)
                 {
                     // Wait for current scan operation to complete, then exit
+                    _log.LogDebug($"Waiting for scanning operations to complete before shutting down from {nameof(OnClosingAsync)}.");
                     IsWaiting = true;
                     await _semaphore?.WaitAsync();
-                    _log.LogInformation($"User closing application during scan. {ScanRepetitionsCount} of {ScanRepetitions} repetitions completed.");
+                    _log.LogInformation("User closing application before all scans completed. {ScanRepetitionsCount} of {ScanRepetitions} repetitions completed.", ScanRepetitionsCount, ScanRepetitions);
+                    _log.LogDebug($"Application shutdown requested from {nameof(OnClosingAsync)}.");
                     System.Windows.Application.Current.Shutdown();
                 }
             }
             else
             {
                 // Exit immediately
+                _log.LogDebug($"Application shutdown requested from {nameof(OnClosingAsync)}.");
                 System.Windows.Application.Current.Shutdown();
             }
         }

@@ -28,6 +28,8 @@ namespace Mosey.ViewModels
                 _userSettings.ImageFile.Directory = value;
                 _appSettings.Update(c => c.ImageFile.Directory = value);
                 RaisePropertyChanged(nameof(ImageSavePath));
+
+                _log.LogInformation($"{nameof(ImageSavePath)} changed to {value}");
             }
         }
 
@@ -42,6 +44,8 @@ namespace Mosey.ViewModels
                 _userSettings.Image.Resolution = value;
                 _appSettings.Update(c => c.Image.Resolution = value);
                 RaisePropertyChanged(nameof(DefaultResolution));
+
+                _log.LogInformation($"{nameof(DefaultResolution)} changed to {value}");
             }
         }
 
@@ -58,6 +62,8 @@ namespace Mosey.ViewModels
                 _userSettings.Device.EnableWhenConnected = value;
                 _appSettings.Update(c => c.Device.EnableWhenConnected = value);
                 RaisePropertyChanged(nameof(ScannersEnableOnConnect));
+
+                _log.LogInformation($"{nameof(ScannersEnableOnConnect)} changed to {value}");
             }
         }
 
@@ -72,6 +78,8 @@ namespace Mosey.ViewModels
                 _userSettings.Device.EnableWhenScanning = value;
                 _appSettings.Update(c => c.Device.EnableWhenScanning = value);
                 RaisePropertyChanged(nameof(ScannersEnableWhenScanning));
+
+                _log.LogInformation($"{nameof(ScannersEnableWhenScanning)} changed to {value}");
             }
         }
 
@@ -86,6 +94,8 @@ namespace Mosey.ViewModels
                 _userSettings.Device.UseHighestResolution = value;
                 _appSettings.Update(c => c.Device.UseHighestResolution = value);
                 RaisePropertyChanged(nameof(ScanHighestResolution));
+
+                _log.LogInformation($"{nameof(ScanHighestResolution)} changed to {value}");
             }
         }
 
@@ -100,6 +110,8 @@ namespace Mosey.ViewModels
                 _userSettings.ScanTimer.Interval = TimeSpan.FromMinutes(value);
                 _appSettings.Update(c => c.ScanTimer.Interval = _userSettings.ScanTimer.Interval);
                 RaisePropertyChanged(nameof(ScanInterval));
+
+                _log.LogInformation($"{nameof(ScanInterval)} changed to {value}");
             }
         }
 
@@ -114,6 +126,8 @@ namespace Mosey.ViewModels
                 _userSettings.ScanTimer.Repetitions = value;
                 _appSettings.Update(c => c.ScanTimer.Repetitions = value);
                 RaisePropertyChanged(nameof(ScanRepetitions));
+
+                _log.LogInformation($"{nameof(ScanRepetitions)} changed to {value}");
             }
         }
 
@@ -136,6 +150,8 @@ namespace Mosey.ViewModels
 
                 _appSettings.Update(c => c.ScanTimer.Delay = _userSettings.ScanTimer.Delay);
                 RaisePropertyChanged(nameof(ScanningDelay));
+
+                _log.LogInformation($"{nameof(ScanningDelay)} changed to {value}");
             }
         }
 
@@ -201,6 +217,8 @@ namespace Mosey.ViewModels
         /// </summary>
         private void ResetUserOptions()
         {
+            _log.LogDebug("Overwriting user settings with defaults.");
+
             // Copy default settings and write to disk
             _userSettings = _appSettings.Value.Copy();
             _appSettings.Update(c => {
@@ -217,6 +235,8 @@ namespace Mosey.ViewModels
             RaisePropertyChanged(nameof(ScannersEnableOnConnect));
             RaisePropertyChanged(nameof(ScannersEnableWhenScanning));
             RaisePropertyChanged(nameof(ScanHighestResolution));
+
+            _log.LogInformation("User settings reset to default.");
         }
 
         /// <summary>

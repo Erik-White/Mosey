@@ -56,7 +56,7 @@
                 </StackPanel.Resources>
                 <TextBlock Text="Default save path" />
                 <DockPanel Margin="{StaticResource Margin.Horizontal.Default}">
-                    <Button DockPanel.Dock="Right" Command="{Binding SelectFolderCommand}" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" HorizontalAlignment="Right" Cursor="Hand">
+                    <Button DockPanel.Dock="Right" Command="{Binding SelectFolderCommand}" HorizontalAlignment="Right" Cursor="Hand">
                         <Label Style="{StaticResource IconSmall}" Margin="{StaticResource Margin.Horizontal.Tiny}">
                             <IconPacks:Material Kind="DotsHorizontal" Width="20" Height="20" />
                         </Label>
