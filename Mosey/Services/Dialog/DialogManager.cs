@@ -7,7 +7,7 @@ using MahApps.Metro.Controls.Dialogs;
 
 namespace Mosey.Services.Dialog
 {
-    class DialogManager : IDialogManager
+    public class DialogManager : IDialogManager
     {
         /// <summary>
         /// Gets the default instance of the dialog coordinator, which can be injected into a view model.

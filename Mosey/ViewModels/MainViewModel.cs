@@ -1,11 +1,4 @@
-﻿using AsyncAwaitBestPractices.MVVM;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Mosey.Configuration;
-using Mosey.Models;
-using Mosey.Models.Dialog;
-using Mosey.Services;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,6 +6,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Schedulers;
 using System.Windows.Input;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using AsyncAwaitBestPractices.MVVM;
+using Mosey.Models;
+using Mosey.Configuration;
 
 namespace Mosey.ViewModels
 {
@@ -22,10 +20,11 @@ namespace Mosey.ViewModels
         private IIntervalTimer _uiTimer;
         private IIntervalTimer _scanTimer;
         private IImagingDevices<IImagingDevice> _DevicesCollection;
-        private IDialogManager _dialogManager;
-        private IFolderBrowserDialog _folderBrowserDialog;
+        private Models.Dialog.IDialogManager _dialogManager;
+        private Models.Dialog.IFolderBrowserDialog _folderBrowserDialog;
         private IViewModel _settingsViewModel;
 
+        private DialogViewModel _dialog;
         private IOptionsMonitor<AppSettings> _appSettings;
         private IImagingDeviceConfig _imageConfig;
         private IImageFileConfig _imageFileConfig;
@@ -71,6 +70,23 @@ namespace Mosey.ViewModels
             {
                 _folderBrowserDialog.SelectedPath = value;
                 RaisePropertyChanged(nameof(ImageSavePath));
+            }
+        }
+
+        /// <summary>
+        /// The estimated amount of disk space required for a full run of images, in bytes.
+        /// </summary>
+        /// <remarks>
+        /// Calculated by multiplying the current number of <see cref="ScanRepetitions"/> by the
+        /// number of currently enabled scanners, by the selected image resolution file size.
+        /// </remarks>
+        public long ImagesRequiredDiskSpace
+        {
+            get
+            {
+                return ScanRepetitions
+                    * _DevicesCollection.GetByEnabled(true).Count()
+                    * _userDeviceConfig.GetResolutionMetaData(_imageConfig.Resolution).FileSize;
             }
         }
 
@@ -252,7 +268,7 @@ namespace Mosey.ViewModels
         public MainViewModel(
             IIntervalTimer intervalTimer,
             IImagingDevices<IImagingDevice> imagingDevices,
-            UIServices uiServices,
+            Services.UIServices uiServices,
             IViewModel settingsViewModel,
             IOptionsMonitor<AppSettings> appSettings,
             ILogger<MainViewModel> logger
@@ -267,6 +283,7 @@ namespace Mosey.ViewModels
 
             _appSettings = appSettings;
             _log = logger;
+            _dialog = new DialogViewModel(this, _dialogManager, _log);
 
             // Initialise configuration options
             SetConfiguration();
@@ -286,7 +303,7 @@ namespace Mosey.ViewModels
             return new MainViewModel(
                 intervalTimer: _scanTimer,
                 imagingDevices: _DevicesCollection,
-                uiServices: new UIServices(
+                uiServices: new Services.UIServices(
                     dialogManager: _dialogManager,
                     folderBrowserDialog: _folderBrowserDialog
                     ),
@@ -358,7 +375,7 @@ namespace Mosey.ViewModels
         {
             get
             {
-                _StartScanCommand = new RelayCommand(o => StartScan(), o => !DevicesCollection.IsEmpty && !DevicesCollection.IsImagingInProgress && !IsScanRunning && !_scanTimer.Paused);
+                _StartScanCommand = new RelayCommand(o => StartScanWithDialog(), o => !DevicesCollection.IsEmpty && !DevicesCollection.IsImagingInProgress && !IsScanRunning && !_scanTimer.Paused);
 
                 return _StartScanCommand;
             }
@@ -455,7 +472,7 @@ namespace Mosey.ViewModels
         }
 
         /// <summary>
-        /// Begin repeated scanning with an <see cref="IIntervalTimer"/>
+        /// Begin repeated scanning with an <see cref="IIntervalTimer"/>.
         /// </summary>
         public void StartScan()
         {
@@ -470,7 +487,28 @@ namespace Mosey.ViewModels
         }
 
         /// <summary>
-        /// Halts scanning and scan timer
+        /// Begin repeated scanning, after first checking interval time and free disk space are sufficient.
+        /// </summary>
+        public async void StartScanWithDialog()
+        {
+            // TODO: Check that interval time is sufficient for selected resolution
+
+            // Check that disk space is sufficient for selected resolution
+            long availableDiskSpace = FileSystemExtensions.AvailableFreeSpace(Path.GetPathRoot(_imageFileConfig.Directory));
+            if (ImagesRequiredDiskSpace * 1.5 > availableDiskSpace)
+            {
+                if (!await _dialog.DiskSpaceDialog(ImagesRequiredDiskSpace, availableDiskSpace))
+                {
+                    _log.LogDebug($"Scanning not started due to low disk space: {Format.ByteSize(ImagesRequiredDiskSpace)} required, {Format.ByteSize(availableDiskSpace)} available.");
+                    return;
+                }
+            }
+
+            StartScan();
+        }
+
+        /// <summary>
+        /// Halts scanning and scan timer.
         /// </summary>
         public void StopScan()
         {
@@ -480,72 +518,17 @@ namespace Mosey.ViewModels
         }
 
         /// <summary>
-        /// Stops scanning based on user input
+        /// Stops scanning based on user input.
         /// </summary>
         public async Task StopScanWithDialog()
         {
-            if (await StopScanDialog(cancellationToken: _cancelScanTokenSource.Token)){
+            if (await _dialog.StopScanDialog(cancellationToken: _cancelScanTokenSource.Token)){
                 StopScan();
             }
         }
-
-        /// <summary>
-        /// Triggers a dialogue to confirm if the user wants to stop scanning
-        /// </summary>
-        /// <param name="timeout">Removes the dialogue if it is still running after this amount of milliseconds</param>
-        /// <param name="cancellationToken">Removes the dialogue if it is still running</param>
-        /// <returns><c>true</c> if the user confirms to stop scanning</returns>
-        protected async Task<bool> StopScanDialog(int timeout = 5000, CancellationToken cancellationToken = default)
-        {
-            _log.LogDebug($"{nameof(StopScanDialog)} initiated.");
-            DialogResult dialogResult = DialogResult.Negative;
-
-            try
-            {
-                // Ensure the dialog is closed if still open once scanning completed
-                using (var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
-                {
-                    // Remove the dialogue after a timeout if no input is recieved
-                    linkedTokenSource.CancelAfter(timeout);
-
-                    IDialogSettings dialogSettings = new Services.Dialog.DialogSettings
-                    {
-                        AffirmativeButtonText = "Stop scanning",
-                        NegativeButtonText = "Continue scanning",
-                        // Using CancellationToken currently results in threading access error, see:
-                        // https://github.com/MahApps/MahApps.Metro/issues/3214
-                        //CancellationToken = linkedTokenSource.Token
-                    };
-
-                    // Show the dialogue until user input is recieved, or scanning is otherwise stopped
-                    dialogResult = await _dialogManager.ShowMessageAsync(
-                        this,
-                        "Stop scanning",
-                        "Are you sure you want to cancel scanning?",
-                        DialogStyle.AffirmativeAndNegative,
-                        dialogSettings
-                        );
-                }
-            }
-            catch (OperationCanceledException ex)
-            {
-                if (ex.CancellationToken.IsCancellationRequested)
-                {
-                    _log.LogDebug(ex, "Stop scanning dialog closed by CancellationToken before user input recieved");
-                }
-                else
-                {
-                    _log.LogError(ex, "Stop scanning dialog failed to return");
-                    throw;
-                }
-            }
-            _log.LogDebug($"User input return from {nameof(StopScanDialog)}: {dialogResult}");
-
-            return dialogResult == DialogResult.Affirmative;
-        }
         
         /// <summary>
-        /// Initiate scanning with <see cref="ScanAsync"/>
+        /// Initiate scanning with <see cref="ScanAsync"/>.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -799,7 +782,7 @@ namespace Mosey.ViewModels
             if (IsScanRunning)
             {
                 // Check with user before exiting
-                bool dialogResult = await StopScanDialog(cancellationToken: _cancelScanTokenSource.Token);
+                bool dialogResult = await _dialog.StopScanDialog(cancellationToken: _cancelScanTokenSource.Token);
                 if (dialogResult)
                 {
                     // Wait for current scan operation to complete, then exit
