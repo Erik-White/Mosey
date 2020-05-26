@@ -157,7 +157,7 @@ namespace Mosey.Services.Imaging
                     Images.Add(image.AsFormat(ImageFormat.Png.ToDrawingImageFormat()));
                 }
             }
-            catch (Exception ex) when (ex is InvalidOperationException)
+            catch (Exception ex) when (ex is COMException || ex is InvalidOperationException)
             {
                 // Scanner has been disconnected or similar
                 IsConnected = false;

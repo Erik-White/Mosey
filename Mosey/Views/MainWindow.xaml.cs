@@ -2,17 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using MahApps.Metro.Controls;
+using Mosey.Models;
 
 namespace Mosey.Views
 {
@@ -25,6 +16,17 @@ namespace Mosey.Views
         public MainWindow()
         {
             InitializeComponent();
+            Closing += Window_Closing;
+        }
+
+        void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (DataContext is IClosing context)
+            {
+                // Handle window closing in ViewModel, if found
+                e.Cancel = true;
+                context.OnClosingAsync();
+            }
         }
     }
 }

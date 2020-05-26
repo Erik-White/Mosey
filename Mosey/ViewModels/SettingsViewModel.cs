@@ -5,16 +5,17 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Mosey.Configuration;
 using Mosey.Models;
-using Mosey.Models.Dialog;
+using Mosey.Services;
 
 namespace Mosey.ViewModels
 {
     public class SettingsViewModel : ViewModelBase
     {
         private ILogger<SettingsViewModel> _log;
-        private IFolderBrowserDialog _folderBrowserDialog;
+        private readonly UIServices _uiServices;
         private IWritableOptions<AppSettings> _appSettings;
         private AppSettings _userSettings;
+        private readonly DialogViewModel _dialog;
 
         #region Properties
         public string ImageSavePath
@@ -28,6 +29,8 @@ namespace Mosey.ViewModels
                 _userSettings.ImageFile.Directory = value;
                 _appSettings.Update(c => c.ImageFile.Directory = value);
                 RaisePropertyChanged(nameof(ImageSavePath));
+
+                _log.LogInformation($"{nameof(ImageSavePath)} changed to {value}");
             }
         }
 
@@ -42,6 +45,8 @@ namespace Mosey.ViewModels
                 _userSettings.Image.Resolution = value;
                 _appSettings.Update(c => c.Image.Resolution = value);
                 RaisePropertyChanged(nameof(DefaultResolution));
+
+                _log.LogInformation($"{nameof(DefaultResolution)} changed to {value}");
             }
         }
 
@@ -58,6 +63,8 @@ namespace Mosey.ViewModels
                 _userSettings.Device.EnableWhenConnected = value;
                 _appSettings.Update(c => c.Device.EnableWhenConnected = value);
                 RaisePropertyChanged(nameof(ScannersEnableOnConnect));
+
+                _log.LogInformation($"{nameof(ScannersEnableOnConnect)} changed to {value}");
             }
         }
 
@@ -72,6 +79,8 @@ namespace Mosey.ViewModels
                 _userSettings.Device.EnableWhenScanning = value;
                 _appSettings.Update(c => c.Device.EnableWhenScanning = value);
                 RaisePropertyChanged(nameof(ScannersEnableWhenScanning));
+
+                _log.LogInformation($"{nameof(ScannersEnableWhenScanning)} changed to {value}");
             }
         }
 
@@ -86,6 +95,8 @@ namespace Mosey.ViewModels
                 _userSettings.Device.UseHighestResolution = value;
                 _appSettings.Update(c => c.Device.UseHighestResolution = value);
                 RaisePropertyChanged(nameof(ScanHighestResolution));
+
+                _log.LogInformation($"{nameof(ScanHighestResolution)} changed to {value}");
             }
         }
 
@@ -100,6 +111,8 @@ namespace Mosey.ViewModels
                 _userSettings.ScanTimer.Interval = TimeSpan.FromMinutes(value);
                 _appSettings.Update(c => c.ScanTimer.Interval = _userSettings.ScanTimer.Interval);
                 RaisePropertyChanged(nameof(ScanInterval));
+
+                _log.LogInformation($"{nameof(ScanInterval)} changed to {value}");
             }
         }
 
@@ -114,6 +127,8 @@ namespace Mosey.ViewModels
                 _userSettings.ScanTimer.Repetitions = value;
                 _appSettings.Update(c => c.ScanTimer.Repetitions = value);
                 RaisePropertyChanged(nameof(ScanRepetitions));
+
+                _log.LogInformation($"{nameof(ScanRepetitions)} changed to {value}");
             }
         }
 
@@ -136,6 +151,8 @@ namespace Mosey.ViewModels
 
                 _appSettings.Update(c => c.ScanTimer.Delay = _userSettings.ScanTimer.Delay);
                 RaisePropertyChanged(nameof(ScanningDelay));
+
+                _log.LogInformation($"{nameof(ScanningDelay)} changed to {value}");
             }
         }
 
@@ -150,22 +167,22 @@ namespace Mosey.ViewModels
 
         public SettingsViewModel(
             ILogger<SettingsViewModel> logger,
-            IFolderBrowserDialog folderBrowserDialog,
+            UIServices uiServices,
             IWritableOptions<AppSettings> appSettings
             )
         {
             _log = logger;
-            _folderBrowserDialog = folderBrowserDialog;
-
+            _uiServices = uiServices;
             _appSettings = appSettings;
             _userSettings = appSettings.Get("UserSettings");
+            _dialog = new DialogViewModel(this, _uiServices, _log);
         }
 
         public override IViewModel Create()
         {
             return new SettingsViewModel(
                 logger: _log,
-                folderBrowserDialog: _folderBrowserDialog,
+                uiServices: _uiServices,
                 appSettings: _appSettings
                 );
         }
@@ -177,7 +194,7 @@ namespace Mosey.ViewModels
             get
             {
                 if (_SelectFolderCommand == null)
-                    _SelectFolderCommand = new RelayCommand(o => OpenFolderDialog());
+                    _SelectFolderCommand = new RelayCommand(o => ImageDirectoryDialog());
 
                 return _SelectFolderCommand;
             }
@@ -201,6 +218,8 @@ namespace Mosey.ViewModels
         /// </summary>
         private void ResetUserOptions()
         {
+            _log.LogDebug("Overwriting user settings with defaults.");
+
             // Copy default settings and write to disk
             _userSettings = _appSettings.Value.Copy();
             _appSettings.Update(c => {
@@ -217,21 +236,26 @@ namespace Mosey.ViewModels
             RaisePropertyChanged(nameof(ScannersEnableOnConnect));
             RaisePropertyChanged(nameof(ScannersEnableWhenScanning));
             RaisePropertyChanged(nameof(ScanHighestResolution));
+
+            _log.LogInformation("User settings reset to default.");
         }
 
         /// <summary>
-        /// Display a dialog window that allows the user to select a default image save location
+        /// Display a dialog window that allows the user to select the default image save location.
         /// </summary>
-        private void OpenFolderDialog()
+        private void ImageDirectoryDialog()
         {
-            _folderBrowserDialog.Title = "Choose the default image file save location";
-            // Go up one directory level, otherwise the dialog starts inside the selected directory
-            _folderBrowserDialog.InitialDirectory = Directory.GetParent(ImageSavePath).FullName;
-            // Ensure SelectedPath reflects current value
-            _folderBrowserDialog.SelectedPath = ImageSavePath;
+            // Go up one level so users can see the initial directory instead of starting inside it
+            string initialDirectory = Directory.GetParent(ImageSavePath).FullName;
+            if (string.IsNullOrWhiteSpace(initialDirectory)) initialDirectory = ImageSavePath;
 
-            _folderBrowserDialog.ShowDialog();
-            ImageSavePath = _folderBrowserDialog.SelectedPath;
+            string selectedDirectory = _dialog.FolderBrowserDialog(
+                initialDirectory,
+                "Choose the default image file save location"
+                );
+
+            // Only update the property if a path was actually returned
+            if (!string.IsNullOrWhiteSpace(selectedDirectory)) ImageSavePath = selectedDirectory;
         }
     }
 }

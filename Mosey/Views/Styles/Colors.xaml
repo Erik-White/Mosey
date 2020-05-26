@@ -13,4 +13,7 @@
     <SolidColorBrush x:Key="Color.Error">#DC3545</SolidColorBrush>
     <SolidColorBrush x:Key="Color.Success">#28A745</SolidColorBrush>
 
+    <SolidColorBrush x:Key="Color.Overlay.Light">#7FFFFFFF</SolidColorBrush>
+    <SolidColorBrush x:Key="Color.Overlay.Dark">#70000000</SolidColorBrush>
+
 </ResourceDictionary>

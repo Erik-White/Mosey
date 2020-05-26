@@ -111,7 +111,7 @@ namespace Mosey.Services.Imaging
 
         public IEnumerable<IImagingDevice> GetByEnabled(bool enabled)
         {
-            return _devices.Where(x => x.IsEnabled = enabled).AsEnumerable();
+            return _devices.Where(x => x.IsEnabled == enabled).AsEnumerable();
         }
 
         /// <summary>

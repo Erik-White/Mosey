@@ -21,6 +21,7 @@ namespace Mosey
     {
         private IConfiguration _appConfig;
         private IConfiguration _userConfig;
+        private ILogger<App> _log;
 
         protected override void OnStartup(StartupEventArgs e) 
         {
@@ -30,14 +31,6 @@ namespace Mosey
             _userConfig = CreateConfiguration("usersettings.json");
 
             var serviceProvider = new ServiceCollection()
-                // Logging to file
-                .AddLogging(options =>
-                {
-                    options.AddConsole();
-                    options.AddDebug();
-                    options.AddFile("mosey.log", append: true);
-                })
-
                 // Configuration
                 .Configure<AppSettings>(_appConfig)
                 .ConfigureWritable<AppSettings>(_userConfig, name: "UserSettings", file: "usersettings.json")
@@ -55,6 +48,16 @@ namespace Mosey
                         }
                     }
                 )
+
+                // Logging
+                .AddLogging(options =>
+                {
+                    options.AddConfiguration(_appConfig.GetSection("Logging"));
+                    options.AddConsole();
+                    options.AddDebug();
+                    // Logging to file
+                    options.AddFile("mosey.log", append: true);
+                })
 
                 // Services
                 .AddTransient<IIntervalTimer, IntervalTimer>()
@@ -77,8 +80,8 @@ namespace Mosey
                 // Finalize
                 .BuildServiceProvider();
 
-            var logger = serviceProvider.GetService<ILoggerFactory>().CreateLogger<App>();
-            logger.LogDebug("Starting application");
+            _log = serviceProvider.GetService<ILoggerFactory>().CreateLogger<App>();
+            _log.LogDebug("Starting application");
 
             // Locate MainViewModel dependencies and create new window
             var window = serviceProvider.GetRequiredService<Views.MainWindow>();
@@ -101,6 +104,7 @@ namespace Mosey
         protected override void OnExit(ExitEventArgs e)
         {
             base.OnExit(e);
+            _log.LogDebug("Closing application");
         }
     }
 }
