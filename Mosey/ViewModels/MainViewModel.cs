@@ -544,7 +544,22 @@ namespace Mosey.ViewModels
         private async void ScanTimer_Tick(object sender, EventArgs e)
         {
             _log.LogDebug($"{nameof(Scan)} event.");
-            await ScanAsync(_cancelScanTokenSource.Token);
+
+            try
+            {
+                await ScanAsync(_cancelScanTokenSource.Token);
+            }
+            catch (OperationCanceledException ex)
+            {
+                _log.LogInformation(ex, "Scanning cancelled before it could be completed");
+            }
+            catch (Exception ex)
+            {
+                // An unhandled error occurred, notify the user and cancel scanning
+                _log.LogError(ex, ex.Message);
+                await _dialog.ExceptionDialog(ex);
+                StopScan();
+            }
 
             // Update progress
             RaisePropertyChanged(nameof(ScanNextTime));
@@ -639,6 +654,11 @@ namespace Mosey.ViewModels
                         DevicesCollection.RefreshDevices(_imageConfig, enableDevices);
                     }, cancellationToken, TaskCreationOptions.None, _staQueue);
                 }
+                catch (Exception ex)
+                {
+                    _log.LogWarning(ex, "Error while attempting to refresh devices.");
+                    await _dialog.ExceptionDialog(ex);
+                }
                 finally
                 {
                     RaisePropertyChanged(nameof(DevicesCollection));
@@ -655,25 +675,26 @@ namespace Mosey.ViewModels
         /// </summary>
         /// <param name="cancellationToken">Used to stop current scanning operations</param>
         /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
+        /// <exception cref="OperationCanceledException">If scanning was cancelled before completion</exception>
         public List<string> Scan(CancellationToken cancellationToken = default)
         {
-            _log.LogDebug($"Scan initiated with {nameof(Scan)} method.");
+            _log.LogDebug($"Scanning initiated with {nameof(Scan)} method.");
             string scannerIDStr = string.Empty;
             string saveDateTime = DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat));
             string saveDirectory = ImageSavePath;
-            List<string> imagePaths = new List<string>();
+            var imagePaths = new List<string>();
 
-            try
+            // Order devices by ID to provide clearer feedback to users
+            foreach (IImagingDevice scanner in DevicesCollection.Devices.OrderBy(o => o.DeviceID).ToList())
             {
-                // Order devices by ID to provide clearer feedback to users
-                foreach (IImagingDevice scanner in DevicesCollection.Devices.OrderBy(o => o.DeviceID).ToList())
+                cancellationToken.ThrowIfCancellationRequested();
+
+                try
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    scannerIDStr = scanner.ID.ToString();
 
                     if (scanner.IsConnected && scanner.IsEnabled && !scanner.IsImaging)
                     {
-                        scannerIDStr = scanner.ID.ToString();
-
                         // Update image config in case of changes
                         scanner.ImageSettings = _imageConfig;
 
@@ -689,6 +710,7 @@ namespace Mosey.ViewModels
 
                         if (scanner.Images.Count() > 0)
                         {
+                            _log.LogDebug("{ImageCount} images retrieved from scanner #{DeviceID}", scanner.Images.Count(), scanner.ID);
                             string fileName = string.Join("_", _imageFileConfig.Prefix, saveDateTime);
                             string directory = Path.Combine(saveDirectory, string.Join(string.Empty, "Scanner", scannerIDStr));
                             Directory.CreateDirectory(directory);
@@ -698,29 +720,21 @@ namespace Mosey.ViewModels
                             foreach (string image in savedImages)
                             {
                                 imagePaths.Add(image);
-                                _log.LogInformation("Saved image from scanner #{DeviceID} to file: {ImagePath}", scannerIDStr, image);
+                                _log.LogInformation("Saved image from scanner #{DeviceID} to file: {ImagePath}", scanner.ID, image);
                             }
                         }
                         else
                         {
-                            _log.LogWarning("Unable to retrieve image from {DeviceName} (#{DeviceID})", scanner.Name, scannerIDStr);
+                            _log.LogWarning("Scanning successful, but no images retrieved from {DeviceName} (#{DeviceID})", scanner.Name, scanner.ID);
                         }
                     }
-                    if (!scanner.IsConnected)
-                    {
-                        _log.LogError("Connection to {DeviceName} (#{DeviceID}) lost while attempting scan.", scanner.Name, scannerIDStr);
-                    }
                 }
-            }
-            catch (OperationCanceledException ex)
-            {
-                _log.LogInformation(ex, $"Scanning operation cancelled.");
-                return imagePaths;
-            }
-            catch (Exception ex)
-            {
-                _log.LogWarning(ex, "Failed to retrive image on scanner #{DeviceID}.", scannerIDStr);
-                throw;
+                catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException || ex is InvalidOperationException)
+                {
+                    // Device will show as disconnected, no images returned
+                    _log.LogWarning(ex, "Communication error on scanner {DeviceName} (#{DeviceID}) while attempting scan.", scanner.Name, scannerIDStr);
+                    return imagePaths;
+                }
             }
             _log.LogDebug($"Scan completed with {nameof(Scan)} method.");
 
@@ -732,6 +746,7 @@ namespace Mosey.ViewModels
         /// </summary>
         /// <param name="cancellationToken">Used to stop current scanning operations</param>
         /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
+        /// <exception cref="OperationCanceledException">If scanning was cancelled before completion</exception>
         private async Task<List<string>> ScanAsync(CancellationToken cancellationToken = default)
         {
             _log.LogDebug($"Scan initiated with {nameof(ScanAsync)} method.");
@@ -755,8 +770,17 @@ namespace Mosey.ViewModels
                     {
                         // Manually clear (RCWs) to prevent memory leaks
                         System.Runtime.InteropServices.Marshal.CleanupUnusedObjectsInCurrentContext();
+                        // Force any pending exceptions to propagate up
+                        t.Wait();
                     }, staQueue);
                 }
+            }
+            catch (AggregateException aggregateEx)
+            {
+                // Unpack the aggregate
+                var innerException = aggregateEx.Flatten().InnerExceptions.FirstOrDefault();
+                // Ensure stack trace is preserved and rethrow
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(innerException).Throw();
             }
             finally
             {
