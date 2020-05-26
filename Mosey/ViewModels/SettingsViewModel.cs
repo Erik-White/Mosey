@@ -5,16 +5,17 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Mosey.Configuration;
 using Mosey.Models;
-using Mosey.Models.Dialog;
+using Mosey.Services;
 
 namespace Mosey.ViewModels
 {
     public class SettingsViewModel : ViewModelBase
     {
         private ILogger<SettingsViewModel> _log;
-        private IFolderBrowserDialog _folderBrowserDialog;
+        private readonly UIServices _uiServices;
         private IWritableOptions<AppSettings> _appSettings;
         private AppSettings _userSettings;
+        private readonly DialogViewModel _dialog;
 
         #region Properties
         public string ImageSavePath
@@ -166,22 +167,22 @@ namespace Mosey.ViewModels
 
         public SettingsViewModel(
             ILogger<SettingsViewModel> logger,
-            IFolderBrowserDialog folderBrowserDialog,
+            UIServices uiServices,
             IWritableOptions<AppSettings> appSettings
             )
         {
             _log = logger;
-            _folderBrowserDialog = folderBrowserDialog;
-
+            _uiServices = uiServices;
             _appSettings = appSettings;
             _userSettings = appSettings.Get("UserSettings");
+            _dialog = new DialogViewModel(this, _uiServices, _log);
         }
 
         public override IViewModel Create()
         {
             return new SettingsViewModel(
                 logger: _log,
-                folderBrowserDialog: _folderBrowserDialog,
+                uiServices: _uiServices,
                 appSettings: _appSettings
                 );
         }
@@ -193,7 +194,7 @@ namespace Mosey.ViewModels
             get
             {
                 if (_SelectFolderCommand == null)
-                    _SelectFolderCommand = new RelayCommand(o => OpenFolderDialog());
+                    _SelectFolderCommand = new RelayCommand(o => ImageDirectoryDialog());
 
                 return _SelectFolderCommand;
             }
@@ -240,18 +241,21 @@ namespace Mosey.ViewModels
         }
 
         /// <summary>
-        /// Display a dialog window that allows the user to select a default image save location
+        /// Display a dialog window that allows the user to select the default image save location.
         /// </summary>
-        private void OpenFolderDialog()
+        private void ImageDirectoryDialog()
         {
-            _folderBrowserDialog.Title = "Choose the default image file save location";
-            // Go up one directory level, otherwise the dialog starts inside the selected directory
-            _folderBrowserDialog.InitialDirectory = Directory.GetParent(ImageSavePath).FullName;
-            // Ensure SelectedPath reflects current value
-            _folderBrowserDialog.SelectedPath = ImageSavePath;
+            // Go up one level so users can see the initial directory instead of starting inside it
+            string initialDirectory = Directory.GetParent(ImageSavePath).FullName;
+            if (string.IsNullOrWhiteSpace(initialDirectory)) initialDirectory = ImageSavePath;
 
-            _folderBrowserDialog.ShowDialog();
-            ImageSavePath = _folderBrowserDialog.SelectedPath;
+            string selectedDirectory = _dialog.FolderBrowserDialog(
+                initialDirectory,
+                "Choose the default image file save location"
+                );
+
+            // Only update the property if a path was actually returned
+            if (!string.IsNullOrWhiteSpace(selectedDirectory)) ImageSavePath = selectedDirectory;
         }
     }
 }
