@@ -57,10 +57,10 @@
     <Grid>
         <!-- #region Progress ring -->
         <Grid Panel.ZIndex="1000" Visibility="{Binding Path=IsWaiting, Converter={StaticResource BoolToVisibilityConverter}}">
-            <Rectangle Fill="#7FFFFFFF" />
+            <Rectangle Fill="{StaticResource Color.Overlay.Light}" />
             <Controls:ProgressRing Height="120" Width="120" />
         </Grid>
-        <!-- #endregion Progress ring-->
+        <!-- #endregion Progress ring -->
         <!--<Border BorderThickness="{StaticResource Margin.Default}" BorderBrush="White" Background="WhiteSmoke">-->
         <DockPanel>
             <!--#region Header and logo -->
@@ -267,68 +267,75 @@
                     <ItemsControl ItemsSource="{Binding Source={StaticResource DevicesCollectionOrdered}}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Grid VerticalAlignment="Stretch">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="4*" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition />
-                                        <RowDefinition />
-                                    </Grid.RowDefinitions>
-                                    <Grid.Style>
-                                        <Style TargetType="{x:Type Grid}">
-                                            <Style.Resources>
-                                                <Style TargetType="TextBlock" BasedOn="{StaticResource TextBlockSmall}">
-                                                    <Setter Property="CustomControls:Margin.Left" Value="0" />
-                                                    <Setter Property="CustomControls:Margin.Right" Value="60" />
-                                                    <Setter Property="Padding" Value="{StaticResource Padding.Tiny}" />
-                                                    <Setter Property="VerticalAlignment" Value="Center" />
-                                                </Style>
-                                                <Style TargetType="{x:Type Label}" BasedOn="{StaticResource IconSmall}">
-                                                    <Setter Property="CustomControls:Margin.Left" Value="{StaticResource Default}" />
-                                                    <Setter Property="CustomControls:Margin.Right" Value="{StaticResource Tiny}" />
-                                                </Style>
-                                            </Style.Resources>
-                                            <Setter Property="CustomControls:Margin.Bottom" Value="{StaticResource Default}" />
-                                            <Setter Property="CustomControls:Margin.Right" Value="0" />
-                                            <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Gray9}" />
-                                        </Style>
-                                    </Grid.Style>
-                                    <TextBlock Text="{Binding Name}" Grid.Column="0" Grid.Row="0">
-                                        <TextBlock.Style>
-                                            <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockLarge}">
-                                                <Setter Property="Margin" Value="{StaticResource Margin.Horizontal.Default}" />
-                                                <Setter Property="CustomControls:Margin.Top" Value="{StaticResource Narrow}" />
-                                                <Setter Property="Padding" Value="0" />
+                                <Grid>
+                                    <!-- #region Overlay -->
+                                    <Grid Panel.ZIndex="1000" Visibility="{Binding IsConnected, Converter={StaticResource BoolToInvertedVisibilityConverter}}">
+                                        <Rectangle Fill="{StaticResource Color.Overlay.Light}" />
+                                    </Grid>
+                                    <!-- #endregion Overlay -->
+                                    <Grid VerticalAlignment="Stretch">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="4*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition />
+                                            <RowDefinition />
+                                        </Grid.RowDefinitions>
+                                        <Grid.Style>
+                                            <Style TargetType="{x:Type Grid}">
+                                                <Style.Resources>
+                                                    <Style TargetType="TextBlock" BasedOn="{StaticResource TextBlockSmall}">
+                                                        <Setter Property="CustomControls:Margin.Left" Value="0" />
+                                                        <Setter Property="CustomControls:Margin.Right" Value="60" />
+                                                        <Setter Property="Padding" Value="{StaticResource Padding.Tiny}" />
+                                                        <Setter Property="VerticalAlignment" Value="Center" />
+                                                    </Style>
+                                                    <Style TargetType="{x:Type Label}" BasedOn="{StaticResource IconSmall}">
+                                                        <Setter Property="CustomControls:Margin.Left" Value="{StaticResource Default}" />
+                                                        <Setter Property="CustomControls:Margin.Right" Value="{StaticResource Tiny}" />
+                                                    </Style>
+                                                </Style.Resources>
+                                                <Setter Property="CustomControls:Margin.Bottom" Value="{StaticResource Default}" />
+                                                <Setter Property="CustomControls:Margin.Right" Value="0" />
+                                                <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Gray9}" />
                                             </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                    <StackPanel Orientation="Horizontal" Grid.Column="0" Grid.Row="1" >
-                                        <Label>
-                                            <IconPacks:Material Kind="Scanner" Height="20" Width="20" />
-                                        </Label>
-                                        <TextBlock Text="{Binding ID}" />
-                                        <Label Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibilityConverter}}">
-                                            <IconPacks:Material Kind="CheckboxMultipleMarked" Height="20" Width="20" />
-                                        </Label>
-                                        <TextBlock Text="Connected" Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibilityConverter}}" />
-                                        <Label Visibility="{Binding IsConnected, Converter={StaticResource BoolToInvertedVisibilityConverter}}">
-                                            <Label.Style>
-                                                <Style TargetType="{x:Type Label}">
-                                                    <Setter Property="Foreground" Value="{StaticResource Color.Error}" />
+                                        </Grid.Style>
+                                        <TextBlock Text="{Binding Name}" Grid.Column="0" Grid.Row="0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockLarge}">
+                                                    <Setter Property="Margin" Value="{StaticResource Margin.Horizontal.Default}" />
+                                                    <Setter Property="CustomControls:Margin.Top" Value="{StaticResource Narrow}" />
+                                                    <Setter Property="Padding" Value="0" />
                                                 </Style>
-                                            </Label.Style>
-                                            <IconPacks:Material Kind="AlertRhombusOutline" Height="20" Width="20" />
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <StackPanel Orientation="Horizontal" Grid.Column="0" Grid.Row="1" >
+                                            <Label>
+                                                <IconPacks:Material Kind="Scanner" Height="20" Width="20" />
+                                            </Label>
+                                            <TextBlock Text="{Binding ID}" />
+                                            <Label Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <IconPacks:Material Kind="CheckboxMultipleMarked" Height="20" Width="20" />
+                                            </Label>
+                                            <TextBlock Text="Connected" Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                            <Label Visibility="{Binding IsConnected, Converter={StaticResource BoolToInvertedVisibilityConverter}}">
+                                                <Label.Style>
+                                                    <Style TargetType="{x:Type Label}">
+                                                        <Setter Property="Foreground" Value="{StaticResource Color.Error}" />
+                                                    </Style>
+                                                </Label.Style>
+                                                <IconPacks:Material Kind="AlertRhombusOutline" Height="20" Width="20" />
+                                            </Label>
+                                            <TextBlock Text="Disconnected" Visibility="{Binding IsConnected, Converter={StaticResource BoolToInvertedVisibilityConverter}}" />
+                                            <Controls:ToggleSwitchButton ToolTip="Enable or disable scanning on this device" IsChecked="{Binding Path=IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsImaging, Converter={Converters:BoolToInvertedBoolConverter}}" Cursor="Hand" />
+                                            <TextBlock Text="Scanning enabled" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                            <TextBlock Text="Scanning disabled" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToInvertedVisibilityConverter}}" />
+                                        </StackPanel>
+                                        <Label Visibility="{Binding IsImaging, Converter={StaticResource BoolToVisibilityConverter}}" Style="{StaticResource IconNormal}" Grid.Column="1" Grid.RowSpan="2">
+                                            <IconPacks:Material Kind="CameraControl" Spin="True" SpinDuration="2.5" Height="40" Width="40" />
                                         </Label>
-                                        <TextBlock Text="Disconnected" Visibility="{Binding IsConnected, Converter={StaticResource BoolToInvertedVisibilityConverter}}" />
-                                        <Controls:ToggleSwitchButton ToolTip="Enable or disable scanning on this device" IsChecked="{Binding Path=IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsImaging, Converter={Converters:BoolToInvertedBoolConverter}}" Cursor="Hand" />
-                                        <TextBlock Text="Scanning enabled" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVisibilityConverter}}" />
-                                        <TextBlock Text="Scanning disabled" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToInvertedVisibilityConverter}}" />
-                                    </StackPanel>
-                                    <Label Visibility="{Binding IsImaging, Converter={StaticResource BoolToVisibilityConverter}}" Style="{StaticResource IconNormal}" Grid.Column="1" Grid.RowSpan="2">
-                                        <IconPacks:Material Kind="CameraControl" Spin="True" SpinDuration="2.5" Height="40" Width="40" />
-                                    </Label>
+                                    </Grid>
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
