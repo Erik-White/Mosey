@@ -487,11 +487,20 @@ namespace Mosey.ViewModels
         }
 
         /// <summary>
-        /// Begin repeated scanning, after first checking interval time and free disk space are sufficient.
+        /// Begin repeated scanning, after first if checking interval time and free disk space are sufficient.
         /// </summary>
         public async void StartScanWithDialog()
         {
-            // TODO: Check that interval time is sufficient for selected resolution
+            // Check that interval time is sufficient for selected resolution
+            TimeSpan imagingTime = _DevicesCollection.GetByEnabled(true).Count() * _userDeviceConfig.GetResolutionMetaData(_imageConfig.Resolution).ImagingTime;
+            if (imagingTime * 1.5 > TimeSpan.FromMinutes(ScanInterval))
+            {
+                if (!await _dialog.ImagingTimeDialog(TimeSpan.FromMinutes(ScanInterval), imagingTime))
+                {
+                    _log.LogDebug($"Scanning not started due to low interval time: {imagingTime.TotalMinutes} minutes required, {ScanInterval} minutes selected.");
+                    return;
+                }
+            }
 
             // Check that disk space is sufficient for selected resolution
             long availableDiskSpace = FileSystemExtensions.AvailableFreeSpace(Path.GetPathRoot(_imageFileConfig.Directory));
