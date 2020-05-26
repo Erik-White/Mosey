@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Mosey.Models;
 using Mosey.Models.Dialog;
 using Mosey.Services.Dialog;
+using System.Runtime.InteropServices;
 
 namespace Mosey.ViewModels
 {
@@ -134,6 +135,49 @@ namespace Mosey.ViewModels
             if (dialogResult == DialogResult.Canceled) _log.LogDebug($"{nameof(StopScanDialog)} closed by CancellationToken before user input recieved");
 
             _log.LogDebug($"User input return from {nameof(StopScanDialog)}: {dialogResult}");
+
+            return dialogResult == DialogResult.Affirmative;
+        }
+
+        /// <summary>
+        /// Notify the user than an except has occurred and the exception message.
+        /// </summary>
+        /// <param name="ex">An exception to relay to the user</param>
+        /// <param name="timeout">Removes the dialogue if it is still running after this amount of milliseconds</param>
+        /// <param name="cancellationToken">Removes the dialogue if it is still running</param>
+        /// <returns><see langword="true"/> when the user has acknowledged the message</returns>
+        public async Task<bool> ExceptionDialog(Exception ex, int timeout = 5000, CancellationToken cancellationToken = default)
+        {
+            _log.LogDebug($"{nameof(ExceptionDialog)} initiated.");
+
+            string errorTitle = "An error occurred";
+            string errorMessage = "";
+
+            if (ex is COMException)
+            {
+                errorTitle = "Scanner communication error";
+                errorMessage = "A error occurred when attempting to communicate with a device";
+            }
+
+            IDialogSettings dialogSettings = new DialogSettings
+            {
+                AffirmativeButtonText = "OK",
+                CancellationToken = cancellationToken
+            };
+
+            // Show the dialogue until user input is recieved, or scanning is otherwise stopped
+            var dialogResult = await _dialogManager.ShowMessageWithTimeoutAsync(
+                _context,
+                errorTitle,
+                $"{errorMessage}{Environment.NewLine}{ex.GetType()}{Environment.NewLine}{ex.Message}",
+                DialogStyle.Affirmative,
+                dialogSettings,
+                timeout
+                );
+
+            if (dialogResult == DialogResult.Canceled) _log.LogDebug($"{nameof(ExceptionDialog)} closed by CancellationToken before user input recieved");
+
+            _log.LogDebug($"User input return from {nameof(ExceptionDialog)}: {dialogResult}");
 
             return dialogResult == DialogResult.Affirmative;
         }
