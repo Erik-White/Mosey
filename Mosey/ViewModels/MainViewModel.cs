@@ -20,8 +20,7 @@ namespace Mosey.ViewModels
         private IIntervalTimer _uiTimer;
         private IIntervalTimer _scanTimer;
         private IImagingDevices<IImagingDevice> _DevicesCollection;
-        private Models.Dialog.IDialogManager _dialogManager;
-        private Models.Dialog.IFolderBrowserDialog _folderBrowserDialog;
+        private readonly Services.UIServices _uiServices;
         private IViewModel _settingsViewModel;
 
         private DialogViewModel _dialog;
@@ -60,15 +59,21 @@ namespace Mosey.ViewModels
             }
         }
 
+        private string _imageSavePath;
+        /// <summary>
+        /// The directory path used to store images obtained when scanning.
+        /// </summary>
         public string ImageSavePath
         {
             get
             {
-                return _folderBrowserDialog.SelectedPath ?? _folderBrowserDialog.InitialDirectory;
+                _imageSavePath ??= _imageFileConfig.Directory;
+
+                return _imageSavePath;
             }
             set
             {
-                _folderBrowserDialog.SelectedPath = value;
+                _imageSavePath = value;
                 RaisePropertyChanged(nameof(ImageSavePath));
             }
         }
@@ -277,13 +282,12 @@ namespace Mosey.ViewModels
             _scanTimer = intervalTimer;
             _uiTimer = (IIntervalTimer)intervalTimer.Clone();
             _DevicesCollection = imagingDevices;
-            _dialogManager = uiServices.DialogManager;
-            _folderBrowserDialog = uiServices.FolderBrowserDialog;
+            _uiServices = uiServices;
             _settingsViewModel = settingsViewModel;
 
             _appSettings = appSettings;
             _log = logger;
-            _dialog = new DialogViewModel(this, _dialogManager, _log);
+            _dialog = new DialogViewModel(this, _uiServices, _log);
 
             // Initialise configuration options
             SetConfiguration();
@@ -303,10 +307,7 @@ namespace Mosey.ViewModels
             return new MainViewModel(
                 intervalTimer: _scanTimer,
                 imagingDevices: _DevicesCollection,
-                uiServices: new Services.UIServices(
-                    dialogManager: _dialogManager,
-                    folderBrowserDialog: _folderBrowserDialog
-                    ),
+                uiServices: _uiServices,
                 settingsViewModel: _settingsViewModel,
                 appSettings: _appSettings,
                 logger: _log
@@ -323,9 +324,6 @@ namespace Mosey.ViewModels
 
             // Lock scanners collection across threads to prevent conflicts
             System.Windows.Data.BindingOperations.EnableCollectionSynchronization(_DevicesCollection.Devices, _DevicesCollectionLock);
-
-            _folderBrowserDialog.InitialDirectory = _imageFileConfig.Directory;
-            _folderBrowserDialog.SelectedPath = _folderBrowserDialog.InitialDirectory;
 
             DevicesCollection.EnableAll();
             _log.LogDebug($"Configuration initialised with {nameof(SetConfiguration)}.");
@@ -451,7 +449,7 @@ namespace Mosey.ViewModels
             get
             {
                 if (_SelectFolderCommand == null)
-                    _SelectFolderCommand = new RelayCommand(o => OpenFolderDialog());
+                    _SelectFolderCommand = new RelayCommand(o => ImageDirectoryDialog());
 
                 return _SelectFolderCommand;
             }
@@ -792,17 +790,21 @@ namespace Mosey.ViewModels
         }
 
         /// <summary>
-        /// Display a dialog window that allows the user to select an image save location
+        /// Display a dialog window that allows the user to select the image save location.
         /// </summary>
-        private void OpenFolderDialog()
+        private void ImageDirectoryDialog()
         {
-            _folderBrowserDialog.Title = "Choose the image file save location";
-            // Go up one directory level, otherwise the dialog starts inside the selected directory
-            _folderBrowserDialog.InitialDirectory = Directory.GetParent(ImageSavePath).FullName;
+            // Go up one level so users can see the initial directory instead of starting inside it
+            string initialDirectory = Directory.GetParent(ImageSavePath).FullName;
+            if (string.IsNullOrWhiteSpace(initialDirectory)) initialDirectory = ImageSavePath;
 
-            _folderBrowserDialog.ShowDialog();
+            string selectedDirectory = _dialog.FolderBrowserDialog(
+                initialDirectory,
+                "Choose the image file save location"
+                );
 
-            RaisePropertyChanged(nameof(ImageSavePath));
+            // Only update the property if a path was actually returned
+            if (!string.IsNullOrWhiteSpace(selectedDirectory)) ImageSavePath = selectedDirectory;
         }
 
         public bool OnClosing()

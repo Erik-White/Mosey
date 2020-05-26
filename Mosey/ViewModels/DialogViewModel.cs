@@ -6,6 +6,7 @@ using Mosey.Models;
 using Mosey.Models.Dialog;
 using Mosey.Services.Dialog;
 using System.Runtime.InteropServices;
+using Mosey.Services;
 
 namespace Mosey.ViewModels
 {
@@ -16,20 +17,22 @@ namespace Mosey.ViewModels
     {
         private readonly IViewModel _context;
         private readonly IDialogManager _dialogManager;
+        private readonly IFolderBrowserDialog _folderBrowserDialog;
         private readonly ILogger _log;
 
-        public DialogViewModel(IViewModel viewModel, IDialogManager dialogManager, ILogger logger)
+        public DialogViewModel(IViewModel dialogContext, UIServices uiServices, ILogger logger)
         {
-            _context = viewModel;
-            _dialogManager = dialogManager;
+            _context = dialogContext;
+            _dialogManager = uiServices.DialogManager;
+            _folderBrowserDialog = uiServices.FolderBrowserDialog;
             _log = logger;
         }
 
         public override IViewModel Create()
         {
             return new DialogViewModel(
-                viewModel: _context,
-                dialogManager: _dialogManager,
+                dialogContext: _context,
+                uiServices: new UIServices(_dialogManager, _folderBrowserDialog),
                 logger: _log
                 );
         }
@@ -180,6 +183,21 @@ namespace Mosey.ViewModels
             _log.LogDebug($"User input return from {nameof(ExceptionDialog)}: {dialogResult}");
 
             return dialogResult == DialogResult.Affirmative;
+        }
+
+        /// <summary>
+        /// Display a <see cref="IFolderBrowserDialog"/> and return the selected path.
+        /// </summary>
+        /// <param name="initialDirectory">The directory location to start browsing</param>
+        /// <param name="title">The dialog title</param>
+        /// <returns>The user selected path, or an empty string if no directory was selected</returns>
+        public string FolderBrowserDialog(string initialDirectory, string title = "Select folder")
+        {
+            _folderBrowserDialog.Title = title;
+            _folderBrowserDialog.InitialDirectory = initialDirectory;
+            _folderBrowserDialog.ShowDialog();
+
+            return _folderBrowserDialog.SelectedPath;
         }
     }
 }
