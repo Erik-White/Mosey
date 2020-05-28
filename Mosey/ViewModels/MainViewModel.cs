@@ -504,14 +504,21 @@ namespace Mosey.ViewModels
             }
 
             // Check that disk space is sufficient for selected resolution
-            long availableDiskSpace = FileSystemExtensions.AvailableFreeSpace(Path.GetPathRoot(_imageFileConfig.Directory));
-            if (ImagesRequiredDiskSpace * 1.5 > availableDiskSpace)
+            try
             {
-                if (!await _dialog.DiskSpaceDialog(ImagesRequiredDiskSpace, availableDiskSpace))
+                long availableDiskSpace = FileSystemExtensions.AvailableFreeSpace(Path.GetPathRoot(_imageFileConfig.Directory));
+                if (ImagesRequiredDiskSpace * 1.5 > availableDiskSpace)
                 {
-                    _log.LogDebug($"Scanning not started due to low disk space: {Format.ByteSize(ImagesRequiredDiskSpace)} required, {Format.ByteSize(availableDiskSpace)} available.");
-                    return;
+                    if (!await _dialog.DiskSpaceDialog(ImagesRequiredDiskSpace, availableDiskSpace))
+                    {
+                        _log.LogDebug($"Scanning not started due to low disk space: {Format.ByteSize(ImagesRequiredDiskSpace)} required, {Format.ByteSize(availableDiskSpace)} available.");
+                        return;
+                    }
                 }
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                _log.LogWarning(ex, $"Unable to show {nameof(DialogViewModel.DiskSpaceDialog)} on path {_imageFileConfig.Directory} due to {ex.GetType()}");
             }
 
             StartScan();
