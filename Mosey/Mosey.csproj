@@ -27,6 +27,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <TrimmerRootAssembly Include="System.IO.FileSystem.DriveInfo" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AsyncAwaitBestPractices.MVVM" Version="4.1.0" />
     <PackageReference Include="DNTScanner.Core" Version="1.1.1" />
     <PackageReference Include="Macross.Json.Extensions" Version="1.4.1" />
