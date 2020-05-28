@@ -12,6 +12,8 @@ namespace Mosey.Models
         /// </summary>
         /// <param name="driveName">A drive root name, e.g. C:\</param>
         /// <returns>A <see cref="DriveInfo"/> instance that represents the logical drive <paramref name="driveName"/></returns>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="UnauthorizedAccessException"></exception>
         public static DriveInfo GetDriveInfo(string driveName)
         {
             return DriveInfo.GetDrives().Where(drive => drive.Name == driveName).FirstOrDefault();
@@ -22,6 +24,8 @@ namespace Mosey.Models
         /// </summary>
         /// <param name="driveName">A drive root name, e.g. C:\</param>
         /// <returns>The available free space, in bytes</returns>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="UnauthorizedAccessException"></exception>
         public static long AvailableFreeSpace(string driveName)
         {
             return GetDriveInfo(driveName).AvailableFreeSpace;
