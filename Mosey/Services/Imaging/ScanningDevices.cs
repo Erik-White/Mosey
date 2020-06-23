@@ -27,6 +27,7 @@ namespace Mosey.Services.Imaging
         public bool IsEmpty { get { return (_devices.Count == 0); } }
         public bool IsImagingInProgress { get { return _devices.Any(x => x.IsImaging is true); } }
         private ICollection<IImagingDevice> _devices = new ObservableItemsCollection<IImagingDevice>();
+        private readonly SystemDevices _systemDevices = new Mosey.Services.Imaging.SystemDevices();
 
         /// <summary>
         /// Initialize an empty collection.
@@ -88,7 +89,7 @@ namespace Mosey.Services.Imaging
             ScanningDevice device = null;
 
             // Attempt to connect a device matching the deviceID
-            var settings = SystemDevices.ScannerSettings(ConnectRetries).Where(x => x.Id == deviceID).FirstOrDefault();
+            var settings = _systemDevices.ScannerSettings(ConnectRetries).Where(x => x.Id == deviceID).FirstOrDefault();
 
             if (settings != null)
             {
@@ -134,7 +135,7 @@ namespace Mosey.Services.Imaging
         /// <inheritdoc cref="RefreshDevices(IImagingDeviceConfig, bool)"/>
         public void RefreshDevices(IImagingDeviceConfig deviceConfig, bool enableDevices = true)
         {
-            IList<IDictionary<string, object>> deviceProperties = SystemDevices.ScannerProperties(connectRetries: ConnectRetries);
+            IList<IDictionary<string, object>> deviceProperties = _systemDevices.ScannerProperties(connectRetries: ConnectRetries);
             if (deviceProperties.Count == 0)
             {
                 // No devices detected, any current devices have been disconnected
@@ -218,7 +219,7 @@ namespace Mosey.Services.Imaging
             _devices.Clear();
 
             // Populate a new collection of scanners using specified image settings
-            foreach (ScanningDevice device in SystemDevices.ScannerDevices(deviceConfig, ConnectRetries))
+            foreach (ScanningDevice device in _systemDevices.ScannerDevices(deviceConfig, ConnectRetries))
             {
                 device.IsEnabled = true;
                 AddDevice(device);
