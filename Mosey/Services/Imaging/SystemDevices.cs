@@ -12,22 +12,21 @@ namespace Mosey.Services.Imaging
     /// <summary>
     /// Provides access to the WIA driver devices via DNTScanner.Core
     /// </summary>
-    internal static class SystemDevices
+    internal sealed class SystemDevices : ISystemDevices
     {
         private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
-        /// <summary>
-        /// Retrieve image(s) from a scanner.
-        /// </summary>
-        /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
-        /// <param name="config">Device settings used when capturing an image</param>
-        /// <param name="format">The image format used internally for storing the image</param>
-        /// <param name="connectRetries">The number of attempts to try connecting to the WIA driver, after <paramref name="delay"/></param>
-        /// <param name="delay">The time in millseconds between <paramref name="connectRetries"/> attempts</param>
-        /// <returns>A list of retrieved images as byte arrays, in <paramref name="format"/></returns>
+        /// <inheritdoc/>
         /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
-        internal static IEnumerable<byte[]> PerformScan(ScannerSettings settings, IImagingDeviceConfig config, ScanningDevice.ImageFormat format, int connectRetries = 1, int delay = 1000)
+        public IEnumerable<byte[]> PerformScan(ScannerSettings settings, IImagingDeviceConfig config, ScanningDevice.ImageFormat format)
+        {
+            return PerformScan(settings, config, format, 1, 1000);
+        }
+        /// <inheritdoc/>
+        /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
+        /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
+        public IEnumerable<byte[]> PerformScan(ScannerSettings settings, IImagingDeviceConfig config, ScanningDevice.ImageFormat format, int connectRetries, int delay)
         {
             IEnumerable<byte[]> images = new List<byte[]>();
 
@@ -41,40 +40,38 @@ namespace Mosey.Services.Imaging
             return images;
         }
 
-        /// <summary>
-        /// A collection of <see cref="IImagingDevice"/> instances representing physical devices connected to the system.
-        /// </summary>
-        /// <param name="deviceConfig">Used to initialize the <see cref="ScanningDevice"/> instances</param>
-        /// <param name="connectRetries">The number of retry attempts allowed if connecting to the WIA driver was unsuccessful</param>
-        /// <param name="semaphore">A semaphore to coordinate connections to the WIA driver</param>
-        /// <returns>A collection of <see cref="ScanningDevice"/> instances representing physical scanning devices connected to the system</returns>
+        /// <inheritdoc/>
         /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
-        internal static IEnumerable<IImagingDevice> ScannerDevices(IImagingDeviceConfig deviceConfig, int connectRetries = 1)
+        public IEnumerable<IImagingDevice> ScannerDevices(IImagingDeviceConfig deviceConfig)
         {
-            var devices = new List<IImagingDevice>();
+            return ScannerDevices(deviceConfig, 1);
+        }
 
+        /// <inheritdoc/>
+        /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
+        /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
+        public IEnumerable<IImagingDevice> ScannerDevices(IImagingDeviceConfig deviceConfig, int connectRetries = 1)
+        {
             foreach (var settings in ScannerSettings(connectRetries))
             {
                 // Store the device in the collection
-                devices.Add(new ScanningDevice(settings, deviceConfig));
+                yield return new ScanningDevice(settings, deviceConfig);
             }
-
-            return devices;
         }
 
-        /// <summary>
-        /// Lists the static properties of scanners connected to the system.
-        /// Use the <see cref="ScannerDevices"/> function to retrieve full device instances.
-        /// </summary>
-        /// <remarks>
-        /// Static device properties are limited, but can be retrieved without establishing a connection to the device.
-        /// </remarks>
-        /// <param name="connectRetries">The number of retry attempts allowed if connecting to the WIA driver was unsuccessful</param>
-        /// <returns>A list of the static device properties</returns>
+        /// <inheritdoc/>
         /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
-        internal static IList<IDictionary<string, object>> ScannerProperties(int connectRetries = 1)
+        public IList<IDictionary<string, object>> ScannerProperties()
+        {
+            return ScannerProperties(1);
+        }
+
+        /// <inheritdoc/>
+        /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
+        /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
+        public IList<IDictionary<string, object>> ScannerProperties(int connectRetries)
         {
             IList<IDictionary<string, object>> properties = new List<IDictionary<string, object>>();
 
@@ -94,7 +91,7 @@ namespace Mosey.Services.Imaging
         /// <returns>A collection of <see cref="ScannerSettings"/> representing physical devices connected to the system.</returns>
         /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
-        internal static IEnumerable<ScannerSettings> ScannerSettings(int connectRetries = 1)
+        public IEnumerable<ScannerSettings> ScannerSettings(int connectRetries = 1)
         {
             var deviceList = new List<ScannerSettings>();
 
@@ -122,14 +119,10 @@ namespace Mosey.Services.Imaging
         /// <summary>
         /// Create and configure a new <see cref="ScannerDevice"/> instance.
         /// </summary>
-        /// <remarks>
-        /// If the resolution specified in <paramref name="config"/> is not available,
-        /// the closest value in <see cref="ScannerSettings.SupportedResolutions"/> will be used.
-        /// </remarks>
         /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
         /// <param name="config">Device settings used when capturing an image</param>
         /// <returns>A <see cref="ScannerDevice"/> instance configured using <paramref name="config"/></returns>
-        private static ScannerDevice ConfiguredScannerDevice(ScannerSettings settings, IImagingDeviceConfig config)
+        private ScannerDevice ConfiguredScannerDevice(ScannerSettings settings, IImagingDeviceConfig config)
         {
             var device = new ScannerDevice(settings);
             var supportedResolutions = settings.SupportedResolutions;
@@ -183,6 +176,7 @@ namespace Mosey.Services.Imaging
         /// The WIA driver will produce COMExceptions if attempting to connect to a device that is
         /// not ready, cannot be found etc. In many cases a successful connection can be made by reattempting
         /// shortly after.
+        /// <para/>
         /// The DNTScanner wrapper does not provide any events or async methods that would allow for simply
         /// awaiting the WIA driver directly
         /// </remarks>
