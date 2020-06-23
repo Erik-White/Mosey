@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Windows;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -12,6 +13,7 @@ using Mosey.Services.Dialog;
 using Mosey.Services.Imaging;
 using Mosey.ViewModels;
 
+[assembly: InternalsVisibleTo("MoseyTests")]
 namespace Mosey
 {
     /// <summary>
