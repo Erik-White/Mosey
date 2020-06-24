@@ -53,5 +53,15 @@ namespace Mosey.Services.Imaging
         /// <inheritdoc cref="ScannerProperties"/>
         /// <param name="connectRetries">The number of retry attempts allowed if connecting to the WIA driver was unsuccessful</param>
         public IList<IDictionary<string, object>> ScannerProperties(int connectRetries);
+
+        /// <summary>
+        /// A collection of <see cref="ScannerSettings"/> representing physical devices connected to the system.
+        /// </summary>
+        /// <returns>A collection of <see cref="ScannerSettings"/> representing physical devices connected to the system.</returns>
+        public IEnumerable<ScannerSettings> ScannerSettings();
+
+        /// <inheritdoc cref="ScannerSettings"/>
+        /// <param name="connectRetries">The number of retry attempts allowed if connecting to the WIA driver was unsuccessful</param>
+        public IEnumerable<ScannerSettings> ScannerSettings(int connectRetries);
     }
 }

@@ -84,14 +84,18 @@ namespace Mosey.Services.Imaging
             return properties;
         }
 
-        /// <summary>
-        /// A collection of <see cref="ScannerSettings"/> representing physical devices connected to the system.
-        /// </summary>
-        /// <param name="connectRetries">The number of retry attempts allowed if connecting to the WIA driver was unsuccessful</param>
-        /// <returns>A collection of <see cref="ScannerSettings"/> representing physical devices connected to the system.</returns>
+        /// <inheritdoc/>
         /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
-        public IEnumerable<ScannerSettings> ScannerSettings(int connectRetries = 1)
+        public IEnumerable<ScannerSettings> ScannerSettings()
+        {
+            return ScannerSettings(1);
+        }
+
+        /// <inheritdoc/>
+        /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
+        /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
+        public IEnumerable<ScannerSettings> ScannerSettings(int connectRetries)
         {
             var deviceList = new List<ScannerSettings>();
 
