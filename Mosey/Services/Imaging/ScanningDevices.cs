@@ -27,21 +27,22 @@ namespace Mosey.Services.Imaging
         public bool IsEmpty { get { return (_devices.Count == 0); } }
         public bool IsImagingInProgress { get { return _devices.Any(x => x.IsImaging is true); } }
         private ICollection<IImagingDevice> _devices = new ObservableItemsCollection<IImagingDevice>();
-        private readonly SystemDevices _systemDevices = new Mosey.Services.Imaging.SystemDevices();
+        private readonly ISystemDevices _systemDevices;
 
         /// <summary>
         /// Initialize an empty collection.
         /// </summary>
-        public ScanningDevices()
-        {
-        }
+        /// <param name="systemDevices">An <see cref="ISystemDevices"/> instance that provide access to the WIA driver devices</param>
+        public ScanningDevices(ISystemDevices systemDevices) : this(null, systemDevices) { }
 
         /// <summary>
         /// Initialize the collection <see cref="ScanningDevice"/>s with the specified <paramref name="deviceConfig"/>.
         /// </summary>
         /// <param name="deviceConfig">Used to initialize the collection's <see cref="ScanningDevice"/>s</param>
-        public ScanningDevices(IImagingDeviceConfig deviceConfig)
+        /// <param name="systemDevices">An <see cref="ISystemDevices"/> instance that provide access to the WIA driver devices</param>
+        public ScanningDevices(IImagingDeviceConfig deviceConfig, ISystemDevices systemDevices)
         {
+            _systemDevices = systemDevices ?? new SystemDevices();
             GetDevices(deviceConfig);
         }
 
@@ -55,6 +56,8 @@ namespace Mosey.Services.Imaging
             return AddDevice(deviceID, null);
         }
 
+        /// <inheritdoc/>
+        /// <exception cref="ArgumentException">If a device with the same <see cref="IDevice.DeviceID"/> already exists in the collection</exception>
         public void AddDevice(IDevice device)
         {
             AddDevice((ScanningDevice)device);
@@ -69,7 +72,7 @@ namespace Mosey.Services.Imaging
         {
             if (!_devices.Contains(device))
             {
-                _devices.Add((IImagingDevice)device);
+                _devices.Add(device);
             }
             else
             {
@@ -132,11 +135,11 @@ namespace Mosey.Services.Imaging
             }
         }
 
-        /// <inheritdoc cref="RefreshDevices(IImagingDeviceConfig, bool)"/>
+        /// <inheritdoc cref="RefreshDevices()"/>
         public void RefreshDevices(IImagingDeviceConfig deviceConfig, bool enableDevices = true)
         {
-            IList<IDictionary<string, object>> deviceProperties = _systemDevices.ScannerProperties(connectRetries: ConnectRetries);
-            if (deviceProperties.Count == 0)
+            var deviceProperties = _systemDevices.ScannerProperties(connectRetries: ConnectRetries);
+            if (deviceProperties is null || deviceProperties.Count == 0)
             {
                 // No devices detected, any current devices have been disconnected
                 foreach (ScanningDevice device in _devices)
@@ -192,7 +195,7 @@ namespace Mosey.Services.Imaging
 
         public void SetDeviceEnabled(IImagingDevice device, bool enabled)
         {
-            _devices.Where(x => x.DeviceID == device.DeviceID).First().IsEnabled = enabled;
+            SetDeviceEnabled(device.DeviceID, enabled);
         }
 
         /// <summary>
@@ -203,7 +206,7 @@ namespace Mosey.Services.Imaging
         private int GetDevices()
         {
             // Populate a new collection of scanners using default image settings
-            return GetDevices(new ScanningDeviceSettings());
+            return GetDevices(null);
         }
 
         /// <summary>
@@ -215,6 +218,8 @@ namespace Mosey.Services.Imaging
         /// <returns>The number of devices added to the collection</returns>
         private int GetDevices(IImagingDeviceConfig deviceConfig)
         {
+            deviceConfig ??= new ScanningDeviceSettings();
+
             // Empty the collection
             _devices.Clear();
 
