@@ -5,7 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 
-namespace MoseyTests
+namespace MoseyTests.Extensions
 {
     public static class MSTestExtensions
     {

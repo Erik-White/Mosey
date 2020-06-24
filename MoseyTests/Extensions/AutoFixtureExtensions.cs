@@ -4,7 +4,7 @@ using System.Text;
 using AutoFixture;
 using AutoFixture.Kernel;
 
-namespace MoseyTests
+namespace MoseyTests.Extensions
 {
     public static class AutoFixtureExtensions
     {   

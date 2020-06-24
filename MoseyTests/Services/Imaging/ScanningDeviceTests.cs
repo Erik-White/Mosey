@@ -8,9 +8,9 @@ using AutoFixture;
 using AutoFixture.AutoMoq;
 using FluentAssertions;
 using System.IO.Abstractions;
-using MoseyTests;
 using Mosey.Models;
 using Mosey.Services.Imaging.Extensions;
+using MoseyTests.Extensions;
 
 namespace Mosey.Services.Imaging.Tests
 {

@@ -1,7 +1,7 @@
 ﻿using AutoFixture;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using MoseyTests;
+using MoseyTests.Extensions;
 
 namespace Mosey.Services.Imaging.Tests
 {
