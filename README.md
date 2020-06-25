@@ -3,7 +3,7 @@ Multi scanner interval imaging tool. Runs on Windows 7 and up
 
 Get the [latest release](https://github.com/Erik-White/Mosey/releases)
 
-![Alt text](Docs/Images/scan_progress.gif?raw=true "Mosey scanning")
+![Mosey scanning](Docs/images/scan_progress.gif "Mosey scanning")
 
 ### Quick start
 - Download the  [latest release](https://github.com/Erik-White/Mosey/releases) for your version of Windows (i.e. 32 or 64 bit)
@@ -17,8 +17,8 @@ Get the [latest release](https://github.com/Erik-White/Mosey/releases)
 
 ### Screenshots
 
-![Alt text](Docs/Images/window_med.png?raw=true "Mosey main window")
+![Mosey main window](Docs/images/window_med.png "Mosey main window")
 
-![Alt text](Docs/Images/scanning_med.png?raw=true "Mosey during scanning")
+![Mosey during scanning](Docs/images/scanning_med.png "Mosey during scanning")
 
-![Alt text](Docs/Images/options_med.png?raw=true "Mosey options")
+![Mosey options](Docs/images/options_med.png "Mosey options")
