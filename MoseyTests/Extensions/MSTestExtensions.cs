@@ -1,9 +1,7 @@
-﻿using NUnit.Framework;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
+using NUnit.Framework;
 
 namespace MoseyTests.Extensions
 {
@@ -27,7 +25,7 @@ namespace MoseyTests.Extensions
         }
 
         /// <summary>
-        /// A property name as a string.
+        /// Retrieve a property name as a string.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="exp"></param>
