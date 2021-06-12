@@ -1,8 +1,6 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
 using Moq;
 using AutoFixture;
 using AutoFixture.AutoMoq;
@@ -11,10 +9,11 @@ using System.IO.Abstractions;
 using Mosey.Models;
 using Mosey.Services.Imaging.Extensions;
 using MoseyTests.Extensions;
+using NUnit.Framework;
 
 namespace Mosey.Services.Imaging.Tests
 {
-    [TestClass()]
+    [TestFixture]
     public class ScanningDeviceTests
     {
         private IFixture _fixture;
@@ -22,7 +21,7 @@ namespace Mosey.Services.Imaging.Tests
         private DNTScanner.Core.ScannerSettings _settings;
         private ScanningDevice.ImageFormat _supportedFormat = ScanningDevice.ImageFormat.Jpeg;
 
-        [TestInitialize]
+        [SetUp]
         public void SetUp()
         {
             _fixture = new Fixture().Customize(new AutoMoqCustomization());
@@ -78,7 +77,7 @@ namespace Mosey.Services.Imaging.Tests
             _fixture.Inject(scanningDeviceMock.Object);
         }
 
-        [TestMethod()]
+        [Test]
         public void ScanningDeviceTest()
         {
             // The SetUp fixture uses the greedy constructor so use a new fixture
@@ -93,7 +92,7 @@ namespace Mosey.Services.Imaging.Tests
             instance.IsImaging.Should().BeFalse();
         }
 
-        [TestMethod()]
+        [Test]
         public void ScanningDeviceTestGreedy()
         {
             var instance = _fixture.Create<ScanningDevice>();
@@ -104,7 +103,7 @@ namespace Mosey.Services.Imaging.Tests
             instance.IsImaging.Should().BeFalse();
         }
 
-        [TestMethod()]
+        [Test]
         public void ClearImagesTest()
         {
             var instance = _fixture.Create<ScanningDevice>();
@@ -118,7 +117,7 @@ namespace Mosey.Services.Imaging.Tests
             instance.Images.Should().NotBeNull().And.BeEmpty();
         }
 
-        [TestMethod()]
+        [Test]
         public void GetImageTest()
         {
             var instance = _fixture.Create<ScanningDevice>();
@@ -128,7 +127,7 @@ namespace Mosey.Services.Imaging.Tests
             instance.Images.Should().BeEquivalentTo(_images);
         }
 
-        [TestMethod()]
+        [Test]
         public void GetImageRaisesCOMExceptionTest()
         {
             var instance = _fixture.Create<ScanningDevice>();
@@ -140,7 +139,7 @@ namespace Mosey.Services.Imaging.Tests
                 .Should().Throw<COMException>();
         }
 
-        [TestMethod()]
+        [Test]
         public void GetImageRaisesArgumentExceptionTest()
         {
             var instance = _fixture.Create<ScanningDevice>();
@@ -150,7 +149,7 @@ namespace Mosey.Services.Imaging.Tests
                 .Should().Throw<ArgumentException>();
         }
 
-        [TestMethod()]
+        [Test]
         public void GetImageRaisesPropertyChangedTest()
         {
             var instance = _fixture.Create<ScanningDevice>();
@@ -168,7 +167,7 @@ namespace Mosey.Services.Imaging.Tests
             instance.IsImaging.Should().BeFalse();
         }
 
-        [TestMethod()]
+        [Test]
         public void SaveImageTest()
         {
             var instance = Mock.Get(_fixture.Create<ScanningDevice>());
@@ -181,7 +180,7 @@ namespace Mosey.Services.Imaging.Tests
             instance.Verify();
         }
 
-        [TestMethod()]
+        [Test]
         public void SaveImageStringFormatTest()
         {
             var instance = Mock.Get(_fixture.Create<ScanningDevice>());
@@ -194,7 +193,7 @@ namespace Mosey.Services.Imaging.Tests
             instance.Verify();
         }
 
-        [TestMethod()]
+        [Test]
         public void SaveImageRaisesInvalidOperationExceptionTest()
         {
             var instance = _fixture.Create<ScanningDevice>();
@@ -206,7 +205,7 @@ namespace Mosey.Services.Imaging.Tests
                 .Should().Throw<InvalidOperationException>();
         }
 
-        [TestMethod()]
+        [Test]
         public void SaveImageRaisesArgumentExceptionTest()
         {
             var instance = _fixture.Create<ScanningDevice>();
@@ -218,7 +217,7 @@ namespace Mosey.Services.Imaging.Tests
                 .Should().Throw<ArgumentException>();
         }
 
-        [TestMethod()]
+        [Test]
         public void EqualsDeviceTest()
         {
             var instance = _fixture.Create<ScanningDevice>();
@@ -230,7 +229,7 @@ namespace Mosey.Services.Imaging.Tests
             instance.Equals(compare).Should().BeFalse();
         }
 
-        [TestMethod()]
+        [Test]
         public void EqualsObjectTest()
         {
             var instance = _fixture.Create<ScanningDevice>();
@@ -242,7 +241,7 @@ namespace Mosey.Services.Imaging.Tests
             instance.Equals((object)compare).Should().BeFalse();
         }
 
-        [TestMethod()]
+        [Test]
         public void GetHashCodeTest()
         {
             var instance = _fixture.Create<ScanningDevice>();

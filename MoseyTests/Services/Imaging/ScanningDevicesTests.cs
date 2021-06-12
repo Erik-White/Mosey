@@ -1,8 +1,6 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+﻿using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Text;
 using MoseyTests.Extensions;
 using Moq;
 using AutoFixture;
@@ -10,17 +8,18 @@ using AutoFixture.AutoMoq;
 using FluentAssertions;
 using DNTScanner.Core;
 using Mosey.Models;
+using NUnit.Framework;
 
 namespace Mosey.Services.Imaging.Tests
 {
-    [TestClass()]
+    [TestFixture]
     public class ScanningDevicesTests
     {
         private int CollectionMockCapacity { get; set; } = 5;
 
         private IFixture _fixture;
 
-        [TestInitialize]
+        [SetUp]
         public void SetUp()
         {
             _fixture = new Fixture().Customize(new AutoMoqCustomization());
@@ -48,7 +47,7 @@ namespace Mosey.Services.Imaging.Tests
                 .Returns(scannerSettings);
         }
 
-        [TestMethod()]
+        [Test]
         public void ScanningDevicesTest()
         {
             var instance = _fixture.Create<ScanningDevices>();
@@ -58,7 +57,7 @@ namespace Mosey.Services.Imaging.Tests
             instance.Devices.Count().Should().Be(CollectionMockCapacity);
         }
 
-        [TestMethod()]
+        [Test]
         public void ScanningDevicesGreedyTest()
         {
             _fixture.SetGreedyConstructor<ScanningDevices>();
@@ -69,7 +68,7 @@ namespace Mosey.Services.Imaging.Tests
             instance.Devices.Count().Should().Be(CollectionMockCapacity);
         }
 
-        [TestMethod()]
+        [Test]
         public void AddDeviceByIDTest()
         {
             var instance = _fixture.Create<ScanningDevices>();
@@ -86,7 +85,7 @@ namespace Mosey.Services.Imaging.Tests
                 .And.Contain(i => i.DeviceID == predictableID);
         }
 
-        [TestMethod()]
+        [Test]
         public void AddDeviceInstanceTest()
         {
             var instance = _fixture.Create<ScanningDevices>();
@@ -100,7 +99,7 @@ namespace Mosey.Services.Imaging.Tests
                 .And.Contain(device);
         }
 
-        [TestMethod()]
+        [Test]
         public void AddDeviceInstanceRaisesArgumentExceptionTest()
         {
             var instance = _fixture.Create<ScanningDevices>();
@@ -115,7 +114,7 @@ namespace Mosey.Services.Imaging.Tests
                 .Should().Throw<ArgumentException>();
         }
 
-        [TestMethod()]
+        [Test]
         public void DisableAllTest()
         {
             var instance = _fixture.Create<ScanningDevices>();
@@ -127,7 +126,7 @@ namespace Mosey.Services.Imaging.Tests
             instance.Devices.All(device => device.IsEnabled == false).Should().BeTrue();
         }
 
-        [TestMethod()]
+        [Test]
         public void EnableAllTest()
         {
             var instance = _fixture.Create<ScanningDevices>();
@@ -144,9 +143,8 @@ namespace Mosey.Services.Imaging.Tests
             instance.Devices.All(device => device.IsEnabled == true).Should().BeTrue();
         }
 
-        [TestMethod()]
-        [DataRow(true)]
-        [DataRow(false)]
+        [TestCase(true)]
+        [TestCase(false)]
         public void GetByEnabledTest(bool enabled)
         {
             var instance = _fixture.Create<ScanningDevices>();
@@ -168,7 +166,7 @@ namespace Mosey.Services.Imaging.Tests
             }
         }
 
-        [TestMethod()]
+        [Test]
         public void RefreshDevicesDisconnectedAllTest()
         {
             var instance = _fixture.Create<ScanningDevices>();
@@ -180,7 +178,7 @@ namespace Mosey.Services.Imaging.Tests
             instance.Devices.All(device => device.IsConnected == false).Should().BeTrue();
         }
 
-        [TestMethod()]
+        [Test]
         public void RefreshDevicesDisconnectedSingleTest()
         {
             var systemDevices = _fixture.Create<ISystemDevices>();
@@ -217,9 +215,8 @@ namespace Mosey.Services.Imaging.Tests
                 .Should().BeFalse();
         }
 
-        [TestMethod()]
-        [DataRow(true)]
-        [DataRow(false)]
+        [TestCase(true)]
+        [TestCase(false)]
         public void SetDeviceEnabledTest(bool enabled)
         {
             var instance = _fixture.Create<ScanningDevices>();
@@ -233,9 +230,8 @@ namespace Mosey.Services.Imaging.Tests
                 .Should().Equal(enabled);
         }
 
-        [TestMethod()]
-        [DataRow(true)]
-        [DataRow(false)]
+        [TestCase(true)]
+        [TestCase(false)]
         public void SetDeviceEnabledInstanceTest(bool enabled)
         {
             var instance = _fixture.Create<ScanningDevices>();

@@ -1,22 +1,22 @@
 ﻿using AutoFixture;
 using FluentAssertions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MoseyTests.Extensions;
+using NUnit.Framework;
 
 namespace Mosey.Services.Imaging.Tests
 {
-    [TestClass()]
+    [TestFixture]
     public class ScanningDeviceSettingsTests
     {
         Fixture _fixture;
 
-        [TestInitialize]
+        [SetUp]
         public void SetUp()
         {
             _fixture = new Fixture();
         }
 
-        [TestMethod()]
+        [Test]
         public void ScanningDeviceSettingsTest()
         {
             var instance = _fixture.Create<ScanningDeviceSettings>();
@@ -24,7 +24,7 @@ namespace Mosey.Services.Imaging.Tests
             instance.AssertAllPropertiesAreNotDefault();
         }
 
-        [TestMethod()]
+        [Test]
         public void ScanningDeviceSettingsTestGreedy()
         {
             // AutoFixture uses least greedy constructor by default
@@ -35,7 +35,7 @@ namespace Mosey.Services.Imaging.Tests
             instance.AssertAllPropertiesAreNotDefault();
         }
 
-        [TestMethod()]
+        [Test]
         public void CloneTest()
         {
             var original = _fixture.Create<ScanningDeviceSettings>();

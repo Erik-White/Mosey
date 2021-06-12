@@ -1,24 +1,24 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using FluentAssertions;
 using AutoFixture;
+using NUnit.Framework;
 
 namespace Mosey.Services.Imaging.Tests
 {
-    [TestClass()]
+    [TestFixture]
     public class ImageFileConfigTests
     {
         Fixture _fixture;
 
-        [TestInitialize]
+        [SetUp]
         public void SetUp()
         {
             _fixture = new Fixture();
         }
 
-        [TestMethod()]
+        [Test]
         public void CloneTest()
         {
             var original = _fixture.Create<ImageFileConfig>();
