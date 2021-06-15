@@ -1,248 +1,234 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
-using MoseyTests.Extensions;
+using NUnit.Framework;
+using AutoFixture.NUnit3;
 using Moq;
-using AutoFixture;
-using AutoFixture.AutoMoq;
 using FluentAssertions;
 using DNTScanner.Core;
 using Mosey.Models;
-using NUnit.Framework;
+using MoseyTests.Extensions;
+using MoseyTests.AutoData;
 
 namespace Mosey.Services.Imaging.Tests
 {
     [TestFixture]
     public class ScanningDevicesTests
     {
-        private int CollectionMockCapacity { get; set; } = 5;
-
-        private IFixture _fixture;
-
-        [SetUp]
-        public void SetUp()
+        public class ConstructorShould
         {
-            _fixture = new Fixture().Customize(new AutoMoqCustomization());
-
-            // Create and configure return values for SystemDevices
-            var systemDevicesMock = _fixture.FreezeMoq<ISystemDevices>();
-            // Use concrete class otherwise cast from interface proxy type fails
-            var scannerDevices = new List<ScanningDevice>();
-            _fixture.AddManyTo(scannerDevices, CollectionMockCapacity);
-            systemDevicesMock
-                .Setup(mock => mock.ScannerDevices(
-                    It.IsAny<IImagingDeviceConfig>(),
-                    It.IsAny<int>()
-                    ))
-                .Returns(scannerDevices);
-
-            var scannerSettings = new List<ScannerSettings>();
-            _fixture.AddManyTo(scannerSettings, CollectionMockCapacity);
-            // Ensure there is an item with a predictable ID
-            scannerSettings.First().Id = CollectionMockCapacity.ToString();
-            systemDevicesMock
-                .Setup(mock => mock.ScannerSettings(
-                    It.IsAny<int>()
-                    ))
-                .Returns(scannerSettings);
-        }
-
-        [Test]
-        public void ScanningDevicesTest()
-        {
-            var instance = _fixture.Create<ScanningDevices>();
-
-            instance.AssertAllPropertiesAreNotDefault();
-            instance.IsEmpty.Should().BeFalse();
-            instance.Devices.Count().Should().Be(CollectionMockCapacity);
-        }
-
-        [Test]
-        public void ScanningDevicesGreedyTest()
-        {
-            _fixture.SetGreedyConstructor<ScanningDevices>();
-            var instance = _fixture.Create<ScanningDevices>();
-
-            instance.AssertAllPropertiesAreNotDefault();
-            instance.IsEmpty.Should().BeFalse();
-            instance.Devices.Count().Should().Be(CollectionMockCapacity);
-        }
-
-        [Test]
-        public void AddDeviceByIDTest()
-        {
-            var instance = _fixture.Create<ScanningDevices>();
-            string predictableID = CollectionMockCapacity.ToString();
-
-            // The deviceID parameter is checked against IDs returned by ISystemDevices.ScannerSettings()
-            // The deviceID will not already be in the collection as it is initialised from
-            // SystemDevices.ScannerDevices() which will return mocked devices
-            instance.AddDevice(deviceID: predictableID);
-
-            instance.Devices.Should()
-                .HaveCount(CollectionMockCapacity + 1)
-                .And.OnlyHaveUniqueItems()
-                .And.Contain(i => i.DeviceID == predictableID);
-        }
-
-        [Test]
-        public void AddDeviceInstanceTest()
-        {
-            var instance = _fixture.Create<ScanningDevices>();
-            // Use concrete class otherwise cast from interface proxy type fails
-            var device = _fixture.Create<ScanningDevice>();
-
-            instance.AddDevice(device);
-
-            instance.Devices.Should()
-                .HaveCount(CollectionMockCapacity + 1)
-                .And.Contain(device);
-        }
-
-        [Test]
-        public void AddDeviceInstanceRaisesArgumentExceptionTest()
-        {
-            var instance = _fixture.Create<ScanningDevices>();
-            // Use concrete class otherwise cast from interface proxy type fails
-            var device = _fixture.Create<ScanningDevice>();
-
-            // Ensure the device already exists in the collection
-            instance.AddDevice(device);
-
-            instance
-                .Invoking(i => i.AddDevice(device))
-                .Should().Throw<ArgumentException>();
-        }
-
-        [Test]
-        public void DisableAllTest()
-        {
-            var instance = _fixture.Create<ScanningDevices>();
-
-            instance.Devices.All(device => device.IsEnabled == true).Should().BeTrue();
-
-            instance.DisableAll();
-
-            instance.Devices.All(device => device.IsEnabled == false).Should().BeTrue();
-        }
-
-        [Test]
-        public void EnableAllTest()
-        {
-            var instance = _fixture.Create<ScanningDevices>();
-
-            foreach (var device in instance.Devices)
+            [Theory, ScanningDeviceAutoData]
+            public void InitializeCollection(ScanningDevices sut)
             {
-                device.IsEnabled = false;
+                sut.AssertAllPropertiesAreNotDefault();
+                sut.IsEmpty.Should().BeFalse();
+                sut.Devices.Count().Should().Be(3);
+                sut.Devices.All(device => device.IsEnabled == true).Should().BeTrue();
             }
 
-            instance.Devices.All(device => device.IsEnabled == false).Should().BeTrue();
-
-            instance.EnableAll();
-
-            instance.Devices.All(device => device.IsEnabled == true).Should().BeTrue();
-        }
-
-        [TestCase(true)]
-        [TestCase(false)]
-        public void GetByEnabledTest(bool enabled)
-        {
-            var instance = _fixture.Create<ScanningDevices>();
-            var device = instance.Devices.First();
-
-            device.IsEnabled = false;
-
-            var results = instance.GetByEnabled(enabled);
-
-            if (enabled)
+            [Theory, ScanningDeviceAutoData]
+            public void InitializeCollectionGreedy([Greedy] ScanningDevices sut)
             {
-                results.Should()
-                    .HaveCount(CollectionMockCapacity - 1)
-                    .And.NotContain(device);
-            }
-            else
-            {
-                results.Should().OnlyContain(d => d == device);
+                sut.AssertAllPropertiesAreNotDefault();
+                sut.IsEmpty.Should().BeFalse();
+                sut.Devices.Count().Should().Be(3);
+                sut.Devices.All(device => device.IsEnabled == true).Should().BeTrue();
             }
         }
 
-        [Test]
-        public void RefreshDevicesDisconnectedAllTest()
+        public class AddDeviceShould
         {
-            var instance = _fixture.Create<ScanningDevices>();
-
-            // The mock SystemDevices.ScannerProperties() will return nothing
-            // So the existing devices will be marked as disconnected
-            instance.RefreshDevices();
-
-            instance.Devices.All(device => device.IsConnected == false).Should().BeTrue();
-        }
-
-        [Test]
-        public void RefreshDevicesDisconnectedSingleTest()
-        {
-            var systemDevices = _fixture.Create<ISystemDevices>();
-            var systemDevicesMock = Mock.Get(systemDevices);
-
-            var instance = _fixture.Create<ScanningDevices>();
-            var initalDevices = instance.Devices;
-
-            // Get the existing DeviceIDs and return from ISystemDevices.ScannerProperties()
-            // Remove one DeviceID so one device will appear disconnected
-            var deviceIDs = instance.Devices.Select(device => device.DeviceID).ToList();
-            var scannerProperties = new List<IDictionary<string, object>>();
-            foreach (var deviceID in deviceIDs.Take(deviceIDs.Count - 1))
+            [Theory, ScanningDeviceAutoData]
+            public void ThrowIfDeviceIdExists([Frozen, CollectionSize(5)] IEnumerable<ScannerSettings> scannerSettings, ScanningDevices sut)
             {
-                scannerProperties.Add(new Dictionary<string, object>() { { "Unique Device ID", deviceID } });
+                var existingId = scannerSettings.First().Id;
+
+                sut.Invoking(x => x.AddDevice(deviceID: existingId))
+                    .Should().Throw<ArgumentException>();
+                sut.Devices.Should()
+                    .HaveCount(5)
+                    .And.OnlyHaveUniqueItems()
+                    .And.Contain(i => i.DeviceID == existingId);
             }
-            systemDevicesMock
-                .Setup(mock => mock.ScannerProperties(It.IsAny<int>()))
-                .Returns(scannerProperties);
 
-            instance.RefreshDevices();
+            [Theory, ScanningDeviceAutoData]
+            public void ThrowIfDeviceInstanceExists(
+                [Frozen] IImagingDeviceConfig deviceConfig,
+                [Frozen] ScannerSettings settings,
+                [Frozen, CollectionSize(1)] IEnumerable<ScannerSettings> scannerSettings,
+                ScanningDevices sut)
+            {
+                var existingInstance = new ScanningDevice(settings, deviceConfig);
 
-            // All devices should be connected except the last
-            instance.Devices
-                .Should().HaveCount(CollectionMockCapacity)
-                .And.BeEquivalentTo(initalDevices);
-            instance.Devices
-                .Take(instance.Devices.Count() - 1)
-                .All(device => device.IsConnected == true)
-                .Should().BeTrue();
-            instance.Devices
-                .Last()
-                .IsConnected
-                .Should().BeFalse();
+                sut.Invoking(x => x.AddDevice(existingInstance))
+                    .Should().Throw<ArgumentException>();
+                sut.Devices.Should()
+                    .HaveCount(1)
+                    .And.OnlyHaveUniqueItems()
+                    .And.Contain(i => i.DeviceID == existingInstance.DeviceID);
+            }
+
+            [Theory, ScanningDeviceAutoData]
+            public void ContainUniqueDevices(
+                ScanningDevice device,
+                [Frozen] IImagingDeviceConfig deviceConfig,
+                [Frozen, CollectionSize(5)] IEnumerable<ScannerSettings> scannerSettings,
+                ScanningDevices sut)
+            {
+                var scanningDevices = scannerSettings.Select(x => new ScanningDevice(x, deviceConfig));
+
+                sut.AddDevice(device);
+
+                sut.Devices.Should()
+                    .HaveCount(6)
+                    .And.OnlyHaveUniqueItems()
+                    .And.Contain(scanningDevices)
+                    .And.Contain(i => i.DeviceID == device.DeviceID);
+            }
         }
 
-        [TestCase(true)]
-        [TestCase(false)]
-        public void SetDeviceEnabledTest(bool enabled)
+        public class DisableAllShould
         {
-            var instance = _fixture.Create<ScanningDevices>();
-            var device = instance.Devices.First();
+            [Theory, ScanningDeviceAutoData]
+            public void SetAllDevicesToDisabled(ScanningDevices sut)
+            {
+                sut.Devices.All(device => device.IsEnabled).Should().BeTrue();
 
-            instance.SetDeviceEnabled(device.DeviceID, enabled);
+                sut.DisableAll();
 
-            instance.Devices
-                .Where(d => d.DeviceID == device.DeviceID)
-                .Select(d => d.IsEnabled)
-                .Should().Equal(enabled);
+                sut.Devices.All(device => !device.IsEnabled).Should().BeTrue();
+            }
         }
 
-        [TestCase(true)]
-        [TestCase(false)]
-        public void SetDeviceEnabledInstanceTest(bool enabled)
+        public class EnableAllShould
         {
-            var instance = _fixture.Create<ScanningDevices>();
-            var device = instance.Devices.First();
+            [Theory, ScanningDeviceAutoData]
+            public void SetAllDevicesToEnabled(ScanningDevices sut)
+            {
+                foreach (var device in sut.Devices)
+                {
+                    device.IsEnabled = false;
+                }
+                sut.Devices.All(device => !device.IsEnabled).Should().BeTrue();
 
-            instance.SetDeviceEnabled(device, enabled);
+                sut.EnableAll();
 
-            instance.Devices
-                .Where(d => d.DeviceID == device.DeviceID)
-                .Select(d => d.IsEnabled)
-                .Should().Equal(enabled);
+                sut.Devices.All(device => device.IsEnabled).Should().BeTrue();
+            }
+        }
+
+        public class RefreshDevicesShould
+        {
+            [Theory, ScanningDeviceAutoData]
+            public void DisconnectAllDevicesIfNotFound(ScanningDevices sut)
+            {
+                sut.RefreshDevices();
+
+                sut.Devices.All(device => !device.IsConnected).Should().BeTrue();
+            }
+
+            [Theory, ScanningDeviceAutoData]
+            public void DisconnectSingleDeviceIfNotFound(
+                [Frozen] Mock<ISystemDevices> systemDevices,
+                [Frozen] IEnumerable<ScannerSettings> scannerSettings)
+            {
+                systemDevices
+                    .Setup(mock => mock.ScannerSettings(It.IsAny<int>()))
+                    .Returns(scannerSettings);
+                var sut = new ScanningDevices(systemDevices.Object);
+                var initalDevices = sut.Devices;
+
+                // Add the existing DeviceIds except one so the device will appear disconnected
+                var scannerProperties = new List<IDictionary<string, object>>();
+                foreach (var deviceID in sut.Devices.Skip(1).Select(d => d.DeviceID))
+                {
+                    scannerProperties.Add(new Dictionary<string, object>() { { "Unique Device ID", deviceID } });
+                }
+                systemDevices
+                    .Setup(mock => mock.ScannerProperties(It.IsAny<int>()))
+                    .Returns(scannerProperties);
+
+                sut.RefreshDevices();
+
+                sut.Devices
+                    .Should().HaveCount(3)
+                    .And.BeEquivalentTo(initalDevices);
+                sut.Devices
+                    .Skip(1).All(device => device.IsConnected)
+                    .Should().BeTrue();
+                sut.Devices
+                    .First().IsConnected
+                    .Should().BeFalse();
+            }
+
+            [Theory, ScanningDeviceAutoData]
+            public void AddNewDevicesToCollection(
+                [Frozen] Mock<ISystemDevices> systemDevices,
+                [Frozen, CollectionSize(4)] IEnumerable<ScannerSettings> scannerSettings,
+                ScannerSettings newScannerSettings)
+            {
+                systemDevices
+                    .Setup(mock => mock.ScannerSettings(It.IsAny<int>()))
+                    .Returns(scannerSettings);
+                var sut = new ScanningDevices(systemDevices.Object);
+                var initalDevices = sut.Devices;
+
+                // Add an extra scanner to the collection
+                scannerSettings = scannerSettings.Append(newScannerSettings);
+                var scannerProperties = new List<IDictionary<string, object>>();
+                foreach (var deviceID in sut.Devices.Select(d => d.DeviceID).Append(newScannerSettings.Id))
+                {
+                    scannerProperties.Add(new Dictionary<string, object>() { { "Unique Device ID", deviceID } });
+                }
+                systemDevices
+                    .Setup(mock => mock.ScannerProperties(It.IsAny<int>()))
+                    .Returns(scannerProperties);
+                systemDevices
+                    .Setup(mock => mock.ScannerSettings(It.IsAny<int>()))
+                    .Returns(scannerSettings);
+
+                sut.RefreshDevices();
+
+                sut.Devices
+                    .Should().HaveCount(5)
+                    .And.Contain(initalDevices);
+                sut.Devices
+                    .Any(d => d.DeviceID == newScannerSettings.Id)
+                    .Should().BeTrue();
+            }
+        }
+
+        public class SetDeviceEnabledShould
+        {
+            [Theory, ScanningDeviceAutoData]
+            public void EnableCorrectDevice(ScanningDevices sut)
+            {
+                var deviceId = sut.Devices.First().DeviceID;
+                foreach (var device in sut.Devices)
+                {
+                    device.IsEnabled = false;
+                }
+
+                sut.SetDeviceEnabled(deviceId, true);
+
+                sut.Devices.First().IsEnabled.Should().BeTrue();
+                sut.Devices.Skip(1).All(d => !d.IsEnabled).Should().BeTrue();
+            }
+
+            [Theory, ScanningDeviceAutoData]
+            public void DisableCorrectDevice(ScanningDevices sut)
+            {
+                var deviceId = sut.Devices.First().DeviceID;
+                foreach (var device in sut.Devices)
+                {
+                    device.IsEnabled = true;
+                }
+
+                sut.SetDeviceEnabled(deviceId, true);
+
+                sut.Devices.First().IsEnabled.Should().BeTrue();
+                sut.Devices.Skip(1).All(d => d.IsEnabled).Should().BeTrue();
+            }
         }
     }
 }

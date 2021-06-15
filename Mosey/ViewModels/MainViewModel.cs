@@ -94,7 +94,7 @@ namespace Mosey.ViewModels
             get
             {
                 return ScanRepetitions
-                    * ScanningDevices.GetByEnabled(true).Count()
+                    * ScanningDevices.Devices.Count(d => d.IsEnabled)
                     * _userDeviceConfig.GetResolutionMetaData(_imageConfig.Resolution).FileSize;
             }
         }
@@ -493,7 +493,7 @@ namespace Mosey.ViewModels
         public async void StartScanWithDialog()
         {
             // Check that interval time is sufficient for selected resolution
-            TimeSpan imagingTime = ScanningDevices.GetByEnabled(true).Count() * _userDeviceConfig.GetResolutionMetaData(_imageConfig.Resolution).ImagingTime;
+            TimeSpan imagingTime = ScanningDevices.Devices.Count(d => d.IsEnabled) * _userDeviceConfig.GetResolutionMetaData(_imageConfig.Resolution).ImagingTime;
             if (imagingTime * 1.5 > TimeSpan.FromMinutes(ScanInterval))
             {
                 if (!await _dialog.ImagingTimeDialog(TimeSpan.FromMinutes(ScanInterval), imagingTime))

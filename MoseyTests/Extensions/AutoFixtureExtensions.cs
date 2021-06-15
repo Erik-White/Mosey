@@ -30,10 +30,10 @@ namespace MoseyTests.Extensions
         /// <typeparam name="T"></typeparam>
         /// <param name="fixture">The fixture to register the mocked instance with</param>
         /// <returns>The mocked <typeparamref name="T"/> instance</returns>
-        public static Moq.Mock<T> FreezeMoq<T>(this IFixture fixture) where T : class
+        public static Moq.Mock<T> FreezeMock<T>(this IFixture fixture) where T : class
         {
             var td = new Moq.Mock<T>();
-            fixture.Register<T>(() => td.Object);
+            fixture.Register(() => td.Object);
 
             return td;
         }

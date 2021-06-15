@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Runtime.InteropServices;
+﻿using System.Collections.Generic;
 using DNTScanner.Core;
 using Mosey.Models;
 
@@ -25,19 +22,6 @@ namespace Mosey.Services.Imaging
         /// <param name="connectRetries">The number of attempts to try connecting to the WIA driver, after <paramref name="delay"/></param>
         /// <param name="delay">The time in millseconds between <paramref name="connectRetries"/> attempts</param>
         IEnumerable<byte[]> PerformScan(ScannerSettings settings, IImagingDeviceConfig config, ScanningDevice.ImageFormat format, int connectRetries, int delay);
-
-        /// <summary>
-        /// A collection of <see cref="IImagingDevice"/> instances representing physical devices connected to the system.
-        /// </summary>
-        /// <param name="deviceConfig">Used to initialize the <see cref="ScanningDevice"/> instances</param>
-        /// <param name="connectRetries">The number of retry attempts allowed if connecting to the WIA driver was unsuccessful</param>
-        /// <param name="semaphore">A semaphore to coordinate connections to the WIA driver</param>
-        /// <returns>A collection of <see cref="ScanningDevice"/> instances representing physical scanning devices connected to the system</returns>
-        public IEnumerable<IImagingDevice> ScannerDevices(IImagingDeviceConfig deviceConfig);
-
-        /// <inheritdoc cref="ScannerDevices(IImagingDeviceConfig)"/>
-        /// <param name="connectRetries">The number of retry attempts allowed if connecting to the WIA driver was unsuccessful</param>
-        public IEnumerable<IImagingDevice> ScannerDevices(IImagingDeviceConfig deviceConfig, int connectRetries);
 
         /// <summary>
         /// Lists the static properties of scanners connected to the system.

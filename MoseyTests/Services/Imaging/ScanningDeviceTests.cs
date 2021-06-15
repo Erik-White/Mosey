@@ -37,7 +37,7 @@ namespace Mosey.Services.Imaging.Tests
             _fixture.AddManyTo(_images, 5);
 
             // Create and configure return values for SystemDevices
-            var systemDevicesMock = _fixture.FreezeMoq<ISystemDevices>();
+            var systemDevicesMock = _fixture.FreezeMock<ISystemDevices>();
             systemDevicesMock
                 .Setup(mock => mock.PerformScan(
                     It.IsAny<DNTScanner.Core.ScannerSettings>(),

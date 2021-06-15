@@ -1,7 +1,7 @@
-﻿using AutoFixture;
+﻿using System;
+using AutoFixture;
 using AutoFixture.AutoNSubstitute;
 using AutoFixture.NUnit3;
-using System;
 
 namespace MoseyTests.AutoData
 {

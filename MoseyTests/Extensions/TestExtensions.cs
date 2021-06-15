@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace MoseyTests.Extensions
 {
-    public static class MSTestExtensions
+    public static class TestExtensions
     {
         /// <summary>
         /// Assert that an object's properties have been set and are not default values.

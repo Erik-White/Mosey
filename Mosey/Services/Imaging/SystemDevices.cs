@@ -43,26 +43,6 @@ namespace Mosey.Services.Imaging
         /// <inheritdoc/>
         /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
-        public IEnumerable<IImagingDevice> ScannerDevices(IImagingDeviceConfig deviceConfig)
-        {
-            return ScannerDevices(deviceConfig, 1);
-        }
-
-        /// <inheritdoc/>
-        /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
-        /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
-        public IEnumerable<IImagingDevice> ScannerDevices(IImagingDeviceConfig deviceConfig, int connectRetries = 1)
-        {
-            foreach (var settings in ScannerSettings(connectRetries))
-            {
-                // Store the device in the collection
-                yield return new ScanningDevice(settings, deviceConfig);
-            }
-        }
-
-        /// <inheritdoc/>
-        /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
-        /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
         public IList<IDictionary<string, object>> ScannerProperties()
         {
             return ScannerProperties(1);
@@ -78,8 +58,7 @@ namespace Mosey.Services.Imaging
             properties = WIARetry(
                     DNTScanner.Core.SystemDevices.GetScannerDeviceProperties,
                     connectRetries,
-                    _semaphore
-                    );
+                    _semaphore);
 
             return properties;
         }
@@ -97,27 +76,10 @@ namespace Mosey.Services.Imaging
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
         public IEnumerable<ScannerSettings> ScannerSettings(int connectRetries)
         {
-            var deviceList = new List<ScannerSettings>();
-
-            var systemScanners = WIARetry(
+            return WIARetry(
                 DNTScanner.Core.SystemDevices.GetScannerDevices,
                 connectRetries,
-                _semaphore
-                );
-
-            // Check that at least one scanner can be found
-            if (systemScanners.FirstOrDefault() == null)
-            {
-                return deviceList;
-            }
-
-            foreach (ScannerSettings settings in systemScanners)
-            {
-                // Store the device in the collection
-                deviceList.Add(settings);
-            }
-
-            return deviceList;
+                _semaphore).AsEnumerable();
         }
 
         /// <summary>
