@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using AutoFixture;
 using AutoFixture.AutoNSubstitute;
 using AutoFixture.NUnit3;
@@ -17,12 +19,14 @@ namespace MoseyTests.AutoData
                 GenerateDelegates = true
             });
 
+            fixture.Register<IFileSystem>(() => new MockFileSystem());
+
             initialize(fixture);
 
             return fixture;
         })
         { }
 
-        public AutoNSubstituteDataAttribute() : this(Fixture => { }) { }
+        public AutoNSubstituteDataAttribute() : this(fixture => { }) { }
     }
 }

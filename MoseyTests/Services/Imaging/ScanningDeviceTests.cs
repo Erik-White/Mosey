@@ -1,252 +1,203 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Moq;
-using AutoFixture;
-using AutoFixture.AutoMoq;
-using FluentAssertions;
 using System.IO.Abstractions;
-using Mosey.Models;
-using Mosey.Services.Imaging.Extensions;
-using MoseyTests.Extensions;
+using System.IO.Abstractions.TestingHelpers;
+using FluentAssertions;
 using NUnit.Framework;
+using AutoFixture.NUnit3;
+using DNTScanner.Core;
+using MoseyTests.AutoData;
+using MoseyTests.Customizations;
+using MoseyTests.Extensions;
 
 namespace Mosey.Services.Imaging.Tests
 {
-    [TestFixture]
     public class ScanningDeviceTests
     {
-        private IFixture _fixture;
-        private readonly IList<byte[]> _images = new List<byte[]>();
-        private DNTScanner.Core.ScannerSettings _settings;
-        private ScanningDevice.ImageFormat _supportedFormat = ScanningDevice.ImageFormat.Jpeg;
-
-        [SetUp]
-        public void SetUp()
+        public class ConstructorShould
         {
-            _fixture = new Fixture().Customize(new AutoMoqCustomization());
-
-            // Mock a ScannerSettings instance to allow value comparisons
-            _settings = _fixture.Freeze<DNTScanner.Core.ScannerSettings>();
-            // Ensure that there is at least one real SupportedTransferFormat
-            _settings
-                .SupportedTransferFormats
-                .Add(_supportedFormat.ToWIAImageFormat().Value.ToString(), "SupportedWIAImageFormat");
-
-            // Mock images returned from scanner
-            _fixture.AddManyTo(_images, 5);
-
-            // Create and configure return values for SystemDevices
-            var systemDevicesMock = _fixture.FreezeMock<ISystemDevices>();
-            systemDevicesMock
-                .Setup(mock => mock.PerformScan(
-                    It.IsAny<DNTScanner.Core.ScannerSettings>(),
-                    It.IsAny<IImagingDeviceConfig>(),
-                    It.IsAny<ScanningDevice.ImageFormat>()
-                    ))
-                .Returns(_images);
-            systemDevicesMock
-                .Setup(mock => mock.PerformScan(
-                    It.IsAny<DNTScanner.Core.ScannerSettings>(),
-                    It.IsAny<IImagingDeviceConfig>(),
-                    It.IsAny<ScanningDevice.ImageFormat>(),
-                    It.IsAny<int>(),
-                    It.IsAny<int>()
-                    ))
-                .Returns(_images);
-
-            // Ensure ScanningDevice dependencies are mocked
-            _fixture.Register<IFileSystem>(() => new System.IO.Abstractions.TestingHelpers.MockFileSystem());
-            var scanningDeviceMock = new Mock<ScanningDevice>(
-                _settings,
-                _fixture.Create<IImagingDeviceConfig>(),
-                _fixture.Create<ISystemDevices>(),
-                _fixture.Create<IFileSystem>()
-                )
+            [Theory, ScanningDeviceAutoData]
+            public void InitializeAllProperties(ScanningDevice sut)
             {
-                CallBase = true
-            };
-            // Intercept SaveImageToDisk() to ensure we don't touch file system
-            scanningDeviceMock.Setup(m => m.SaveImageToDisk(
-                It.IsAny<byte[]>(),
-                It.IsAny<string>(),
-                It.IsAny<ScanningDevice.ImageFormat>(),
-                It.IsAny<System.Drawing.Imaging.EncoderParameters>()
-                ))
-                .Verifiable();
-            _fixture.Inject(scanningDeviceMock.Object);
-        }
-
-        [Test]
-        public void ScanningDeviceTest()
-        {
-            // The SetUp fixture uses the greedy constructor so use a new fixture
-            // AutoFixture uses least greedy constructor by default 
-            var instance = new Fixture()
-                .Customize(new AutoMoqCustomization())
-                .Create<ScanningDevice>();
-
-            instance.AssertAllPropertiesAreNotDefault();
-            instance.IsConnected.Should().BeTrue();
-            instance.IsEnabled.Should().BeFalse();
-            instance.IsImaging.Should().BeFalse();
-        }
-
-        [Test]
-        public void ScanningDeviceTestGreedy()
-        {
-            var instance = _fixture.Create<ScanningDevice>();
-
-            instance.AssertAllPropertiesAreNotDefault();
-            instance.IsConnected.Should().BeTrue();
-            instance.IsEnabled.Should().BeFalse();
-            instance.IsImaging.Should().BeFalse();
-        }
-
-        [Test]
-        public void ClearImagesTest()
-        {
-            var instance = _fixture.Create<ScanningDevice>();
-
-            instance.Images = _images;
-
-            instance.Images.Should().NotBeEmpty().And.HaveCount(_images.Count);
-
-            instance.ClearImages();
-
-            instance.Images.Should().NotBeNull().And.BeEmpty();
-        }
-
-        [Test]
-        public void GetImageTest()
-        {
-            var instance = _fixture.Create<ScanningDevice>();
-
-            instance.GetImage(_supportedFormat);
-
-            instance.Images.Should().BeEquivalentTo(_images);
-        }
-
-        [Test]
-        public void GetImageRaisesCOMExceptionTest()
-        {
-            var instance = _fixture.Create<ScanningDevice>();
-
-            instance.IsConnected = false;
-
-            instance
-                .Invoking(i => i.GetImage())
-                .Should().Throw<COMException>();
-        }
-
-        [Test]
-        public void GetImageRaisesArgumentExceptionTest()
-        {
-            var instance = _fixture.Create<ScanningDevice>();
-
-            instance
-                .Invoking(i => i.GetImage())
-                .Should().Throw<ArgumentException>();
-        }
-
-        [Test]
-        public void GetImageRaisesPropertyChangedTest()
-        {
-            var instance = _fixture.Create<ScanningDevice>();
-
-            // IsImaging should only be true during the operation of GetImage()
-            instance.IsImaging.Should().BeFalse();
-
-            using (var monitoredSubject = instance.Monitor())
-            {
-                monitoredSubject.Subject.GetImage(_supportedFormat);
-
-                monitoredSubject.Should().RaisePropertyChangeFor(x => x.IsImaging);
+                sut.AssertAllPropertiesAreNotDefault();
+                sut.IsConnected.Should().BeTrue();
+                sut.IsImaging.Should().BeFalse();
             }
 
-            instance.IsImaging.Should().BeFalse();
+            [Theory, ScanningDeviceAutoData]
+            public void InitializeAllPropertiesGreedy([Greedy] ScanningDevice sut)
+            {
+                sut.AssertAllPropertiesAreNotDefault();
+                sut.IsConnected.Should().BeTrue();
+                sut.IsImaging.Should().BeFalse();
+            }
         }
 
-        [Test]
-        public void SaveImageTest()
+        public class ClearImagesShould
         {
-            var instance = Mock.Get(_fixture.Create<ScanningDevice>());
+            [Theory, ScanningDeviceAutoData]
+            public void EmptyImagesCollection([Frozen] IList<byte[]> images, ScanningDevice sut)
+            {
+                sut.Images = images;
+                sut.Images
+                    .Should().NotBeEmpty()
+                    .And.BeEquivalentTo(images);
 
-            instance.Object.Images = _images;
+                sut.ClearImages();
 
-            var result = instance.Object.SaveImage("FileName", "Directory", _supportedFormat);
-
-            result.Should().HaveCount(_images.Count);
-            instance.Verify();
+                sut.Images
+                    .Should().NotBeNull()
+                    .And.BeEmpty();
+            }
         }
 
-        [Test]
-        public void SaveImageStringFormatTest()
+        public class GetImageShould
         {
-            var instance = Mock.Get(_fixture.Create<ScanningDevice>());
+            [Theory, ScanningDeviceAutoData]
+            public void ReturnImagesForSupportedFormat([Frozen] IEnumerable<byte[]> images, [Greedy] ScanningDevice sut)
+            {
+                sut.GetImage(ScannerSettingsCustomization.SupportedImageFormat);
 
-            instance.Object.Images = _images;
+                sut.Images.Count.Should().Be(images.Count());
 
-            var result = instance.Object.SaveImage("FileName", "Directory", _supportedFormat);
+                foreach (var (image, deviceImage) in Enumerable.Zip(images, sut.Images))
+                {
+                    // Image data won't match exactly because headers will differ due to conversion
+                    image.Should().IntersectWith(deviceImage);
+                }
+            }
 
-            result.Should().HaveCount(_images.Count);
-            instance.Verify();
+            [Theory, ScanningDeviceAutoData]
+            public void ThrowIfImageFormatNotSupported([Greedy] ScanningDevice sut)
+            {
+                sut.Invoking(x => x.GetImage(ScanningDevice.ImageFormat.Gif))
+                    .Should().Throw<ArgumentException>();
+                sut.Images.Should().BeEmpty();
+            }
+
+            [Theory, ScanningDeviceAutoData]
+            public void ThrowCOMExceptionIfDeviceNotConnected([Greedy] ScanningDevice sut)
+            {
+                sut.IsConnected = false;
+
+                sut.Invoking(x => x.GetImage(ScannerSettingsCustomization.SupportedImageFormat))
+                    .Should().Throw<COMException>();
+                sut.Images.Should().BeEmpty();
+            }
+
+            [Theory, ScanningDeviceAutoData]
+            public void RaiseIsImagingPropertyChanged([Greedy] ScanningDevice sut)
+            {
+                // IsImaging should only be true during the operation of GetImage()
+                sut.IsImaging.Should().BeFalse();
+
+                using (var monitoredSubject = sut.Monitor())
+                {
+                    monitoredSubject.Subject.GetImage(ScannerSettingsCustomization.SupportedImageFormat);
+
+                    monitoredSubject.Should().RaisePropertyChangeFor(x => x.IsImaging);
+                }
+
+                sut.IsImaging.Should().BeFalse();
+            }
         }
 
-        [Test]
-        public void SaveImageRaisesInvalidOperationExceptionTest()
+        public class SaveImageShould
         {
-            var instance = _fixture.Create<ScanningDevice>();
+            private readonly string filename = "Filename";
+            private readonly string directory = new MockFileSystem().Path.Combine("C:", "Directory");
 
-            instance.Images = null;
+            [Theory, ScanningDeviceAutoData]
+            public void ThrowInvalidOperationExceptionIfNoImages([Greedy] ScanningDevice sut)
+            {
+                sut.Images = null;
 
-            instance
-                .Invoking(i => i.SaveImage(string.Empty, string.Empty, _supportedFormat))
-                .Should().Throw<InvalidOperationException>();
+                sut
+                    .Invoking(i => i.SaveImage(filename, directory, ScannerSettingsCustomization.SupportedImageFormat))
+                    .Should().Throw<InvalidOperationException>();
+            }
+
+            [Theory, ScanningDeviceAutoData]
+            public void ThrowArgumentExceptionIfNoFilePath([CollectionSize(1)] IList<byte[]> images, [Greedy] ScanningDevice sut)
+            {
+                sut.Images = images;
+
+                sut
+                    .Invoking(i => i.SaveImage(string.Empty, string.Empty, ScannerSettingsCustomization.SupportedImageFormat))
+                    .Should().Throw<ArgumentException>()
+                    .WithMessage("A valid filename and directory must be supplied");
+            }
+
+            [Theory, ScanningDeviceAutoData]
+            public void SaveImageWithFilePath([CollectionSize(1)] IList<byte[]> images, [Frozen] IFileSystem fileSystem, [Greedy] ScanningDevice sut)
+            {
+                sut.Images = images;
+
+                var result = sut.SaveImage(filename, directory, ScannerSettingsCustomization.SupportedImageFormat);
+
+                result.Should().HaveCount(images.Count);
+                (fileSystem as MockFileSystem).AllFiles.Should().BeEquivalentTo(result);
+                foreach (var filePath in result)
+                {
+                    var expectedPath = fileSystem.Path.Combine(directory, filename);
+                    expectedPath = fileSystem.Path.ChangeExtension(expectedPath, ScannerSettingsCustomization.SupportedImageFormat.ToString());
+                    filePath.Equals(expectedPath, StringComparison.OrdinalIgnoreCase).Should().BeTrue();
+                }
+            }
+
+            [Theory, ScanningDeviceAutoData]
+            public void AppendCountToFilePaths([CollectionSize(2)] IList<byte[]> images, [Frozen] IFileSystem fileSystem, [Greedy] ScanningDevice sut)
+            {
+                var count = 0;
+                sut.Images = images;
+
+                var result = sut.SaveImage(filename, directory, ScannerSettingsCustomization.SupportedImageFormat);
+
+                result.Should().HaveCount(images.Count);
+                (fileSystem as MockFileSystem).AllFiles.Should().BeEquivalentTo(result);
+                foreach (var filePath in result)
+                {
+                    var expectedPath = fileSystem.Path.Combine(directory, $"{filename}_{++count}");
+                    expectedPath = fileSystem.Path.ChangeExtension(expectedPath, ScannerSettingsCustomization.SupportedImageFormat.ToString());
+                    filePath.Equals(expectedPath, StringComparison.OrdinalIgnoreCase).Should().BeTrue();
+                }
+            }
+
+            [Theory, ScanningDeviceAutoData]
+            public void WriteImageDataToDisk([CollectionSize(2)] IList<byte[]> images, [Frozen] IFileSystem fileSystem, [Greedy] ScanningDevice sut)
+            {
+                var fs = fileSystem as MockFileSystem;
+                sut.Images = images;
+
+                var result = sut.SaveImage(filename, directory, ScannerSettingsCustomization.SupportedImageFormat);
+
+                result.Should().HaveCount(images.Count);
+                fs.AllFiles.Should().BeEquivalentTo(result);
+                foreach (var (filePath, image) in Enumerable.Zip(fs.AllFiles, images))
+                {
+                    // Image data won't match exactly because headers will differ due to conversion
+                    fs.GetFile(filePath).Contents.Should().IntersectWith(image);
+                }
+            }
         }
 
-        [Test]
-        public void SaveImageRaisesArgumentExceptionTest()
+        public class EqualsShould
         {
-            var instance = _fixture.Create<ScanningDevice>();
+            [Theory, ScanningDeviceAutoData]
+            public void BeEquivalentToClone([Frozen] ScannerSettings _, ScanningDevice sut, ScanningDevice clone)
+            {
+                sut.Equals(clone).Should().BeTrue();
+            }
 
-            instance.Images = _images;
+            [Theory, ScanningDeviceAutoData]
+            public void EqualSettingsHash([Frozen] ScannerSettings settings, ScanningDevice sut)
+            {
+                var result = sut.GetHashCode();
 
-            instance
-                .Invoking(i => i.SaveImage(string.Empty, string.Empty, _supportedFormat.ToString()))
-                .Should().Throw<ArgumentException>();
-        }
-
-        [Test]
-        public void EqualsDeviceTest()
-        {
-            var instance = _fixture.Create<ScanningDevice>();
-            var compare = new Fixture()
-                .Customize(new AutoMoqCustomization())
-                .Create<ScanningDevice>();
-
-            instance.Equals(instance).Should().BeTrue();
-            instance.Equals(compare).Should().BeFalse();
-        }
-
-        [Test]
-        public void EqualsObjectTest()
-        {
-            var instance = _fixture.Create<ScanningDevice>();
-            var compare = new Fixture()
-                .Customize(new AutoMoqCustomization())
-                .Create<ScanningDevice>();
-
-            instance.Equals((object)instance).Should().BeTrue();
-            instance.Equals((object)compare).Should().BeFalse();
-        }
-
-        [Test]
-        public void GetHashCodeTest()
-        {
-            var instance = _fixture.Create<ScanningDevice>();
-
-            instance.GetHashCode().Should().Be(_settings.Id.GetHashCode());
+                result.Should().Be(settings.Id.GetHashCode());
+            }
         }
     }
 }

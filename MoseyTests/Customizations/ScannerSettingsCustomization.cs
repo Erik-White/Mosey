@@ -9,21 +9,20 @@ namespace MoseyTests.Customizations
 {
     public class ScannerSettingsCustomization : ICustomization
     {
+        public static ScanningDevice.ImageFormat SupportedImageFormat { get; set; } = ScanningDevice.ImageFormat.Jpeg;
+
         public void Customize(IFixture fixture)
         {
-            fixture.Customize<ScannerSettings>(c =>
-                c.FromFactory(() =>
-                {
-                    var scannerSettings = GetInstance(fixture);
-                    // Ensure that there is at least one real SupportedTransferFormat
-                    scannerSettings
-                        .SupportedTransferFormats
-                        .Add(ScanningDevice.ImageFormat.Jpeg.ToWIAImageFormat().Value.ToString(),
-                            "SupportedWIAImageFormat");
+            fixture.Register(() =>
+            {
+                var scannerSettings = GetInstance(fixture);
+                // Ensure that there is at least one real SupportedTransferFormat
+                scannerSettings
+                    .SupportedTransferFormats
+                    .Add(SupportedImageFormat.ToWIAImageFormat().Value, "SupportedWIAImageFormat");
 
-                    return scannerSettings;
-                })
-            );
+                return scannerSettings;
+            });
         }
 
         /// <summary>

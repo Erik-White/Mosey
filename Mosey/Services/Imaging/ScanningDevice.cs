@@ -105,7 +105,7 @@ namespace Mosey.Services.Imaging
         public ScanningDevice(ScannerSettings settings, IImagingDeviceConfig config, ISystemDevices systemDevices, IFileSystem fileSystem)
         {
             _scannerSettings = settings;
-            ImageSettings ??= config;
+            ImageSettings = config;
             _systemDevices = systemDevices ?? new SystemDevices();
             _fileSystem = fileSystem ?? new FileSystem();
         }
@@ -253,7 +253,7 @@ namespace Mosey.Services.Imaging
 
         public bool Equals(IImagingDevice device)
         {
-            return null != device && DeviceID == device.DeviceID;
+            return device is not null && DeviceID == device.DeviceID;
         }
 
         public override bool Equals(object obj)
@@ -280,7 +280,7 @@ namespace Mosey.Services.Imaging
         protected internal IEnumerable<string> SaveImagesToDisk(IEnumerable<byte[]> images, string filePath, ImageFormat format = ImageFormat.Png, EncoderParameters encoderParams = null)
         {
             int count = 1;
-            string fileName = Path.GetFileNameWithoutExtension(filePath);
+            string fileName = Path.GetFileName(filePath);
 
             // Write all images to disk
             foreach (var imageBytes in Images)
@@ -288,9 +288,11 @@ namespace Mosey.Services.Imaging
                 // Append count to filename in case of multiple images
                 string savePath = filePath;
                 if (images.Count() > 1) 
-                    savePath = savePath.Replace(fileName, $"{fileName}_{count}");
+                    savePath = savePath.Replace(
+                        fileName,
+                        $"{Path.GetFileNameWithoutExtension(fileName)}_{count}{Path.GetExtension(filePath)}");
 
-                SaveImageToDisk(imageBytes, filePath, format, encoderParams);
+                SaveImageToDisk(imageBytes, savePath, format, encoderParams);
 
                 yield return savePath;
 
@@ -307,11 +309,13 @@ namespace Mosey.Services.Imaging
         /// <param name="encoderParams">Specify image encoding when writing the image</param>
         protected internal virtual void SaveImageToDisk(byte[] image, string filePath, ImageFormat format = ImageFormat.Png, EncoderParameters encoderParams = null)
         {
-            image.ToImage().Save(
-                filePath,
-                format.ToDrawingImageFormat().CodecInfo(),
-                encoderParams
-                );
+            using (var fileStream = _fileSystem.File.Create(filePath))
+            {
+                image.ToImage().Save(
+                    fileStream,
+                    format.ToDrawingImageFormat().CodecInfo(),
+                    encoderParams);
+            }
         }
 
         /// <summary>

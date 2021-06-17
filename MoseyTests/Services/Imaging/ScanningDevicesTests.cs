@@ -12,7 +12,6 @@ using MoseyTests.AutoData;
 
 namespace Mosey.Services.Imaging.Tests
 {
-    [TestFixture]
     public class ScanningDevicesTests
     {
         public class ConstructorShould

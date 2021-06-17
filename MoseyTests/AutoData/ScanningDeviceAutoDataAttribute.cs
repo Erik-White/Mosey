@@ -1,4 +1,5 @@
-﻿using MoseyTests.Customizations;
+﻿using AutoFixture;
+using MoseyTests.Customizations;
 
 namespace MoseyTests.AutoData
 {
@@ -6,9 +7,11 @@ namespace MoseyTests.AutoData
     {
         public ScanningDeviceAutoDataAttribute() : base(fixture =>
         {
-            fixture.Customize(new ScannerSettingsCustomization());
+            fixture.Customize(new CompositeCustomization(new ScannerSettingsCustomization()));
             // A concrete class is required when retrieving devices from ISystemDevices
             fixture.Customize(new ConcreteScanningDeviceCustomization());
+            fixture.Customize(new ImageBytesCustomization());
+            fixture.Customize(new SystemDevicesMockCustomization());
         })
         { }
     }
