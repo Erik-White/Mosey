@@ -62,7 +62,7 @@ namespace Mosey
                 })
 
                 // Services
-                .AddTransient<IIntervalTimer, IntervalTimer>()
+                .AddTransient<IFactory<IIntervalTimer>, IntervalTimerFactory>()
                 .AddTransient<IFolderBrowserDialog, FolderBrowserDialog>()
                 .AddScoped<IDialogManager, DialogManager>()
                 .AddTransient<ISystemDevices, SystemDevices>()

@@ -17,13 +17,14 @@ namespace Mosey.ViewModels
     public class MainViewModel : ViewModelBase, IViewModelParent<IViewModel>, IClosing, IDisposable
     {
         // From IoC container
-        private readonly IIntervalTimer _scanTimer;
+        private readonly IFactory<IIntervalTimer> _timerFactory;
         private readonly Services.UIServices _uiServices;
         private readonly IViewModel _settingsViewModel;
         private readonly IOptionsMonitor<AppSettings> _appSettings;
         private readonly ILogger<MainViewModel> _log;
 
         // From constructor
+        private readonly IIntervalTimer _scanTimer;
         private readonly IIntervalTimer _uiTimer;
         private readonly DialogViewModel _dialog;
 
@@ -266,7 +267,7 @@ namespace Mosey.ViewModels
         #endregion Properties
 
         public MainViewModel(
-            IIntervalTimer intervalTimer,
+            IFactory<IIntervalTimer> intervalTimerFactory,
             IImagingDevices<IImagingDevice> imagingDevices,
             Services.UIServices uiServices,
             IViewModel settingsViewModel,
@@ -274,14 +275,15 @@ namespace Mosey.ViewModels
             ILogger<MainViewModel> logger
             )
         {
-            _scanTimer = intervalTimer;
+            _timerFactory = intervalTimerFactory;
             ScanningDevices = imagingDevices;
             _uiServices = uiServices;
             _settingsViewModel = settingsViewModel;
             _appSettings = appSettings;
             _log = logger;
 
-            _uiTimer = (IIntervalTimer)intervalTimer.Clone();
+            _scanTimer = intervalTimerFactory.Create();
+            _uiTimer = intervalTimerFactory.Create();
             _dialog = new DialogViewModel(this, _uiServices, _log);
 
             Initialize();
@@ -290,7 +292,7 @@ namespace Mosey.ViewModels
         public override IViewModel Create()
         {
             return new MainViewModel(
-                intervalTimer: _scanTimer,
+                intervalTimerFactory: _timerFactory,
                 imagingDevices: ScanningDevices,
                 uiServices: _uiServices,
                 settingsViewModel: _settingsViewModel,
