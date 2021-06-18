@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.IO.Abstractions;
 using System.Windows;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Configuration;
@@ -62,6 +63,7 @@ namespace Mosey
                 })
 
                 // Services
+                .AddSingleton<IFileSystem, FileSystem>()
                 .AddTransient<IFactory<IIntervalTimer>, IntervalTimerFactory>()
                 .AddTransient<IFolderBrowserDialog, FolderBrowserDialog>()
                 .AddScoped<IDialogManager, DialogManager>()

@@ -11,6 +11,7 @@ using Microsoft.Extensions.Options;
 using AsyncAwaitBestPractices.MVVM;
 using Mosey.Models;
 using Mosey.Configuration;
+using System.IO.Abstractions;
 
 namespace Mosey.ViewModels
 {
@@ -21,6 +22,7 @@ namespace Mosey.ViewModels
         private readonly Services.UIServices _uiServices;
         private readonly IViewModel _settingsViewModel;
         private readonly IOptionsMonitor<AppSettings> _appSettings;
+        private readonly IFileSystem _fileSystem;
         private readonly ILogger<MainViewModel> _log;
 
         // From constructor
@@ -272,6 +274,7 @@ namespace Mosey.ViewModels
             Services.UIServices uiServices,
             IViewModel settingsViewModel,
             IOptionsMonitor<AppSettings> appSettings,
+            IFileSystem fileSystem,
             ILogger<MainViewModel> logger
             )
         {
@@ -280,6 +283,7 @@ namespace Mosey.ViewModels
             _uiServices = uiServices;
             _settingsViewModel = settingsViewModel;
             _appSettings = appSettings;
+            _fileSystem = fileSystem;
             _log = logger;
 
             _scanTimer = intervalTimerFactory.Create();
@@ -297,8 +301,8 @@ namespace Mosey.ViewModels
                 uiServices: _uiServices,
                 settingsViewModel: _settingsViewModel,
                 appSettings: _appSettings,
-                logger: _log
-                );
+                fileSystem: _fileSystem,
+                logger: _log);
         }
 
         #region Commands
@@ -490,12 +494,12 @@ namespace Mosey.ViewModels
         }
 
         /// <summary>
-        /// Begin repeated scanning, after first if checking interval time and free disk space are sufficient.
+        /// Begin repeated scanning, after first checking if checking interval time and free disk space are sufficient.
         /// </summary>
         public async void StartScanWithDialog()
         {
             // Check that interval time is sufficient for selected resolution
-            TimeSpan imagingTime = ScanningDevices.Devices.Count(d => d.IsEnabled) * _userDeviceConfig.GetResolutionMetaData(_imageConfig.Resolution).ImagingTime;
+            var imagingTime = ScanningDevices.Devices.Count(d => d.IsEnabled) * _userDeviceConfig.GetResolutionMetaData(_imageConfig.Resolution).ImagingTime;
             if (imagingTime * 1.5 > TimeSpan.FromMinutes(ScanInterval))
             {
                 if (!await _dialog.ImagingTimeDialog(TimeSpan.FromMinutes(ScanInterval), imagingTime))
@@ -508,7 +512,9 @@ namespace Mosey.ViewModels
             // Check that disk space is sufficient for selected resolution
             try
             {
-                long availableDiskSpace = FileSystemExtensions.AvailableFreeSpace(Path.GetPathRoot(_imageFileConfig.Directory));
+                long availableDiskSpace = FileSystemExtensions.AvailableFreeSpace(
+                    _fileSystem.Path.GetPathRoot(_imageFileConfig.Directory),
+                    _fileSystem);
                 if (ImagesRequiredDiskSpace * 1.5 > availableDiskSpace)
                 {
                     if (!await _dialog.DiskSpaceDialog(ImagesRequiredDiskSpace, availableDiskSpace))
@@ -722,8 +728,8 @@ namespace Mosey.ViewModels
                         {
                             _log.LogDebug("{ImageCount} images retrieved from scanner #{DeviceID}", scanner.Images.Count(), scanner.ID);
                             string fileName = string.Join("_", _imageFileConfig.Prefix, saveDateTime);
-                            string directory = Path.Combine(saveDirectory, string.Join(string.Empty, "Scanner", scannerIDStr));
-                            Directory.CreateDirectory(directory);
+                            string directory = _fileSystem.Path.Combine(saveDirectory, string.Join(string.Empty, "Scanner", scannerIDStr));
+                            _fileSystem.Directory.CreateDirectory(directory);
 
                             // Write image(s) to filesystem and retrieve a list of saved file names
                             IEnumerable<string> savedImages = scanner.SaveImage(fileName, directory: directory, fileFormat: ImageFormat);
@@ -807,7 +813,7 @@ namespace Mosey.ViewModels
         private void ImageDirectoryDialog()
         {
             // Go up one level so users can see the initial directory instead of starting inside it
-            string initialDirectory = Directory.GetParent(ImageSavePath).FullName;
+            string initialDirectory = _fileSystem.Directory.GetParent(ImageSavePath).FullName;
             if (string.IsNullOrWhiteSpace(initialDirectory)) initialDirectory = ImageSavePath;
 
             string selectedDirectory = _dialog.FolderBrowserDialog(

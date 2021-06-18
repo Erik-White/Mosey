@@ -6,16 +6,18 @@ using Microsoft.Extensions.Logging;
 using Mosey.Configuration;
 using Mosey.Models;
 using Mosey.Services;
+using System.IO.Abstractions;
 
 namespace Mosey.ViewModels
 {
     public class SettingsViewModel : ViewModelBase
     {
         private ILogger<SettingsViewModel> _log;
-        private readonly UIServices _uiServices;
         private IWritableOptions<AppSettings> _appSettings;
         private AppSettings _userSettings;
+        private readonly UIServices _uiServices;
         private readonly DialogViewModel _dialog;
+        private readonly IFileSystem _fileSystem;
 
         #region Properties
         public string ImageSavePath
@@ -168,14 +170,15 @@ namespace Mosey.ViewModels
         public SettingsViewModel(
             ILogger<SettingsViewModel> logger,
             UIServices uiServices,
-            IWritableOptions<AppSettings> appSettings
-            )
+            IWritableOptions<AppSettings> appSettings,
+            IFileSystem fileSystem)
         {
             _log = logger;
             _uiServices = uiServices;
             _appSettings = appSettings;
             _userSettings = appSettings.Get("UserSettings");
             _dialog = new DialogViewModel(this, _uiServices, _log);
+            _fileSystem = fileSystem;
         }
 
         public override IViewModel Create()
@@ -183,8 +186,8 @@ namespace Mosey.ViewModels
             return new SettingsViewModel(
                 logger: _log,
                 uiServices: _uiServices,
-                appSettings: _appSettings
-                );
+                appSettings: _appSettings,
+                fileSystem: _fileSystem);
         }
 
         #region Commands
@@ -246,7 +249,7 @@ namespace Mosey.ViewModels
         private void ImageDirectoryDialog()
         {
             // Go up one level so users can see the initial directory instead of starting inside it
-            string initialDirectory = Directory.GetParent(ImageSavePath).FullName;
+            string initialDirectory = _fileSystem.Directory.GetParent(ImageSavePath).FullName;
             if (string.IsNullOrWhiteSpace(initialDirectory)) initialDirectory = ImageSavePath;
 
             string selectedDirectory = _dialog.FolderBrowserDialog(
