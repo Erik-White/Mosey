@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Mosey.GUI.Models.Dialog;
+﻿using Mosey.GUI.Models.Dialog;
 
 namespace Mosey.GUI.Services.Dialog
 {

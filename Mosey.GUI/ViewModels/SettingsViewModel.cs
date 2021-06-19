@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Windows.Input;
-using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Mosey.Configuration;
 using Mosey.GUI.Models;
@@ -11,8 +11,8 @@ namespace Mosey.GUI.ViewModels
 {
     public class SettingsViewModel : ViewModelBase
     {
-        private ILogger<SettingsViewModel> _log;
-        private IWritableOptions<AppSettings> _appSettings;
+        private readonly ILogger<SettingsViewModel> _log;
+        private readonly IWritableOptions<AppSettings> _appSettings;
         private AppSettings _userSettings;
         private readonly UIServices _uiServices;
         private readonly DialogViewModel _dialog;
@@ -224,7 +224,8 @@ namespace Mosey.GUI.ViewModels
 
             // Copy default settings and write to disk
             _userSettings = _appSettings.Value.Copy();
-            _appSettings.Update(c => {
+            _appSettings.Update(c =>
+            {
                 c.ScanTimer = _userSettings.ScanTimer;
                 c.ImageFile = _userSettings.ImageFile;
                 c.Image = _userSettings.Image;

@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MahApps.Metro.Controls.Dialogs;
 using Mosey.GUI.Models.Dialog;
-using MahApps.Metro.Controls.Dialogs;
 
 namespace Mosey.GUI.Services.Dialog
 {

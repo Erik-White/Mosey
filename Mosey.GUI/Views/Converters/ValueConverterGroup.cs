@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Data;
 
@@ -46,7 +46,7 @@ namespace Mosey.GUI.Views.Converters
             if (_parameters == null)
                 return null;
 
-            var index = IndexOf(converter as IValueConverter);
+            var index = IndexOf(converter);
             string parameter;
 
             try

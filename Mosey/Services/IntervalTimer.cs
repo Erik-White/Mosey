@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Threading;
 using System.Diagnostics;
+using System.Threading;
 using Mosey.Models;
 
 namespace Mosey.Services
@@ -23,7 +23,7 @@ namespace Mosey.Services
         private bool disposed;
         private Timer timer;
         private TimeSpan intervalRemaining;
-        private Stopwatch stopWatch = new Stopwatch();
+        private readonly Stopwatch stopWatch = new Stopwatch();
 
         public IntervalTimer()
         {
@@ -99,7 +99,7 @@ namespace Mosey.Services
         protected virtual void OnComplete(EventArgs e)
         {
             Complete?.Invoke(this, EventArgs.Empty);
-        } 
+        }
 
         /// <summary>
         /// Timer callback method. Continues the timer until the maximum repetition count is reached
@@ -112,7 +112,7 @@ namespace Mosey.Services
                 // Notify event subscribers
                 OnTick(EventArgs.Empty);
                 Resume();
-                if(RepetitionsCount == Repetitions)
+                if (RepetitionsCount == Repetitions)
                 {
                     Stop();
                 }
@@ -153,7 +153,7 @@ namespace Mosey.Services
                 // Pause the stopwatch and calculate the time remaining until the next callback is due
                 stopWatch.Stop();
                 timer.Change(Timeout.Infinite, Timeout.Infinite);
-                if(Delay > TimeSpan.Zero && RepetitionsCount == 0)
+                if (Delay > TimeSpan.Zero && RepetitionsCount == 0)
                 {
                     intervalRemaining = Delay.Subtract(stopWatch.Elapsed);
                 }

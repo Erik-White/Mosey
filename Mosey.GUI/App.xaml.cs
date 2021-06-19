@@ -1,20 +1,20 @@
 ﻿using System;
 using System.IO;
 using System.IO.Abstractions;
-using System.Windows;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Mosey.Models;
 using Mosey.Configuration;
-using Mosey.Services;
-using Mosey.Services.Imaging;
+using Mosey.GUI.Models;
 using Mosey.GUI.Models.Dialog;
+using Mosey.GUI.Services;
 using Mosey.GUI.Services.Dialog;
 using Mosey.GUI.ViewModels;
-using Mosey.GUI.Services;
-using Mosey.GUI.Models;
+using Mosey.Models;
+using Mosey.Services;
+using Mosey.Services.Imaging;
 
 [assembly: InternalsVisibleTo("Mosey.GUI.Tests")]
 namespace Mosey.GUI
@@ -28,7 +28,7 @@ namespace Mosey.GUI
         private IConfiguration _userConfig;
         private ILogger<App> _log;
 
-        protected override void OnStartup(StartupEventArgs e) 
+        protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 

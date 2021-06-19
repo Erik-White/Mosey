@@ -1,9 +1,6 @@
-﻿using System;
-using System.Text;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Mosey.GUI.Models.Dialog;
+﻿using System.Threading.Tasks;
 using MahApps.Metro.Controls.Dialogs;
+using Mosey.GUI.Models.Dialog;
 
 namespace Mosey.GUI.Services.Dialog
 {
@@ -27,7 +24,7 @@ namespace Mosey.GUI.Services.Dialog
         public async Task<DialogResult> ShowMessageAsync(object context, string title, string message, DialogStyle style = DialogStyle.Affirmative, IDialogSettings settings = null)
         {
             MessageDialogResult result = await Instance.ShowMessageAsync(context, title, message, style.ToMetroDialogStyle(), settings?.ToMetroDialogSettings());
-            
+
             return result.ToDialogResult();
         }
 

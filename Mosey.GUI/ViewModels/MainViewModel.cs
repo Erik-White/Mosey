@@ -7,12 +7,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Schedulers;
 using System.Windows.Input;
+using AsyncAwaitBestPractices.MVVM;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using AsyncAwaitBestPractices.MVVM;
-using Mosey.Models;
 using Mosey.Configuration;
 using Mosey.GUI.Models;
+using Mosey.Models;
 
 namespace Mosey.GUI.ViewModels
 {
@@ -45,7 +45,7 @@ namespace Mosey.GUI.ViewModels
         private CancellationTokenSource _cancelScanTokenSource = new CancellationTokenSource();
         private bool _disposed;
 
-         #region Properties
+        #region Properties
         public string ImageFormat
         {
             get
@@ -548,11 +548,12 @@ namespace Mosey.GUI.ViewModels
         /// </summary>
         public async Task StopScanWithDialog()
         {
-            if (await _dialog.StopScanDialog(cancellationToken: _cancelScanTokenSource.Token)){
+            if (await _dialog.StopScanDialog(cancellationToken: _cancelScanTokenSource.Token))
+            {
                 StopScan();
             }
         }
-        
+
         /// <summary>
         /// Initiate scanning with <see cref="ScanAsync"/>.
         /// </summary>

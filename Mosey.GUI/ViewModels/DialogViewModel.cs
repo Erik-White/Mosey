@@ -1,12 +1,12 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using Mosey.GUI.Models;
 using Mosey.GUI.Models.Dialog;
-using Mosey.GUI.Services.Dialog;
 using Mosey.GUI.Services;
+using Mosey.GUI.Services.Dialog;
 
 namespace Mosey.GUI.ViewModels
 {

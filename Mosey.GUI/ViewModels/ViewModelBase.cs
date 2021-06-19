@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Diagnostics;
 using System.ComponentModel;
+using System.Diagnostics;
 using Mosey.GUI.Models;
 
 namespace Mosey.GUI.ViewModels

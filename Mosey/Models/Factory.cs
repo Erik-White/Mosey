@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Mosey.Models
+﻿namespace Mosey.Models
 {
     public interface IFactory<T>
     {
