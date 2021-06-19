@@ -1,8 +1,8 @@
 ﻿using FluentAssertions;
 using NUnit.Framework;
 using AutoFixture.NUnit3;
-using MoseyTests.AutoData;
-using MoseyTests.Extensions;
+using Mosey.Tests.AutoData;
+using Mosey.Tests.Extensions;
 
 namespace Mosey.Services.Imaging.Tests
 {

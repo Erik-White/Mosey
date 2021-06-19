@@ -5,7 +5,7 @@ using AutoFixture;
 using AutoFixture.AutoNSubstitute;
 using AutoFixture.NUnit3;
 
-namespace MoseyTests.AutoData
+namespace Mosey.Tests.AutoData
 {
     public class AutoNSubstituteDataAttribute : AutoDataAttribute
     {

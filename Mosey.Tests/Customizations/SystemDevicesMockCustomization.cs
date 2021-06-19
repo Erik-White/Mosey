@@ -6,7 +6,7 @@ using Moq;
 using Mosey.Models;
 using Mosey.Services.Imaging;
 
-namespace MoseyTests.Customizations
+namespace Mosey.Tests.Customizations
 {
     public class SystemDevicesMockCustomization : ICustomization
     {

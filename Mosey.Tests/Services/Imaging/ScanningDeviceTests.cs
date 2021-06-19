@@ -8,9 +8,9 @@ using FluentAssertions;
 using NUnit.Framework;
 using AutoFixture.NUnit3;
 using DNTScanner.Core;
-using MoseyTests.AutoData;
-using MoseyTests.Customizations;
-using MoseyTests.Extensions;
+using Mosey.Tests.AutoData;
+using Mosey.Tests.Customizations;
+using Mosey.Tests.Extensions;
 
 namespace Mosey.Services.Imaging.Tests
 {

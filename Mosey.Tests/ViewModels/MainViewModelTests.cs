@@ -8,8 +8,8 @@ using AutoFixture.NUnit3;
 using NSubstitute;
 using FluentAssertions;
 using Mosey.Models;
-using MoseyTests.AutoData;
-using MoseyTests.Extensions;
+using Mosey.Tests.AutoData;
+using Mosey.Tests.Extensions;
 
 namespace Mosey.ViewModels.Tests
 {

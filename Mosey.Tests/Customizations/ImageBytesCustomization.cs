@@ -3,7 +3,7 @@ using System.Drawing;
 using System.IO;
 using AutoFixture;
 
-namespace MoseyTests.Customizations
+namespace Mosey.Tests.Customizations
 {
     public class ImageBytesCustomization : ICustomization
     {

@@ -7,8 +7,8 @@ using Moq;
 using FluentAssertions;
 using DNTScanner.Core;
 using Mosey.Models;
-using MoseyTests.Extensions;
-using MoseyTests.AutoData;
+using Mosey.Tests.Extensions;
+using Mosey.Tests.AutoData;
 
 namespace Mosey.Services.Imaging.Tests
 {

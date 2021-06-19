@@ -1,7 +1,7 @@
 ﻿using AutoFixture;
-using MoseyTests.Customizations;
+using Mosey.Tests.Customizations;
 
-namespace MoseyTests.AutoData
+namespace Mosey.Tests.AutoData
 {
     public class ScanningDeviceAutoDataAttribute : AutoNSubstituteDataAttribute
     {

@@ -3,7 +3,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using NUnit.Framework;
 
-namespace MoseyTests.Extensions
+namespace Mosey.Tests.Extensions
 {
     public static class TestExtensions
     {

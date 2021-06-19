@@ -2,7 +2,7 @@
 using Mosey.Models;
 using Mosey.Services;
 
-namespace MoseyTests.AutoData
+namespace Mosey.Tests.AutoData
 {
     public class MainViewModelAutoDataAttribute : AutoNSubstituteDataAttribute
     {

@@ -5,7 +5,7 @@ using DNTScanner.Core;
 using Mosey.Services.Imaging;
 using Mosey.Services.Imaging.Extensions;
 
-namespace MoseyTests.Customizations
+namespace Mosey.Tests.Customizations
 {
     public class ScannerSettingsCustomization : ICustomization
     {
