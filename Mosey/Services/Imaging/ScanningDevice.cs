@@ -193,7 +193,9 @@ namespace Mosey.Services.Imaging
         /// </summary>
         public void SaveImage()
         {
-            string directory = _fileSystem.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(), System.Reflection.Assembly.GetExecutingAssembly().GetName().Name);
+            string directory = _fileSystem.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
+                System.Reflection.Assembly.GetExecutingAssembly().GetName().Name);
             SaveImage("image", directory, ImageFormat.Png);
         }
 

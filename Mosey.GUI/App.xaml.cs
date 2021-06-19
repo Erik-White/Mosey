@@ -48,7 +48,7 @@ namespace Mosey.GUI
                             config.ImageFile.Directory = Path.Combine
                             (
                                 Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
-                                System.Reflection.Assembly.GetExecutingAssembly().GetName().Name
+                                "Mosey"
                             );
                         }
                     }
