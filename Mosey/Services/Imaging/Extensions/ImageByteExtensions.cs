@@ -27,10 +27,8 @@ namespace Mosey.Services.Imaging.Extensions
         /// <returns>An <see cref="Image"/> instance</returns>
         public static Image ToImage(this byte[] value)
         {
-            using (var ms = new System.IO.MemoryStream(value))
-            {
-                return Image.FromStream(ms);
-            }
+            var ms = new System.IO.MemoryStream(value);
+            return Image.FromStream(ms);
         }
 
         /// <summary>
