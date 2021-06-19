@@ -14,7 +14,7 @@ using Mosey.Services.Dialog;
 using Mosey.Services.Imaging;
 using Mosey.ViewModels;
 
-[assembly: InternalsVisibleTo("MoseyTests")]
+[assembly: InternalsVisibleTo("Mosey.Tests")]
 namespace Mosey
 {
     /// <summary>
