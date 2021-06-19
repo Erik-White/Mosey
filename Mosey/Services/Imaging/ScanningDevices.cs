@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
-using Microsoft.Extensions.Configuration;
 using Mosey.Models;
-using DNTScanner.Core;
 
 namespace Mosey.Services.Imaging
 {
@@ -33,8 +31,7 @@ namespace Mosey.Services.Imaging
         /// <summary>
         /// Initialize an empty collection.
         /// </summary>
-        /// <param name="systemDevices">An <see cref="ISystemDevices"/> instance that provide access to the WIA driver devices</param>
-        public ScanningDevices(ISystemDevices systemDevices) : this(null, systemDevices) { }
+        public ScanningDevices() : this(null, null) { }
 
         /// <summary>
         /// Initialize the collection <see cref="ScanningDevice"/>s with the specified <paramref name="deviceConfig"/>.

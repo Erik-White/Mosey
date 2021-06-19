@@ -38,7 +38,9 @@ namespace Mosey.Services.Imaging.Tests
         public class AddDeviceShould
         {
             [Theory, ScanningDeviceAutoData]
-            public void ThrowIfDeviceIdExists([Frozen, CollectionSize(5)] IEnumerable<ScannerSettings> scannerSettings, ScanningDevices sut)
+            public void ThrowIfDeviceIdExists(
+                [Frozen, CollectionSize(5)] IEnumerable<ScannerSettings> scannerSettings,
+                [Greedy] ScanningDevices sut)
             {
                 var existingId = scannerSettings.First().Id;
 
@@ -54,8 +56,8 @@ namespace Mosey.Services.Imaging.Tests
             public void ThrowIfDeviceInstanceExists(
                 [Frozen] IImagingDeviceConfig deviceConfig,
                 [Frozen] ScannerSettings settings,
-                [Frozen, CollectionSize(1)] IEnumerable<ScannerSettings> scannerSettings,
-                ScanningDevices sut)
+                [Frozen, CollectionSize(1)] IEnumerable<ScannerSettings> _,
+                [Greedy] ScanningDevices sut)
             {
                 var existingInstance = new ScanningDevice(settings, deviceConfig);
 
@@ -72,7 +74,7 @@ namespace Mosey.Services.Imaging.Tests
                 ScanningDevice device,
                 [Frozen] IImagingDeviceConfig deviceConfig,
                 [Frozen, CollectionSize(5)] IEnumerable<ScannerSettings> scannerSettings,
-                ScanningDevices sut)
+                [Greedy] ScanningDevices sut)
             {
                 var scanningDevices = scannerSettings.Select(x => new ScanningDevice(x, deviceConfig));
 
@@ -119,7 +121,7 @@ namespace Mosey.Services.Imaging.Tests
         public class RefreshDevicesShould
         {
             [Theory, ScanningDeviceAutoData]
-            public void DisconnectAllDevicesIfNotFound(ScanningDevices sut)
+            public void DisconnectAllDevicesIfNotFound([Greedy] ScanningDevices sut)
             {
                 sut.RefreshDevices();
 
@@ -134,7 +136,7 @@ namespace Mosey.Services.Imaging.Tests
                 systemDevices
                     .Setup(mock => mock.ScannerSettings(It.IsAny<int>()))
                     .Returns(scannerSettings);
-                var sut = new ScanningDevices(systemDevices.Object);
+                var sut = new ScanningDevices(null, systemDevices.Object);
                 var initalDevices = sut.Devices;
 
                 // Add the existing DeviceIds except one so the device will appear disconnected
@@ -169,7 +171,7 @@ namespace Mosey.Services.Imaging.Tests
                 systemDevices
                     .Setup(mock => mock.ScannerSettings(It.IsAny<int>()))
                     .Returns(scannerSettings);
-                var sut = new ScanningDevices(systemDevices.Object);
+                var sut = new ScanningDevices(null, systemDevices.Object);
                 var initalDevices = sut.Devices;
 
                 // Add an extra scanner to the collection

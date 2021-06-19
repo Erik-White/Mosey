@@ -2,7 +2,7 @@
 
 namespace Mosey.Services
 {
-    internal class IntervalTimerFactory : IFactory<IIntervalTimer>
+    public class IntervalTimerFactory : IFactory<IIntervalTimer>
     {
         public IIntervalTimer Create()
         {
