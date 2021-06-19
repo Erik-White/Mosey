@@ -6,7 +6,7 @@ using AutoFixture;
 using AutoFixture.Kernel;
 using AutoFixture.NUnit3;
 
-namespace MoseyTests.Extensions
+namespace MoseyTests.AutoData
 {
     public class CollectionSizeAttribute : CustomizeAttribute
     {

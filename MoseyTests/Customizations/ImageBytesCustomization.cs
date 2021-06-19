@@ -1,10 +1,7 @@
-﻿using AutoFixture;
-using Mosey.Models;
-using Mosey.Services.Imaging;
-using Mosey.Services.Imaging.Extensions;
-using System;
+﻿using System;
 using System.Drawing;
 using System.IO;
+using AutoFixture;
 
 namespace MoseyTests.Customizations
 {

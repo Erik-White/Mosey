@@ -1,7 +1,6 @@
 ﻿using AutoFixture;
 using Mosey.Models;
 using Mosey.Services;
-using MoseyTests.Customizations;
 
 namespace MoseyTests.AutoData
 {
