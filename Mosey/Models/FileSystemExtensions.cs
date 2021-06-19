@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 
 namespace Mosey.Models
@@ -14,9 +13,9 @@ namespace Mosey.Models
         /// <returns>A <see cref="DriveInfo"/> instance that represents the logical drive <paramref name="driveName"/></returns>
         /// <exception cref="IOException"></exception>
         /// <exception cref="UnauthorizedAccessException"></exception>
-        public static DriveInfo GetDriveInfo(string driveName)
+        public static IDriveInfo GetDriveInfo(string driveName, IFileSystem fileSystem)
         {
-            return DriveInfo.GetDrives().Where(drive => drive.Name == driveName).FirstOrDefault();
+            return fileSystem.DriveInfo.GetDrives().Where(drive => drive.Name == driveName).FirstOrDefault();
         }
 
         /// <summary>
@@ -26,9 +25,9 @@ namespace Mosey.Models
         /// <returns>The available free space, in bytes</returns>
         /// <exception cref="IOException"></exception>
         /// <exception cref="UnauthorizedAccessException"></exception>
-        public static long AvailableFreeSpace(string driveName)
+        public static long AvailableFreeSpace(string driveName, IFileSystem fileSystem)
         {
-            return GetDriveInfo(driveName).AvailableFreeSpace;
+            return GetDriveInfo(driveName, fileSystem).AvailableFreeSpace;
         }
 
         /// <summary>
@@ -36,15 +35,15 @@ namespace Mosey.Models
         /// </summary>
         /// <param name="path">The path to verify</param>
         /// <returns><see langword="True"/> if <paramref name="path"/> is a UNC path</returns>
-        public static bool IsNetworkPath(string path)
+        public static bool IsNetworkPath(string path, IFileSystem fileSystem)
         {
             if (!path.StartsWith(@"/") && !path.StartsWith(@"\"))
             {
                 // Path may not start with a slash, but could be a network drive
-                string rootPath = Path.GetPathRoot(path);
-                DriveInfo driveInfo = new DriveInfo(rootPath);
+                string rootPath = fileSystem.Path.GetPathRoot(path);
+                var driveInfo = fileSystem.DriveInfo.FromDriveName(rootPath);
 
-                return driveInfo.DriveType == DriveType.Network;
+                return driveInfo.DriveType == System.IO.DriveType.Network;
             }
 
             return true;

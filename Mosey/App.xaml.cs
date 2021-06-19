@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
+using System.IO.Abstractions;
 using System.Windows;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -12,6 +14,7 @@ using Mosey.Services.Dialog;
 using Mosey.Services.Imaging;
 using Mosey.ViewModels;
 
+[assembly: InternalsVisibleTo("Mosey.Tests")]
 namespace Mosey
 {
     /// <summary>
@@ -60,9 +63,11 @@ namespace Mosey
                 })
 
                 // Services
-                .AddTransient<IIntervalTimer, IntervalTimer>()
+                .AddSingleton<IFileSystem, FileSystem>()
+                .AddTransient<IFactory<IIntervalTimer>, IntervalTimerFactory>()
                 .AddTransient<IFolderBrowserDialog, FolderBrowserDialog>()
                 .AddScoped<IDialogManager, DialogManager>()
+                .AddTransient<ISystemDevices, SystemDevices>()
                 .AddTransient<IImagingDevice, ScanningDevice>()
                 .AddSingleton<IImagingDevices<IImagingDevice>, ScanningDevices>()
 

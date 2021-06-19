@@ -14,13 +14,6 @@ namespace Mosey.Models
         IEnumerable<T> Devices { get; }
 
         /// <summary>
-        /// Retrieve the devices in the collection where their <see cref="IDevice.IsEnabled"/> property is equal to <paramref name="enabled"/>.
-        /// </summary>
-        /// <param name="enabled">The specified <see cref="IDevice.IsEnabled"/> property</param>
-        /// <returns>Devices where the <see cref="IDevice.IsEnabled"/> is equal to <paramref name="enabled"/></returns>
-        IEnumerable<T> GetByEnabled(bool enabled);
-
-        /// <summary>
         /// Add a <see cref="IDevice"/> to the collection.
         /// </summary>
         /// <param name="device">A <see cref="IDevice"/> instance</param>
@@ -35,13 +28,6 @@ namespace Mosey.Models
         /// Set the <see cref="IDevice.IsEnabled"/> property of all devices in the collection to <see langword="false"/>.
         /// </summary>
         void DisableAll();
-
-        /// <summary>
-        /// Set the <see cref="IDevice.IsEnabled"/> property of a specific <see cref="IDevice"/> instance.
-        /// </summary>
-        /// <param name="device">A <see cref="IDevice"/> instance</param>
-        /// <param name="enabled">Sets the <see cref="IDevice.IsEnabled"/> property</param>
-        void SetDeviceEnabled(T device, bool enabled);
 
         /// <summary>
         /// Set the <see cref="IDevice.IsEnabled"/> property of a device in the collection.

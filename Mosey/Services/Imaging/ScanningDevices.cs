@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Threading;
 using Microsoft.Extensions.Configuration;
 using Mosey.Models;
+using DNTScanner.Core;
 
 namespace Mosey.Services.Imaging
 {
@@ -14,6 +14,9 @@ namespace Mosey.Services.Imaging
     /// </summary>
     public class ScanningDevices : IImagingDevices<IImagingDevice>
     {
+        private readonly ICollection<IImagingDevice> _devices = new ObservableItemsCollection<IImagingDevice>();
+        private readonly ISystemDevices _systemDevices;
+
         /// <summary>
         /// The number of time to attempt reconnection to the WIA driver.
         /// </summary>
@@ -22,25 +25,25 @@ namespace Mosey.Services.Imaging
         /// <summary>
         /// A collection of <see cref="ScanningDevice"/>s, representing physical scanners.
         /// </summary>
-        public IEnumerable<IImagingDevice> Devices { get { return _devices; } }
+        public IEnumerable<IImagingDevice> Devices => _devices;
 
-        public bool IsEmpty { get { return (_devices.Count == 0); } }
-        public bool IsImagingInProgress { get { return _devices.Any(x => x.IsImaging is true); } }
-        private ICollection<IImagingDevice> _devices = new ObservableItemsCollection<IImagingDevice>();
+        public bool IsEmpty => !_devices.Any();
+        public bool IsImagingInProgress => _devices.Any(x => x.IsImaging is true);
 
         /// <summary>
         /// Initialize an empty collection.
         /// </summary>
-        public ScanningDevices()
-        {
-        }
+        /// <param name="systemDevices">An <see cref="ISystemDevices"/> instance that provide access to the WIA driver devices</param>
+        public ScanningDevices(ISystemDevices systemDevices) : this(null, systemDevices) { }
 
         /// <summary>
         /// Initialize the collection <see cref="ScanningDevice"/>s with the specified <paramref name="deviceConfig"/>.
         /// </summary>
         /// <param name="deviceConfig">Used to initialize the collection's <see cref="ScanningDevice"/>s</param>
-        public ScanningDevices(IImagingDeviceConfig deviceConfig)
+        /// <param name="systemDevices">An <see cref="ISystemDevices"/> instance that provide access to the WIA driver devices</param>
+        public ScanningDevices(IImagingDeviceConfig deviceConfig, ISystemDevices systemDevices)
         {
+            _systemDevices = systemDevices ?? new SystemDevices();
             GetDevices(deviceConfig);
         }
 
@@ -54,6 +57,8 @@ namespace Mosey.Services.Imaging
             return AddDevice(deviceID, null);
         }
 
+        /// <inheritdoc/>
+        /// <exception cref="ArgumentException">If a device with the same <see cref="IDevice.DeviceID"/> already exists in the collection</exception>
         public void AddDevice(IDevice device)
         {
             AddDevice((ScanningDevice)device);
@@ -68,7 +73,7 @@ namespace Mosey.Services.Imaging
         {
             if (!_devices.Contains(device))
             {
-                _devices.Add((IImagingDevice)device);
+                _devices.Add(device);
             }
             else
             {
@@ -88,7 +93,7 @@ namespace Mosey.Services.Imaging
             ScanningDevice device = null;
 
             // Attempt to connect a device matching the deviceID
-            var settings = SystemDevices.ScannerSettings(ConnectRetries).Where(x => x.Id == deviceID).FirstOrDefault();
+            var settings = _systemDevices.ScannerSettings(ConnectRetries).FirstOrDefault(x => x.Id == deviceID);
 
             if (settings != null)
             {
@@ -109,33 +114,25 @@ namespace Mosey.Services.Imaging
             SetByEnabled(true);
         }
 
-        public IEnumerable<IImagingDevice> GetByEnabled(bool enabled)
-        {
-            return _devices.Where(x => x.IsEnabled == enabled).AsEnumerable();
-        }
-
         /// <summary>
         /// Retrieve <see cref="ScanningDevice"/>s that are connected to the system and add them to the collection.
         /// Update the status of any devices are already present in the collection.
         /// </summary>
         public void RefreshDevices()
         {
-            // Get a new collection of devices if none already present
-            if (IsEmpty)
-            {
-                GetDevices();
-            }
-            else
-            {
-                RefreshDevices(new ScanningDeviceSettings());
-            }
+            RefreshDevices(new ScanningDeviceSettings());
         }
 
-        /// <inheritdoc cref="RefreshDevices(IImagingDeviceConfig, bool)"/>
+        /// <inheritdoc cref="RefreshDevices()"/>
         public void RefreshDevices(IImagingDeviceConfig deviceConfig, bool enableDevices = true)
         {
-            IList<IDictionary<string, object>> deviceProperties = SystemDevices.ScannerProperties(connectRetries: ConnectRetries);
-            if (deviceProperties.Count == 0)
+            const string DEVICE_ID_KEY = "Unique Device ID";
+            var deviceIds = new List<string>();
+
+            // Check the static properties for changed IDs and only retrieve ScannerSetting instances if necessary.
+            // This saves connecting the devices via the WIA driver and is much faster
+            var deviceProperties = _systemDevices.ScannerProperties(connectRetries: ConnectRetries);
+            if (deviceProperties is null || !deviceProperties.Any())
             {
                 // No devices detected, any current devices have been disconnected
                 foreach (ScanningDevice device in _devices)
@@ -147,62 +144,66 @@ namespace Mosey.Services.Imaging
 
             // Check if devices not already in the collection
             // Or already in the collection, but not connected
-            foreach (IDictionary<string, object> properties in deviceProperties)
+            var currentDevices = Devices.Select(d => d.DeviceID);
+            foreach (var properties in deviceProperties)
             {
-                string deviceID = properties["Unique Device ID"].ToString();
-
-                if (!_devices.Where(d => d.DeviceID == deviceID).Any())
+                if (properties.TryGetValue(DEVICE_ID_KEY, out var id))
                 {
-                    // Create a new device and add it to the collection
-                    ScanningDevice device = AddDevice(deviceID, deviceConfig);
-                    device.IsEnabled = enableDevices;
+                    deviceIds.Add((string)id);
                 }
-                else
-                {
-                    ScanningDevice existingDevice = (ScanningDevice)_devices.Where(d => d.DeviceID == deviceID && !d.IsConnected).FirstOrDefault();
-                    if (existingDevice != null)
-                    {
-                        // Remove the existing device from the collection
-                        bool enabled = existingDevice.IsEnabled;
-                        _devices.Remove(existingDevice);
+            }
 
-                        // Replace with the new and updated device
-                        ScanningDevice device = AddDevice(deviceID, deviceConfig);
-                        device.IsEnabled = enabled;
-                    }
-                }
+            // These devices can no longer be found and are disconnected
+            foreach (var deviceId in currentDevices.Except(deviceIds))
+            {
+                var device = (ScanningDevice)_devices.FirstOrDefault(d => d.DeviceID == deviceId);
+                device.IsConnected = false;
+            }
 
-                // If the device is in the collection but no longer found
-                IEnumerable<IImagingDevice> devicesRemoved = _devices.Where(l1 => !deviceProperties.Any(l2 => l1.DeviceID == l2["Unique Device ID"].ToString()));
-                if (devicesRemoved.Count() > 0)
+            // These are new devices, add them to the collection
+            foreach (var deviceId in deviceIds.Except(currentDevices))
+            {
+                var device = AddDevice(deviceId, deviceConfig);
+                device.IsEnabled = enableDevices;
+            }
+
+            // These devices are already in the collection, but previously disconnected
+            foreach (var deviceId in currentDevices.Intersect(deviceIds))
+            {
+                var existingDevice = (ScanningDevice)_devices.FirstOrDefault(d => d.DeviceID == deviceId && !d.IsConnected);
+                if (existingDevice is not null)
                 {
-                    foreach (ScanningDevice device in devicesRemoved)
-                    {
-                        device.IsConnected = false;
-                    }
+                    // Remove the existing device and replace with the updated
+                    bool enabled = existingDevice.IsEnabled;
+                    _devices.Remove(existingDevice);
+
+                    var device = AddDevice(deviceId, deviceConfig);
+                    device.IsEnabled = enabled;
                 }
             }
         }
 
         public void SetDeviceEnabled(string deviceID, bool enabled)
         {
-            _devices.Where(x => x.DeviceID == deviceID).First().IsEnabled = enabled;
-        }
-
-        public void SetDeviceEnabled(IImagingDevice device, bool enabled)
-        {
-            _devices.Where(x => x.DeviceID == device.DeviceID).First().IsEnabled = enabled;
+            _devices.First(x => x.DeviceID == deviceID).IsEnabled = enabled;
         }
 
         /// <summary>
-        /// Retrieve <see cref="ScanningDevice"/>s that are connected to the system and add them to the collection.
-        /// The exisiting items in the collection are cleared first.
+        /// A collection of <see cref="IImagingDevice"/> instances representing physical devices connected to the system.
         /// </summary>
-        /// <returns>The number of devices added to the collection</returns>
-        private int GetDevices()
+        /// <param name="deviceConfig">Used to initialize the <see cref="ScanningDevice"/> instances</param>
+        /// <returns>A collection of <see cref="ScanningDevice"/> instances representing physical scanning devices connected to the system</returns>
+        private IEnumerable<IImagingDevice> ScannerDevices(IImagingDeviceConfig deviceConfig)
+            => ScannerDevices(deviceConfig, 1);
+
+        /// <inheritdoc cref="ScannerDevices(IImagingDeviceConfig)"/>
+        /// <param name="connectRetries">The number of retry attempts allowed if connecting to the WIA driver was unsuccessful</param>
+        private IEnumerable<IImagingDevice> ScannerDevices(IImagingDeviceConfig deviceConfig, int connectRetries = 1)
         {
-            // Populate a new collection of scanners using default image settings
-            return GetDevices(new ScanningDeviceSettings());
+            foreach (var settings in _systemDevices.ScannerSettings(connectRetries))
+            {
+                yield return new ScanningDevice(settings, deviceConfig);
+            }
         }
 
         /// <summary>
@@ -214,11 +215,11 @@ namespace Mosey.Services.Imaging
         /// <returns>The number of devices added to the collection</returns>
         private int GetDevices(IImagingDeviceConfig deviceConfig)
         {
-            // Empty the collection
-            _devices.Clear();
+            deviceConfig ??= new ScanningDeviceSettings();
 
             // Populate a new collection of scanners using specified image settings
-            foreach (ScanningDevice device in SystemDevices.ScannerDevices(deviceConfig, ConnectRetries))
+            _devices.Clear();
+            foreach (ScanningDevice device in ScannerDevices(deviceConfig, ConnectRetries))
             {
                 device.IsEnabled = true;
                 AddDevice(device);

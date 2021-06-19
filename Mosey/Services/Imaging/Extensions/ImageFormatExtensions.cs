@@ -41,7 +41,7 @@ namespace Mosey.Services.Imaging.Extensions
         /// Convert to a <see cref="DNTScanner.Core.WiaImageFormat"/> instance.
         /// </summary>
         /// <param name="value"></param>
-        /// <returns>A <see cref="ImageFormat"/> instance</returns>
+        /// <returns>A <see cref="DNTScanner.Core.WiaImageFormat"/> instance</returns>
         public static DNTScanner.Core.WiaImageFormat ToWIAImageFormat(this ScanningDevice.ImageFormat value)
         {
             return (DNTScanner.Core.WiaImageFormat)typeof(DNTScanner.Core.WiaImageFormat)
