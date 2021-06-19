@@ -445,7 +445,7 @@ namespace Mosey.ViewModels
             System.Windows.Data.BindingOperations.EnableCollectionSynchronization(ScanningDevices.Devices, _scanningDevicesLock);
 
             // Register event callbacks
-            _appSettings.OnChange<AppSettings>(UpdateConfig);
+            _appSettings.OnChange(UpdateConfig);
             _scanTimer.Tick += ScanTimer_Tick;
             _scanTimer.Complete += ScanTimer_Complete;
             _uiTimer.Tick += UITimer_Tick;
@@ -462,7 +462,7 @@ namespace Mosey.ViewModels
         /// Update local configuration from supplied <see cref="AppSettings"/>.
         /// </summary>
         /// <param name="settings">Application configuration settings</param>
-        private void UpdateConfig(AppSettings settings)
+        internal void UpdateConfig(AppSettings settings)
         {
             if (!IsScanRunning)
             {
@@ -642,7 +642,7 @@ namespace Mosey.ViewModels
         /// <param name="intervalSeconds">The duration between refreshes</param>
         /// <param name="cancellationToken">Used to stop the refresh loop</param>
         /// <returns></returns>
-        private async Task RefreshDevicesAsync(int intervalSeconds = 1, CancellationToken cancellationToken = default)
+        internal async Task RefreshDevicesAsync(int intervalSeconds = 1, CancellationToken cancellationToken = default)
         {
             _log.LogDebug($"Device refresh initiated with {nameof(RefreshDevicesAsync)}");
             while (true)

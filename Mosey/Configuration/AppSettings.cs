@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Mosey.Models;
 using Mosey.Services;
 using Mosey.Services.Imaging;
