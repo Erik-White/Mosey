@@ -6,13 +6,14 @@ using System.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Mosey.Configuration;
+using Mosey.GUI.Configuration;
 using Mosey.GUI.Models;
 using Mosey.GUI.Models.Dialog;
 using Mosey.GUI.Services;
 using Mosey.GUI.Services.Dialog;
 using Mosey.GUI.ViewModels;
 using Mosey.Models;
+using Mosey.Models.Imaging;
 using Mosey.Services;
 using Mosey.Services.Imaging;
 

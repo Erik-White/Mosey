@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Mosey.Models;
+using Mosey.Models.Imaging;
 
 namespace Mosey.Services.Imaging
 {

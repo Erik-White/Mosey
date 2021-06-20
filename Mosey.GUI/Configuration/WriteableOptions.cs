@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace Mosey.Configuration
+namespace Mosey.GUI.Configuration
 {
     public interface IWritableOptions<out T> : IOptionsSnapshot<T> where T : class, new()
     {

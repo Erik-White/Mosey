@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace Mosey.GUI.Models
+namespace Mosey.GUI.ViewModels.Extensions
 {
-    public static class Format
+    internal static class StringFormat
     {
         public static readonly string[] sizeSuffixes =
         {

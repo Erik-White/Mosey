@@ -5,7 +5,7 @@ using AutoFixture.NUnit3;
 using DNTScanner.Core;
 using FluentAssertions;
 using Moq;
-using Mosey.Models;
+using Mosey.Models.Imaging;
 using Mosey.Tests.AutoData;
 using Mosey.Tests.Extensions;
 using NUnit.Framework;

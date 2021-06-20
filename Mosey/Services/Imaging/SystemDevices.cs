@@ -4,7 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using DNTScanner.Core;
-using Mosey.Models;
+using Mosey.Models.Imaging;
 using Mosey.Services.Imaging.Extensions;
 
 namespace Mosey.Services.Imaging

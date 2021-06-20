@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Windows.Input;
 using Microsoft.Extensions.Logging;
-using Mosey.Configuration;
+using Mosey.GUI.Configuration;
 using Mosey.GUI.Models;
 using Mosey.GUI.Services;
 

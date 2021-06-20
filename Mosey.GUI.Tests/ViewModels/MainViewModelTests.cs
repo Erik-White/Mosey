@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture.NUnit3;
 using FluentAssertions;
-using Mosey.Models;
+using Mosey.Models.Imaging;
 using Mosey.Tests.AutoData;
 using Mosey.Tests.Extensions;
 using NSubstitute;

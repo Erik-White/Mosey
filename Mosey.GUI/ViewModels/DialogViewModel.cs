@@ -7,6 +7,7 @@ using Mosey.GUI.Models;
 using Mosey.GUI.Models.Dialog;
 using Mosey.GUI.Services;
 using Mosey.GUI.Services.Dialog;
+using Mosey.GUI.ViewModels.Extensions;
 
 namespace Mosey.GUI.ViewModels
 {
@@ -98,7 +99,7 @@ namespace Mosey.GUI.ViewModels
             var dialogResult = await _dialogManager.ShowMessageWithTimeoutAsync(
                 _context,
                 "Disk space low",
-                $"The images generated from scanning will require approximately {Format.ByteSize(requiredSpace)} of disk space. Only {Format.ByteSize(availableSpace)} is available, are you sure you want to continue?",
+                $"The images generated from scanning will require approximately {StringFormat.ByteSize(requiredSpace)} of disk space. Only {StringFormat.ByteSize(availableSpace)} is available, are you sure you want to continue?",
                 DialogStyle.AffirmativeAndNegative,
                 dialogSettings,
                 timeout

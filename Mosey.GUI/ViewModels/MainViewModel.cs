@@ -10,9 +10,12 @@ using System.Windows.Input;
 using AsyncAwaitBestPractices.MVVM;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Mosey.Configuration;
+using Mosey.GUI.Configuration;
 using Mosey.GUI.Models;
+using Mosey.GUI.ViewModels.Extensions;
 using Mosey.Models;
+using Mosey.Models.Imaging;
+using Mosey.Services;
 
 namespace Mosey.GUI.ViewModels
 {
@@ -226,9 +229,11 @@ namespace Mosey.GUI.ViewModels
         public IImagingDevices<IImagingDevice> ScanningDevices { get; private set; }
 
         /// <inheritdoc cref="IImagingDevices{T}"/>
-        public ObservableItemsCollection<IImagingDevice> Devices => (ObservableItemsCollection<IImagingDevice>)ScanningDevices.Devices;
+        public ObservableItemsCollection<IImagingDevice> Devices
+            => (ObservableItemsCollection<IImagingDevice>)ScanningDevices.Devices;
 
-        public ICollection<IViewModel> ViewModelChildren { get; private set; } = new System.Collections.ObjectModel.ObservableCollection<IViewModel>();
+        public ICollection<IViewModel> ViewModelChildren { get; private set; }
+            = new System.Collections.ObjectModel.ObservableCollection<IViewModel>();
 
         public SettingsViewModel SettingsViewModel
         {
@@ -506,7 +511,7 @@ namespace Mosey.GUI.ViewModels
                 {
                     if (!await _dialog.DiskSpaceDialog(ImagesRequiredDiskSpace, availableDiskSpace))
                     {
-                        _log.LogDebug($"Scanning not started due to low disk space: {Format.ByteSize(ImagesRequiredDiskSpace)} required, {Format.ByteSize(availableDiskSpace)} available.");
+                        _log.LogDebug($"Scanning not started due to low disk space: {StringFormat.ByteSize(ImagesRequiredDiskSpace)} required, {StringFormat.ByteSize(availableDiskSpace)} available.");
                         return;
                     }
                 }

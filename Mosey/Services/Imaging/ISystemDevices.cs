@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using DNTScanner.Core;
-using Mosey.Models;
+using Mosey.Models.Imaging;
 
 namespace Mosey.Services.Imaging
 {

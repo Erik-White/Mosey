@@ -6,7 +6,7 @@ using System.IO.Abstractions;
 using System.Linq;
 using System.Runtime.InteropServices;
 using DNTScanner.Core;
-using Mosey.Models;
+using Mosey.Models.Imaging;
 using Mosey.Services.Imaging.Extensions;
 
 namespace Mosey.Services.Imaging
@@ -130,6 +130,7 @@ namespace Mosey.Services.Imaging
             {
                 throw new COMException("The scanner is not connected.");
             }
+
             if (!_scannerSettings.SupportedTransferFormats.ContainsKey(format.ToWIAImageFormat().Value))
             {
                 throw new ArgumentException($"The image format {format} is not supported by this device.");
@@ -224,6 +225,7 @@ namespace Mosey.Services.Imaging
             {
                 throw new InvalidOperationException($"No images available. Please call the {nameof(GetImage)} method first.");
             }
+
             if (string.IsNullOrWhiteSpace(directory) || string.IsNullOrWhiteSpace(directory))
             {
                 throw new ArgumentException("A valid filename and directory must be supplied");

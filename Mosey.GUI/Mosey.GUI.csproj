@@ -34,6 +34,7 @@
 
   <ItemGroup>
     <PackageReference Include="AsyncAwaitBestPractices.MVVM" Version="4.1.0" />
+    <PackageReference Include="Macross.Json.Extensions" Version="2.0.0" />
     <PackageReference Include="MahApps.Metro" Version="2.0.0-alpha0455" />
     <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="4.0.0" />
     <PackageReference Include="Microsoft-WindowsAPICodePack-Shell" Version="1.1.4" />
@@ -59,6 +60,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Generator>MSBuild:Compile</Generator>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Configuration\" />
+    <Folder Include="ViewModels\Extensions\" />
   </ItemGroup>
 
 </Project>

@@ -2,9 +2,9 @@
 using System.IO.Abstractions;
 using System.Linq;
 
-namespace Mosey.Models
+namespace Mosey.GUI.ViewModels.Extensions
 {
-    public static class FileSystemExtensions
+    internal static class FileSystemExtensions
     {
         /// <summary>
         /// Create a <see cref="DriveInfo"/> instance representing a logical drive on the system that matches <paramref name="driveName"/>.
@@ -13,7 +13,8 @@ namespace Mosey.Models
         /// <returns>A <see cref="DriveInfo"/> instance that represents the logical drive <paramref name="driveName"/></returns>
         /// <exception cref="IOException"></exception>
         /// <exception cref="UnauthorizedAccessException"></exception>
-        public static IDriveInfo GetDriveInfo(string driveName, IFileSystem fileSystem) => fileSystem.DriveInfo.GetDrives().Where(drive => drive.Name == driveName).FirstOrDefault();
+        public static IDriveInfo GetDriveInfo(string driveName, IFileSystem fileSystem)
+            => fileSystem.DriveInfo.GetDrives().Where(drive => drive.Name == driveName).FirstOrDefault();
 
         /// <summary>
         /// The available free space of logical a drive on the system that matches <paramref name="driveName"/>.
@@ -22,7 +23,8 @@ namespace Mosey.Models
         /// <returns>The available free space, in bytes</returns>
         /// <exception cref="IOException"></exception>
         /// <exception cref="UnauthorizedAccessException"></exception>
-        public static long AvailableFreeSpace(string driveName, IFileSystem fileSystem) => GetDriveInfo(driveName, fileSystem).AvailableFreeSpace;
+        public static long AvailableFreeSpace(string driveName, IFileSystem fileSystem)
+            => GetDriveInfo(driveName, fileSystem).AvailableFreeSpace;
 
         /// <summary>
         /// Check is a file path is a Universal Naming Convention (UNC) network path
