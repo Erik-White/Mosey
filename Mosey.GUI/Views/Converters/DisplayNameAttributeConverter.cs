@@ -10,11 +10,11 @@ namespace Mosey.GUI.Views.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            //if (value == null) return string.Empty;
+            //if (value is null) return string.Empty;
 
             var propInfo = value.GetType().GetProperty(parameter.ToString());
             var displayAttributes = propInfo.GetCustomAttributes(typeof(DisplayAttribute), true);
-            if (displayAttributes != null && displayAttributes.Length == 1)
+            if (displayAttributes is not null && displayAttributes.Length == 1)
             {
                 return ((DisplayAttribute)displayAttributes[0]).Name;
             }

@@ -87,7 +87,7 @@ namespace Mosey.Services.Imaging
             // Attempt to connect a device matching the deviceID
             var settings = _systemDevices.ScannerSettings(ConnectRetries).FirstOrDefault(x => x.Id == deviceID);
 
-            if (settings != null)
+            if (settings is not null)
             {
                 device = new ScanningDevice(settings, config);
                 AddDevice(device);

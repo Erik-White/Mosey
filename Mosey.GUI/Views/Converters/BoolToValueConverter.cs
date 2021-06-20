@@ -18,7 +18,7 @@ namespace Mosey.GUI.Views.Converters
 
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value == null)
+            if (value is null)
             {
                 return FalseValue;
             }
@@ -28,7 +28,7 @@ namespace Mosey.GUI.Views.Converters
             }
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => value != null ? value.Equals(TrueValue) : false;
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => value is not null ? value.Equals(TrueValue) : false;
 
         public override object ProvideValue(IServiceProvider serviceProvider) => this;
     }

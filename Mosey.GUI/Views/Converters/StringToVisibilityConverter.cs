@@ -21,7 +21,7 @@ namespace Mosey.GUI.Views.Converters
             Visibility matchedVisibility = (Visibility)Enum.Parse(typeof(Visibility), MatchedVisibility, true);
             Visibility defaultVisibility = (Visibility)Enum.Parse(typeof(Visibility), DefaultVisibility, true);
 
-            if (value == null || (string)value != (string)parameter)
+            if (value is null || (string)value != (string)parameter)
             {
                 return defaultVisibility;
             }

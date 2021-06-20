@@ -16,7 +16,7 @@ namespace Mosey.Services.Imaging.Extensions
         internal static List<EncoderParameter> AddOrUpdate(this List<EncoderParameter> value, EncoderParameter encoderParameter)
         {
             // Check if the encoder is already present in the list
-            var paramIndex = value.FindIndex(e => e != null && e.Encoder == encoderParameter.Encoder);
+            var paramIndex = value.FindIndex(e => e is not null && e.Encoder == encoderParameter.Encoder);
             if (paramIndex >= 0)
             {
                 // Update the existing value
@@ -56,28 +56,28 @@ namespace Mosey.Services.Imaging.Extensions
 
             // Replace existing values in the paramter list if they already exist
             // Otherwise just add them to the collection
-            System.Collections.Generic.List<EncoderParameter> encoderParams = value.Param.Where(e => e != null).ToList();
-            if (compression != null)
+            System.Collections.Generic.List<EncoderParameter> encoderParams = value.Param.Where(e => e is not null).ToList();
+            if (compression is not null)
             {
                 encoderParams.AddOrUpdate(new EncoderParameter(Encoder.Compression, (long)compression));
             }
 
-            if (quality != null)
+            if (quality is not null)
             {
                 encoderParams.AddOrUpdate(new EncoderParameter(Encoder.Quality, (long)quality));
             }
 
-            if (colorDepth != null)
+            if (colorDepth is not null)
             {
                 encoderParams.AddOrUpdate(new EncoderParameter(Encoder.ColorDepth, (long)colorDepth));
             }
 
-            if (transform != null)
+            if (transform is not null)
             {
                 encoderParams.AddOrUpdate(new EncoderParameter(Encoder.Transformation, (long)transform));
             }
 
-            if (frame != null)
+            if (frame is not null)
             {
                 encoderParams.AddOrUpdate(new EncoderParameter(Encoder.SaveFlag, (long)frame));
             }

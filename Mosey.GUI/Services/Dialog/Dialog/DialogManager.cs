@@ -30,7 +30,7 @@ namespace Mosey.GUI.Services.Dialog
             var metroDialog = await Instance.GetCurrentDialogAsync<BaseMetroDialog>(context);
 
             // Perform a very simply check to see if the correct dialog is returned, then show it
-            if (metroDialog != null && metroDialog.Title == dialog.Title)
+            if (metroDialog is not null && metroDialog.Title == dialog.Title)
             {
                 await Instance.ShowMetroDialogAsync(context, metroDialog, settings?.ToMetroDialogSettings());
             }
@@ -42,7 +42,7 @@ namespace Mosey.GUI.Services.Dialog
             var metroDialog = await Instance.GetCurrentDialogAsync<BaseMetroDialog>(context);
 
             // Perform a very simply check to see if the correct dialog is returned, then hide it
-            if (metroDialog != null && metroDialog.Title == dialog.Title)
+            if (metroDialog is not null && metroDialog.Title == dialog.Title)
             {
                 await Instance.HideMetroDialogAsync(context, metroDialog, settings?.ToMetroDialogSettings());
             }

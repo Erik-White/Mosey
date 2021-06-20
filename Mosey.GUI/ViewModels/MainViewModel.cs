@@ -169,7 +169,7 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_scanTimer != null)
+                if (_scanTimer is not null)
                 {
                     return _scanTimer.RepetitionsCount;
                 }
@@ -183,7 +183,7 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_scanTimer != null)
+                if (_scanTimer is not null)
                 {
                     return _scanTimer.Enabled || ScanningDevices.IsImagingInProgress;
                 }
@@ -342,7 +342,7 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_PauseScanCommand == null)
+                if (_PauseScanCommand is null)
                 {
                     _PauseScanCommand = new RelayCommand(o => _scanTimer.Pause(), o => IsScanRunning && !_scanTimer.Paused);
                 }
@@ -356,7 +356,7 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_ResumeScanCommand == null)
+                if (_ResumeScanCommand is null)
                 {
                     _ResumeScanCommand = new RelayCommand(o => _scanTimer.Resume(), o => _scanTimer.Paused);
                 }
@@ -370,7 +370,7 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_StopScanCommand == null)
+                if (_StopScanCommand is null)
                 {
                     _StopScanCommand = new AsyncCommand(() => StopScanWithDialog(), _ => IsScanRunning && !_cancelScanTokenSource.IsCancellationRequested);
                 }
@@ -384,7 +384,7 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_RefreshScannersCommand == null)
+                if (_RefreshScannersCommand is null)
                 {
                     _RefreshScannersCommand = new RelayCommand(o => RefreshDevices(), o => !ScanningDevices.IsImagingInProgress && !IsScanRunning);
                 }
@@ -398,7 +398,7 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_SelectFolderCommand == null)
+                if (_SelectFolderCommand is null)
                 {
                     _SelectFolderCommand = new RelayCommand(o => ImageDirectoryDialog());
                 }

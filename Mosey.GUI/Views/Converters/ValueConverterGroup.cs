@@ -37,7 +37,7 @@ namespace Mosey.GUI.Views.Converters
 
         private void ExtractParameters(object parameter)
         {
-            if (parameter != null)
+            if (parameter is not null)
             {
                 _parameters = Regex.Split(parameter.ToString(), @"(?<!\\),");
             }
@@ -45,7 +45,7 @@ namespace Mosey.GUI.Views.Converters
 
         private string GetParameter(IValueConverter converter)
         {
-            if (_parameters == null)
+            if (_parameters is null)
             {
                 return null;
             }
@@ -64,7 +64,7 @@ namespace Mosey.GUI.Views.Converters
                 parameter = null;
             }
 
-            if (parameter != null)
+            if (parameter is not null)
             {
                 parameter = Regex.Unescape(parameter);
             }

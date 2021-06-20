@@ -16,7 +16,7 @@ namespace Mosey.Tests.AutoData
 
         public override ICustomization GetCustomization(ParameterInfo parameter)
         {
-            if (parameter == null)
+            if (parameter is null)
             {
                 throw new ArgumentNullException(nameof(parameter));
             }

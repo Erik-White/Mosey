@@ -16,7 +16,7 @@ namespace Mosey.Services
         public TimeSpan Interval { get; private set; } = TimeSpan.FromSeconds(1);
         public int Repetitions { get; private set; } = -1;
         public int RepetitionsCount { get; private set; }
-        public bool Enabled => (timer != null);
+        public bool Enabled => (timer is not null);
         public bool Paused { get; private set; }
         public event EventHandler Tick;
         public event EventHandler Complete;
@@ -69,7 +69,7 @@ namespace Mosey.Services
             Repetitions = repetitions;
             StartTime = DateTime.Now;
 
-            if (timer != null)
+            if (timer is not null)
             {
                 Stop();
             }
@@ -122,7 +122,7 @@ namespace Mosey.Services
             RepetitionsCount = 0;
             stopWatch.Reset();
 
-            if (timer != null)
+            if (timer is not null)
             {
                 timer.Dispose();
                 timer = null;
@@ -136,7 +136,7 @@ namespace Mosey.Services
         /// </summary>
         public void Pause()
         {
-            if (timer != null && !Paused && stopWatch.IsRunning)
+            if (timer is not null && !Paused && stopWatch.IsRunning)
             {
                 // Pause the stopwatch and calculate the time remaining until the next callback is due
                 stopWatch.Stop();
@@ -158,7 +158,7 @@ namespace Mosey.Services
         /// </summary>
         public void Resume()
         {
-            if (timer != null)
+            if (timer is not null)
             {
                 if (intervalRemaining > TimeSpan.Zero)
                 {
@@ -189,21 +189,21 @@ namespace Mosey.Services
             {
                 if (disposing)
                 {
-                    if (Tick != null)
+                    if (Tick is not null)
                     {
                         foreach (var del in Tick.GetInvocationList())
                         {
                             Tick -= (del as EventHandler);
                         }
                     }
-                    if (Complete != null)
+                    if (Complete is not null)
                     {
                         foreach (var del in Complete.GetInvocationList())
                         {
                             Complete -= (del as EventHandler);
                         }
                     }
-                    if (timer != null)
+                    if (timer is not null)
                     {
                         timer.Dispose();
                     }

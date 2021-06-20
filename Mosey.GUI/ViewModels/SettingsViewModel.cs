@@ -165,7 +165,7 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_SelectFolderCommand == null)
+                if (_SelectFolderCommand is null)
                 {
                     _SelectFolderCommand = new RelayCommand(o => ImageDirectoryDialog());
                 }
@@ -179,7 +179,7 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_ResetOptionsCommand == null)
+                if (_ResetOptionsCommand is null)
                 {
                     _ResetOptionsCommand = new RelayCommand(o => ResetUserOptions());
                 }

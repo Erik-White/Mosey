@@ -15,7 +15,7 @@ namespace Mosey.GUI.Views
         private static void LeftChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             FrameworkElement frameworkElement = d as FrameworkElement;
-            if (frameworkElement != null)
+            if (frameworkElement is not null)
             {
                 var currentMargin = frameworkElement.Margin;
                 frameworkElement.Margin = new Thickness((double)e.NewValue, currentMargin.Top, currentMargin.Right, currentMargin.Bottom);
@@ -35,7 +35,7 @@ namespace Mosey.GUI.Views
         private static void TopChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             FrameworkElement frameworkElement = d as FrameworkElement;
-            if (frameworkElement != null)
+            if (frameworkElement is not null)
             {
                 var currentMargin = frameworkElement.Margin;
                 frameworkElement.Margin = new Thickness(currentMargin.Left, (double)e.NewValue, currentMargin.Right, currentMargin.Bottom);
@@ -55,7 +55,7 @@ namespace Mosey.GUI.Views
         private static void RightChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             FrameworkElement frameworkElement = d as FrameworkElement;
-            if (frameworkElement != null)
+            if (frameworkElement is not null)
             {
                 var currentMargin = frameworkElement.Margin;
                 frameworkElement.Margin = new Thickness(currentMargin.Left, currentMargin.Top, (double)e.NewValue, currentMargin.Bottom);
@@ -75,7 +75,7 @@ namespace Mosey.GUI.Views
         private static void BottomChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             FrameworkElement frameworkElement = d as FrameworkElement;
-            if (frameworkElement != null)
+            if (frameworkElement is not null)
             {
                 var currentMargin = frameworkElement.Margin;
                 frameworkElement.Margin = new Thickness(currentMargin.Left, currentMargin.Top, currentMargin.Right, (double)e.NewValue);
@@ -100,7 +100,7 @@ namespace Mosey.GUI.Views
         private static void LeftChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             ContentControl contentControl = d as ContentControl;
-            if (contentControl != null)
+            if (contentControl is not null)
             {
                 var currentPadding = contentControl.Padding;
                 contentControl.Padding = new Thickness((double)e.NewValue, currentPadding.Top, currentPadding.Right, currentPadding.Bottom);
@@ -120,7 +120,7 @@ namespace Mosey.GUI.Views
         private static void TopChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             ContentControl contentControl = d as ContentControl;
-            if (contentControl != null)
+            if (contentControl is not null)
             {
                 var currentPadding = contentControl.Padding;
                 contentControl.Padding = new Thickness(currentPadding.Left, (double)e.NewValue, currentPadding.Right, currentPadding.Bottom);
@@ -140,7 +140,7 @@ namespace Mosey.GUI.Views
         private static void RightChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             ContentControl contentControl = d as ContentControl;
-            if (contentControl != null)
+            if (contentControl is not null)
             {
                 var currentPadding = contentControl.Padding;
                 contentControl.Padding = new Thickness(currentPadding.Left, currentPadding.Top, (double)e.NewValue, currentPadding.Bottom);
@@ -160,7 +160,7 @@ namespace Mosey.GUI.Views
         private static void BottomChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             ContentControl contentControl = d as ContentControl;
-            if (contentControl != null)
+            if (contentControl is not null)
             {
                 var currentPadding = contentControl.Padding;
                 contentControl.Padding = new Thickness(currentPadding.Left, currentPadding.Top, currentPadding.Right, (double)e.NewValue);

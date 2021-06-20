@@ -92,7 +92,7 @@ namespace System.Threading.Tasks.Schedulers
         /// </summary>
         public void Dispose()
         {
-            if (_tasks != null)
+            if (_tasks is not null)
             {
                 // Indicate that no new tasks will be coming in
                 _tasks.CompleteAdding();

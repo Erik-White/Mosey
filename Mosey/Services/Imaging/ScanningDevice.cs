@@ -221,7 +221,7 @@ namespace Mosey.Services.Imaging
         /// <exception cref="InvalidOperationException">If the <see cref="Images"/> property returns no images to save</exception>
         public IEnumerable<string> SaveImage(string fileName, string directory, ImageFormat imageFormat = ImageFormat.Png)
         {
-            if (Images == null || Images.Count == 0)
+            if (Images is null || Images.Count == 0)
             {
                 throw new InvalidOperationException($"No images available. Please call the {nameof(GetImage)} method first.");
             }

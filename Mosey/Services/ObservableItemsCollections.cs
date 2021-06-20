@@ -36,7 +36,7 @@ namespace Mosey.Services
         {
             foreach (INotifyPropertyChanged item in items)
             {
-                if (item != null)
+                if (item is not null)
                 {
                     item.PropertyChanged += new PropertyChangedEventHandler(Item_PropertyChanged);
                 }
@@ -47,7 +47,7 @@ namespace Mosey.Services
         {
             foreach (INotifyPropertyChanged item in items)
             {
-                if (item != null)
+                if (item is not null)
                 {
                     item.PropertyChanged -= new PropertyChangedEventHandler(Item_PropertyChanged);
                 }

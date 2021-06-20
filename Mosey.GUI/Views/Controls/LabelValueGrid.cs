@@ -26,7 +26,7 @@ namespace Mosey.GUI.Views.Controls
 
             RowDefinitions.Clear();
 
-            if (Children != null)
+            if (Children is not null)
             {
                 foreach (System.Windows.UIElement curChild in Children)
                 {

@@ -38,7 +38,7 @@ namespace Mosey.GUI.Models
         /// <param name="canExecute">The execution status logic.</param>
         public RelayCommand(Action<object> execute, Predicate<object> canExecute)
         {
-            if (execute == null)
+            if (execute is null)
             {
                 throw new ArgumentNullException(nameof(execute));
             }
@@ -52,7 +52,7 @@ namespace Mosey.GUI.Models
         #region ICommand Members
 
         [DebuggerStepThrough]
-        public bool CanExecute(object parameters) => _canExecute == null ? true : _canExecute(parameters);
+        public bool CanExecute(object parameters) => _canExecute is null ? true : _canExecute(parameters);
 
         public event EventHandler CanExecuteChanged
         {
