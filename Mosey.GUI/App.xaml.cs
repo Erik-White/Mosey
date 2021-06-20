@@ -40,20 +40,18 @@ namespace Mosey.GUI
                 // Configuration
                 .Configure<AppSettings>(_appConfig)
                 .ConfigureWritable<AppSettings>(_userConfig, name: "UserSettings", file: "usersettings.json")
-                .PostConfigureAll<AppSettings>(
-                    config =>
+                .PostConfigureAll<AppSettings>(config =>
+                {
+                    if (string.IsNullOrEmpty(config.ImageFile.Directory))
                     {
-                        if (string.IsNullOrEmpty(config.ImageFile.Directory))
-                        {
-                            // Ensure default directory is user's Pictures folder
-                            config.ImageFile.Directory = Path.Combine
-                            (
-                                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
-                                "Mosey"
-                            );
-                        }
+                        // Ensure default directory is user's Pictures folder
+                        config.ImageFile.Directory = Path.Combine
+                        (
+                            Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
+                            "Mosey"
+                        );
                     }
-                )
+                })
 
                 // Logging
                 .AddLogging(options =>

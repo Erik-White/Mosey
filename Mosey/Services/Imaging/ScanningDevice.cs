@@ -16,12 +16,26 @@ namespace Mosey.Services.Imaging
     /// </summary>
     public class ScanningDevice : PropertyChangedBase, IImagingDevice
     {
+        private bool _isConnected = true;
+        private bool _isEnabled;
+        private bool _isImaging;
+        private int _scanRetries = 5;
+
+        private readonly IFileSystem _fileSystem;
+        private readonly ScannerSettings _scannerSettings;
+        private readonly ISystemDevices _systemDevices;
+
         public string Name => _scannerSettings.Name;
+
         public int ID => GetSimpleID(_scannerSettings.Id);
+
         public string DeviceID => _scannerSettings.Id;
-        public IList<KeyValuePair<string, object>> DeviceSettings => _scannerSettings.ScannerDeviceSettings.ToList();
+
+        public IList<KeyValuePair<string, object>> DeviceSettings
+            => _scannerSettings.ScannerDeviceSettings.ToList();
 
         public IList<byte[]> Images { get; protected internal set; } = new List<byte[]>();
+
         public IImagingDeviceConfig ImageSettings { get; set; }
 
         /// <inheritdoc cref="ScannerSettings.IsAutomaticDocumentFeeder"/>
@@ -51,9 +65,6 @@ namespace Mosey.Services.Imaging
             private set => SetField(ref _isImaging, value);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
         public int ScanRetries
         {
             get => _scanRetries;
@@ -75,26 +86,20 @@ namespace Mosey.Services.Imaging
             Tiff
         }
 
-        private bool _isConnected = true;
-        private bool _isEnabled;
-        private bool _isImaging;
-        private int _scanRetries = 5;
-        private readonly IFileSystem _fileSystem;
-        private readonly ScannerSettings _scannerSettings;
-        private readonly ISystemDevices _systemDevices;
-
         /// <summary>
         /// Initialize a new instance using a <see cref="ScannerSettings"/> instance that represents a physical scanner.
         /// </summary>
         /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
-        public ScanningDevice(ScannerSettings settings) : this(settings, null, null, null) { }
+        public ScanningDevice(ScannerSettings settings)
+            : this(settings, null, null, null) { }
 
         /// <summary>
         /// Initialize a new instance using a <see cref="ScannerSettings"/> instance that represents a physical scanner.
         /// </summary>
         /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
         /// <param name="config">Device settings used when capturing an image</param>
-        public ScanningDevice(ScannerSettings settings, IImagingDeviceConfig config) : this(settings, config, null, null) { }
+        public ScanningDevice(ScannerSettings settings, IImagingDeviceConfig config)
+            : this(settings, config, null, null) { }
 
         /// <summary>
         /// Initialize a new instance using a <see cref="ScannerSettings"/> instance that represents a physical scanner.
@@ -110,9 +115,11 @@ namespace Mosey.Services.Imaging
             _fileSystem = fileSystem ?? new FileSystem();
         }
 
-        public void ClearImages() => Images = new List<byte[]>();
+        public void ClearImages()
+            => Images = new List<byte[]>();
 
-        public void GetImage() => GetImage(ImageFormat.Bmp);
+        public void GetImage()
+            => GetImage(ImageFormat.Bmp);
 
         /// <summary>
         /// Retrieve an image from the physical imaging device.
@@ -170,7 +177,7 @@ namespace Mosey.Services.Imaging
                     }
                 }
             }
-            catch (Exception ex) when (ex is COMException || ex is InvalidOperationException)
+            catch (Exception ex) when (ex is COMException or InvalidOperationException)
             {
                 // Scanner has been disconnected or similar
                 IsConnected = false;
@@ -249,11 +256,14 @@ namespace Mosey.Services.Imaging
             }
         }
 
-        public bool Equals(IImagingDevice device) => device is not null && DeviceID == device.DeviceID;
+        public bool Equals(IImagingDevice device)
+            => device is not null && DeviceID == device.DeviceID;
 
-        public override bool Equals(object obj) => Equals(obj as ScanningDevice);
+        public override bool Equals(object obj)
+            => Equals(obj as ScanningDevice);
 
-        public override int GetHashCode() => DeviceID.GetHashCode();
+        public override int GetHashCode()
+            => DeviceID.GetHashCode();
 
         /// <summary>
         /// Store image byte arrays to disk.

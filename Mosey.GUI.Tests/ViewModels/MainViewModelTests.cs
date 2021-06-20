@@ -60,7 +60,7 @@ namespace Mosey.GUI.ViewModels.Tests
             [Theory, MainViewModelAutoData]
             public async Task RepeatRefreshDevices([Frozen] IImagingDevices<IImagingDevice> imagingDevices, MainViewModel sut)
             {
-                using CancellationTokenSource cts = new CancellationTokenSource();
+                using var cts = new CancellationTokenSource();
                 cts.CancelAfter(2000);
 
                 await sut.RefreshDevicesAsync(0, cts.Token);
@@ -75,7 +75,7 @@ namespace Mosey.GUI.ViewModels.Tests
             [Theory, MainViewModelAutoData]
             public async Task CancelTask([Frozen] IImagingDevices<IImagingDevice> imagingDevices, MainViewModel sut)
             {
-                using CancellationTokenSource cts = new CancellationTokenSource();
+                using var cts = new CancellationTokenSource();
                 cts.CancelAfter(0);
 
                 await sut.RefreshDevicesAsync(0, cts.Token);
@@ -87,7 +87,7 @@ namespace Mosey.GUI.ViewModels.Tests
             [Theory, MainViewModelAutoData]
             public async Task RaisePropertyChanged(MainViewModel sut)
             {
-                using CancellationTokenSource cts = new CancellationTokenSource();
+                using var cts = new CancellationTokenSource();
                 cts.CancelAfter(1000);
 
                 using (var monitoredSubject = sut.Monitor())

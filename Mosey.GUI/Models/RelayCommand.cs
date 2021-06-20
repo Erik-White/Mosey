@@ -13,14 +13,8 @@ namespace Mosey.GUI.Models
     /// </summary>
     public class RelayCommand : ICommand
     {
-        #region Fields
-
         private readonly Action<object> _execute;
         private readonly Predicate<object> _canExecute;
-
-        #endregion // Fields
-
-        #region Constructors
 
         /// <summary>
         /// Creates a new command that can always execute.
@@ -47,12 +41,8 @@ namespace Mosey.GUI.Models
             _canExecute = canExecute;
         }
 
-        #endregion // Constructors
-
-        #region ICommand Members
-
         [DebuggerStepThrough]
-        public bool CanExecute(object parameters) => _canExecute is null ? true : _canExecute(parameters);
+        public bool CanExecute(object parameters) => _canExecute is null || _canExecute(parameters);
 
         public event EventHandler CanExecuteChanged
         {
@@ -66,7 +56,5 @@ namespace Mosey.GUI.Models
         }
 
         public void Execute(object parameters) => _execute(parameters);
-
-        #endregion // ICommand Members
     }
 }

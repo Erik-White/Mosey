@@ -23,7 +23,7 @@ namespace Mosey.Services
         private bool disposed;
         private Timer timer;
         private TimeSpan intervalRemaining;
-        private readonly Stopwatch stopWatch = new Stopwatch();
+        private readonly Stopwatch stopWatch = new();
 
         public IntervalTimer()
         {
@@ -73,6 +73,7 @@ namespace Mosey.Services
             {
                 Stop();
             }
+
             timer = new Timer(TimerInterval, null, delay, interval);
             stopWatch.Restart();
         }
@@ -149,6 +150,7 @@ namespace Mosey.Services
                 {
                     intervalRemaining = Interval.Subtract(stopWatch.Elapsed);
                 }
+
                 Paused = true;
             }
         }
@@ -171,6 +173,7 @@ namespace Mosey.Services
                     stopWatch.Restart();
                     timer.Change(Interval, Interval);
                 }
+
                 Paused = false;
             }
         }
@@ -196,6 +199,7 @@ namespace Mosey.Services
                             Tick -= (del as EventHandler);
                         }
                     }
+
                     if (Complete is not null)
                     {
                         foreach (var del in Complete.GetInvocationList())
@@ -203,11 +207,13 @@ namespace Mosey.Services
                             Complete -= (del as EventHandler);
                         }
                     }
+
                     if (timer is not null)
                     {
                         timer.Dispose();
                     }
                 }
+
                 disposed = true;
             }
         }

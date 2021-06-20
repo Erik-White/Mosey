@@ -29,7 +29,7 @@ namespace Mosey.Tests.Customizations
         /// Creates a new instance manually to avoid recursion problems
         /// </summary>
         internal static ScannerSettings GetInstance(IFixture fixture)
-            => new ScannerSettings
+            => new()
             {
                 Id = fixture.Create<string>(),
                 Name = fixture.Create<string>(),

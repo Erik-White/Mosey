@@ -11,16 +11,11 @@ namespace Mosey.Services.Imaging.Extensions
         /// <param name="value">An <see cref="ScanningDevice.ImageFormat"/> instance</param>
         /// <param name="imageFormatStr">A file extension <see cref="string"/></param>
         /// <returns>An <see cref="ScanningDevice.ImageFormat"/> <see cref="Enum"/></returns>
-        public static ScanningDevice.ImageFormat FromString(this ScanningDevice.ImageFormat value, string imageFormatStr)
+        public static ScanningDevice.ImageFormat FromString(this ScanningDevice.ImageFormat _, string imageFormatStr)
         {
-            if (Enum.TryParse(imageFormatStr, ignoreCase: true, out value))
-            {
-                return value;
-            }
-            else
-            {
-                throw new ArgumentException($"{imageFormatStr} is not a supported image file extension.");
-            }
+            return Enum.TryParse(imageFormatStr, ignoreCase: true, out ScanningDevice.ImageFormat value)
+                ? value
+                : throw new ArgumentException($"{imageFormatStr} is not a supported image file extension.");
         }
 
         /// <summary>

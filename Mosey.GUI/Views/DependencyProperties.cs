@@ -14,7 +14,7 @@ namespace Mosey.GUI.Views
 
         private static void LeftChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            FrameworkElement frameworkElement = d as FrameworkElement;
+            var frameworkElement = d as FrameworkElement;
             if (frameworkElement is not null)
             {
                 var currentMargin = frameworkElement.Margin;
@@ -24,7 +24,7 @@ namespace Mosey.GUI.Views
 
         public static void SetLeft(UIElement element, double value) => element.SetValue(LeftProperty, value);
 
-        public static double GetLeft(UIElement element) => 0;
+        public static double GetLeft(UIElement _) => 0;
 
         public static readonly DependencyProperty TopProperty = DependencyProperty.RegisterAttached(
             "Top",
@@ -34,7 +34,7 @@ namespace Mosey.GUI.Views
 
         private static void TopChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            FrameworkElement frameworkElement = d as FrameworkElement;
+            var frameworkElement = d as FrameworkElement;
             if (frameworkElement is not null)
             {
                 var currentMargin = frameworkElement.Margin;
@@ -44,7 +44,7 @@ namespace Mosey.GUI.Views
 
         public static void SetTop(UIElement element, double value) => element.SetValue(TopProperty, value);
 
-        public static double GetTop(UIElement element) => 0;
+        public static double GetTop(UIElement _) => 0;
 
         public static readonly DependencyProperty RightProperty = DependencyProperty.RegisterAttached(
             "Right",
@@ -54,7 +54,7 @@ namespace Mosey.GUI.Views
 
         private static void RightChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            FrameworkElement frameworkElement = d as FrameworkElement;
+            var frameworkElement = d as FrameworkElement;
             if (frameworkElement is not null)
             {
                 var currentMargin = frameworkElement.Margin;
@@ -64,7 +64,7 @@ namespace Mosey.GUI.Views
 
         public static void SetRight(UIElement element, double value) => element.SetValue(RightProperty, value);
 
-        public static double GetRight(UIElement element) => 0;
+        public static double GetRight(UIElement _) => 0;
 
         public static readonly DependencyProperty BottomProperty = DependencyProperty.RegisterAttached(
             "Bottom",
@@ -74,7 +74,7 @@ namespace Mosey.GUI.Views
 
         private static void BottomChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            FrameworkElement frameworkElement = d as FrameworkElement;
+            var frameworkElement = d as FrameworkElement;
             if (frameworkElement is not null)
             {
                 var currentMargin = frameworkElement.Margin;
@@ -84,7 +84,7 @@ namespace Mosey.GUI.Views
 
         public static void SetBottom(UIElement element, double value) => element.SetValue(BottomProperty, value);
 
-        public static double GetBottom(UIElement element) => 0;
+        public static double GetBottom(UIElement _) => 0;
     }
     #endregion Margin
 
@@ -99,7 +99,7 @@ namespace Mosey.GUI.Views
 
         private static void LeftChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            ContentControl contentControl = d as ContentControl;
+            var contentControl = d as ContentControl;
             if (contentControl is not null)
             {
                 var currentPadding = contentControl.Padding;
@@ -109,7 +109,7 @@ namespace Mosey.GUI.Views
 
         public static void SetLeft(UIElement element, double value) => element.SetValue(LeftProperty, value);
 
-        public static double GetLeft(UIElement element) => 0;
+        public static double GetLeft(UIElement _) => 0;
 
         public static readonly DependencyProperty TopProperty = DependencyProperty.RegisterAttached(
             "Top",
@@ -119,7 +119,7 @@ namespace Mosey.GUI.Views
 
         private static void TopChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            ContentControl contentControl = d as ContentControl;
+            var contentControl = d as ContentControl;
             if (contentControl is not null)
             {
                 var currentPadding = contentControl.Padding;
@@ -129,7 +129,7 @@ namespace Mosey.GUI.Views
 
         public static void SetTop(UIElement element, double value) => element.SetValue(TopProperty, value);
 
-        public static double GetTop(UIElement element) => 0;
+        public static double GetTop(UIElement _) => 0;
 
         public static readonly DependencyProperty RightProperty = DependencyProperty.RegisterAttached(
             "Right",
@@ -139,7 +139,7 @@ namespace Mosey.GUI.Views
 
         private static void RightChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            ContentControl contentControl = d as ContentControl;
+            var contentControl = d as ContentControl;
             if (contentControl is not null)
             {
                 var currentPadding = contentControl.Padding;
@@ -149,7 +149,7 @@ namespace Mosey.GUI.Views
 
         public static void SetRight(UIElement element, double value) => element.SetValue(RightProperty, value);
 
-        public static double GetRight(UIElement element) => 0;
+        public static double GetRight(UIElement _) => 0;
 
         public static readonly DependencyProperty BottomProperty = DependencyProperty.RegisterAttached(
             "Bottom",
@@ -159,7 +159,7 @@ namespace Mosey.GUI.Views
 
         private static void BottomChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            ContentControl contentControl = d as ContentControl;
+            var contentControl = d as ContentControl;
             if (contentControl is not null)
             {
                 var currentPadding = contentControl.Padding;
@@ -169,7 +169,7 @@ namespace Mosey.GUI.Views
 
         public static void SetBottom(UIElement element, double value) => element.SetValue(BottomProperty, value);
 
-        public static double GetBottom(UIElement element) => 0;
+        public static double GetBottom(UIElement _) => 0;
     }
     #endregion Padding
 }

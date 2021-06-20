@@ -42,10 +42,10 @@ namespace Mosey.GUI.ViewModels
         private DeviceConfig _userDeviceConfig;
 
         // Threading
-        private readonly object _scanningDevicesLock = new object();
-        private static readonly StaTaskScheduler _staQueue = new StaTaskScheduler(numberOfThreads: 1);
-        private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-        private CancellationTokenSource _cancelScanTokenSource = new CancellationTokenSource();
+        private readonly object _scanningDevicesLock = new();
+        private static readonly StaTaskScheduler _staQueue = new(numberOfThreads: 1);
+        private static readonly SemaphoreSlim _semaphore = new(1, 1);
+        private CancellationTokenSource _cancelScanTokenSource = new();
         private bool _disposed;
 
         #region Properties
@@ -118,6 +118,7 @@ namespace Mosey.GUI.ViewModels
                 {
                     value = 1;
                 }
+
                 _scanDelay = TimeSpan.FromMinutes(value);
                 RaisePropertyChanged(nameof(ScanDelay));
             }
@@ -139,6 +140,7 @@ namespace Mosey.GUI.ViewModels
                 {
                     value = 1;
                 }
+
                 _scanInterval = TimeSpan.FromMinutes(value);
                 RaisePropertyChanged(nameof(ScanInterval));
             }
@@ -160,39 +162,17 @@ namespace Mosey.GUI.ViewModels
                 {
                     value = 1;
                 }
+
                 _scanRepetitions = value;
                 RaisePropertyChanged(nameof(ScanRepetitions));
             }
         }
 
         public int ScanRepetitionsCount
-        {
-            get
-            {
-                if (_scanTimer is not null)
-                {
-                    return _scanTimer.RepetitionsCount;
-                }
-                else
-                {
-                    return 0;
-                }
-            }
-        }
+            => _scanTimer is not null ? _scanTimer.RepetitionsCount : 0;
+
         public bool IsScanRunning
-        {
-            get
-            {
-                if (_scanTimer is not null)
-                {
-                    return _scanTimer.Enabled || ScanningDevices.IsImagingInProgress;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-        }
+            => _scanTimer is not null && (_scanTimer.Enabled || ScanningDevices.IsImagingInProgress);
 
         public TimeSpan ScanNextTime
         {
@@ -211,19 +191,7 @@ namespace Mosey.GUI.ViewModels
         }
 
         public DateTime ScanFinishTime
-        {
-            get
-            {
-                if (IsScanRunning)
-                {
-                    return _scanTimer.FinishTime;
-                }
-                else
-                {
-                    return DateTime.MinValue;
-                }
-            }
-        }
+            => IsScanRunning ? _scanTimer.FinishTime : DateTime.MinValue;
 
         /// <inheritdoc cref="IImagingDevices{T}"/>
         public IImagingDevices<IImagingDevice> ScanningDevices { get; private set; }
@@ -293,7 +261,9 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                _EnableScannersCommand = new RelayCommand(o => ScanningDevices.EnableAll(), o => !ScanningDevices.IsEmpty && !IsScanRunning);
+                _EnableScannersCommand ??= new RelayCommand(
+                    o => ScanningDevices.EnableAll(),
+                    o => !ScanningDevices.IsEmpty && !IsScanRunning);
 
                 return _EnableScannersCommand;
             }
@@ -304,7 +274,9 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                _ManualScanCommand = new RelayCommand(o => _ = ScanAsync(), o => !ScanningDevices.IsEmpty && !ScanningDevices.IsImagingInProgress && !IsScanRunning);
+                _ManualScanCommand ??= new RelayCommand(
+                    o => _ = ScanAsync(),
+                    o => !ScanningDevices.IsEmpty && !ScanningDevices.IsImagingInProgress && !IsScanRunning);
 
                 return _ManualScanCommand;
             }
@@ -315,37 +287,23 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                _StartScanCommand = new RelayCommand(o => StartScanWithDialog(), o => !ScanningDevices.IsEmpty && !ScanningDevices.IsImagingInProgress && !IsScanRunning && !_scanTimer.Paused);
+                _StartScanCommand ??= new RelayCommand(
+                    o => StartScanWithDialog(),
+                    o => !ScanningDevices.IsEmpty && !ScanningDevices.IsImagingInProgress && !IsScanRunning && !_scanTimer.Paused);
 
                 return _StartScanCommand;
             }
         }
 
         public ICommand StartStopScanCommand
-        {
-            get
-            {
-                if (IsScanRunning)
-                {
-                    return StopScanCommand;
-                }
-                else
-                {
-                    return StartScanCommand;
-                }
-
-            }
-        }
+            => IsScanRunning ? StopScanCommand : StartScanCommand;
 
         private ICommand _PauseScanCommand;
         public ICommand PauseScanCommand
         {
             get
             {
-                if (_PauseScanCommand is null)
-                {
-                    _PauseScanCommand = new RelayCommand(o => _scanTimer.Pause(), o => IsScanRunning && !_scanTimer.Paused);
-                }
+                _PauseScanCommand ??= new RelayCommand(o => _scanTimer.Pause(), o => IsScanRunning && !_scanTimer.Paused);
 
                 return _PauseScanCommand;
             }
@@ -356,10 +314,7 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_ResumeScanCommand is null)
-                {
-                    _ResumeScanCommand = new RelayCommand(o => _scanTimer.Resume(), o => _scanTimer.Paused);
-                }
+                _ResumeScanCommand ??= new RelayCommand(o => _scanTimer.Resume(), o => _scanTimer.Paused);
 
                 return _ResumeScanCommand;
             }
@@ -370,10 +325,9 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_StopScanCommand is null)
-                {
-                    _StopScanCommand = new AsyncCommand(() => StopScanWithDialog(), _ => IsScanRunning && !_cancelScanTokenSource.IsCancellationRequested);
-                }
+                _StopScanCommand ??= new AsyncCommand(
+                    () => StopScanWithDialog(),
+                    _ => IsScanRunning && !_cancelScanTokenSource.IsCancellationRequested);
 
                 return _StopScanCommand;
             }
@@ -384,10 +338,9 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_RefreshScannersCommand is null)
-                {
-                    _RefreshScannersCommand = new RelayCommand(o => RefreshDevices(), o => !ScanningDevices.IsImagingInProgress && !IsScanRunning);
-                }
+                _RefreshScannersCommand ??= new RelayCommand(
+                    o => RefreshDevices(),
+                    o => !ScanningDevices.IsImagingInProgress && !IsScanRunning);
 
                 return _RefreshScannersCommand;
             }
@@ -398,10 +351,7 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_SelectFolderCommand is null)
-                {
-                    _SelectFolderCommand = new RelayCommand(o => ImageDirectoryDialog());
-                }
+                _SelectFolderCommand ??= new RelayCommand(o => ImageDirectoryDialog());
 
                 return _SelectFolderCommand;
             }
@@ -516,7 +466,7 @@ namespace Mosey.GUI.ViewModels
                     }
                 }
             }
-            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 _log.LogWarning(ex, $"Unable to show {nameof(DialogViewModel.DiskSpaceDialog)} on path {_imageFileConfig.Directory} due to {ex.GetType()}");
             }
@@ -688,7 +638,7 @@ namespace Mosey.GUI.ViewModels
             var scannerIDStr = string.Empty;
             var saveDateTime = DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat));
             var saveDirectory = ImageSavePath;
-            List<string> imagePaths = new List<string>();
+            var imagePaths = new List<string>();
 
             // Order devices by ID to provide clearer feedback to users
             foreach (var scanner in ScanningDevices.Devices.OrderBy(o => o.DeviceID).ToList())
@@ -735,13 +685,14 @@ namespace Mosey.GUI.ViewModels
                         }
                     }
                 }
-                catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException || ex is InvalidOperationException)
+                catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException or InvalidOperationException)
                 {
                     // Device will show as disconnected, no images returned
                     _log.LogWarning(ex, "Communication error on scanner {DeviceName} (#{DeviceID}) while attempting scan.", scanner.Name, scannerIDStr);
                     return imagePaths;
                 }
             }
+
             _log.LogDebug($"Scan completed with {nameof(Scan)} method.");
 
             return imagePaths;
@@ -756,7 +707,7 @@ namespace Mosey.GUI.ViewModels
         private async Task<List<string>> ScanAsync(CancellationToken cancellationToken = default)
         {
             _log.LogDebug($"Scan initiated with {nameof(ScanAsync)} method.");
-            List<string> results = new List<string>();
+            var results = new List<string>();
 
             // Ensure device refresh or other operations are complete
             await _semaphore.WaitAsync();
@@ -765,15 +716,15 @@ namespace Mosey.GUI.ViewModels
             {
                 // The apartment state MUST be single threaded for COM interop
                 // Runtime callable wrappers must be disposed manually to prevent problems with early disposal of COM servers
-                using (StaTaskScheduler staQueue = new StaTaskScheduler(numberOfThreads: 1, disableComObjectEagerCleanup: true))
+                using (var staQueue = new StaTaskScheduler(numberOfThreads: 1, disableComObjectEagerCleanup: true))
+            {
+                await Task.Factory.StartNew(() =>
                 {
-                    await Task.Factory.StartNew(() =>
-                    {
-                        // Obtain images from scanners
-                        results = Scan(cancellationToken);
-                    }, cancellationToken, TaskCreationOptions.LongRunning, staQueue)
-                    .ContinueWith(t =>
-                    {
+                    // Obtain images from scanners
+                    results = Scan(cancellationToken);
+                }, cancellationToken, TaskCreationOptions.LongRunning, staQueue)
+                .ContinueWith(t =>
+                {
                         // Manually clear (RCWs) to prevent memory leaks
                         System.Runtime.InteropServices.Marshal.CleanupUnusedObjectsInCurrentContext();
                         // Force any pending exceptions to propagate up
@@ -792,6 +743,7 @@ namespace Mosey.GUI.ViewModels
             {
                 _semaphore.Release();
             }
+
             _log.LogDebug($"Scan completed with {nameof(ScanAsync)} method.");
 
             return results;
@@ -870,6 +822,7 @@ namespace Mosey.GUI.ViewModels
                     _uiTimer?.Dispose();
                     _staQueue?.Dispose();
                 }
+
                 _disposed = true;
             }
         }

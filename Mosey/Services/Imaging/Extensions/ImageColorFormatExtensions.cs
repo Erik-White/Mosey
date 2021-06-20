@@ -17,15 +17,12 @@ namespace Mosey.Services.Imaging.Extensions
         public static ColorType ToColorType(this ImageColorFormat colorFormat)
         {
             // ColorType properties are internal and not accessible for comparison
-            switch (colorFormat)
+            return colorFormat switch
             {
-                case ImageColorFormat.BlackAndWhite:
-                    return ColorType.BlackAndWhite;
-                case ImageColorFormat.Greyscale:
-                    return ColorType.Greyscale;
-                default:
-                    return ColorType.Color;
-            }
+                ImageColorFormat.BlackAndWhite => ColorType.BlackAndWhite,
+                ImageColorFormat.Greyscale => ColorType.Greyscale,
+                _ => ColorType.Color,
+            };
         }
     }
 }

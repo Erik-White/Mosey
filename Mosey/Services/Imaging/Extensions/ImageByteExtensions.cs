@@ -24,7 +24,7 @@ namespace Mosey.Services.Imaging.Extensions
         /// <returns>An <see cref="Image"/> instance</returns>
         public static Image ToImage(this byte[] value)
         {
-            System.IO.MemoryStream ms = new System.IO.MemoryStream(value);
+            var ms = new System.IO.MemoryStream(value);
             return Image.FromStream(ms);
         }
 
@@ -45,7 +45,7 @@ namespace Mosey.Services.Imaging.Extensions
         /// <returns>An <see cref="Image"/> instance in the specified format and encoding</returns>
         public static Image ToImage(this byte[] value, ImageFormat format, EncoderParameters encoderParameters = null)
         {
-            using (System.IO.MemoryStream ms = value.ToImage().ToMemoryStream(format, encoderParameters))
+            using (var ms = value.ToImage().ToMemoryStream(format, encoderParameters))
             {
                 return Image.FromStream(ms);
             }

@@ -14,7 +14,7 @@ namespace Mosey.Services.Imaging
     /// </summary>
     internal sealed class SystemDevices : ISystemDevices
     {
-        private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        private static readonly SemaphoreSlim _semaphore = new(1, 1);
 
         /// <inheritdoc/>
         /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
@@ -30,7 +30,7 @@ namespace Mosey.Services.Imaging
             // Connect to the specified device and create a COM object representation
             using (var device = ConfiguredScannerDevice(settings, config))
             {
-                WIARetry(() => { device.PerformScan(format.ToWIAImageFormat()); }, connectRetries, _semaphore, delay);
+                WIARetry(() => device.PerformScan(format.ToWIAImageFormat()), connectRetries, _semaphore, delay);
                 images = WIARetry(device.ExtractScannedImageFiles, connectRetries, _semaphore, delay).ToList();
             }
 
@@ -81,7 +81,7 @@ namespace Mosey.Services.Imaging
         /// <returns>A <see cref="ScannerDevice"/> instance configured using <paramref name="config"/></returns>
         private ScannerDevice ConfiguredScannerDevice(ScannerSettings settings, IImagingDeviceConfig config)
         {
-            ScannerDevice device = new ScannerDevice(settings);
+            var device = new ScannerDevice(settings);
             var supportedResolutions = settings.SupportedResolutions;
 
             // Check that the selected resolution is supported by this device
@@ -147,7 +147,7 @@ namespace Mosey.Services.Imaging
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
         private static T WIARetry<T>(Func<T> method, int connectRetries = 1, SemaphoreSlim semaphore = null, int delay = 1000)
         {
-            T result = default(T);
+            T result = default;
             semaphore?.Wait();
 
             try
@@ -169,6 +169,7 @@ namespace Mosey.Services.Imaging
                             Thread.Sleep(delay);
                             continue;
                         }
+
                         throw;
                     }
                 }

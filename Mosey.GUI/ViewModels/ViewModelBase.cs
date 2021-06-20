@@ -75,12 +75,11 @@ namespace Mosey.GUI.ViewModels
             var handler = PropertyChanged;
             if (handler is not null)
             {
-                PropertyChangedEventArgs e = new PropertyChangedEventArgs(propertyName);
+                var e = new PropertyChangedEventArgs(propertyName);
                 handler(this, e);
             }
         }
 
         #endregion // INotifyPropertyChanged Members
     }
-
 }

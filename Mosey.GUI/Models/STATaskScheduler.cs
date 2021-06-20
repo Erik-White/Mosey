@@ -37,7 +37,7 @@ namespace System.Threading.Tasks.Schedulers
             // Create the threads to be used by this scheduler
             _threads = Enumerable.Range(0, numberOfThreads).Select(i =>
             {
-                Thread thread = new Thread(() =>
+                var thread = new Thread(() =>
                 {
                     // Continually get the next task and try to execute it.
                     // This will continue until the scheduler is disposed and no more tasks remain.
@@ -50,6 +50,7 @@ namespace System.Threading.Tasks.Schedulers
                 {
                     thread.DisableComObjectEagerCleanup();
                 }
+
                 thread.IsBackground = true;
                 thread.SetApartmentState(ApartmentState.STA);
                 return thread;

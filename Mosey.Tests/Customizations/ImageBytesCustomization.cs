@@ -11,17 +11,18 @@ namespace Mosey.Tests.Customizations
 
         internal static byte[] GetBitmapData(int width = 10, int height = 10)
         {
-            Random random = new Random();
+            var random = new Random();
             byte[] bitmapData;
-            Bitmap image = new Bitmap(width, height);
+            var image = new Bitmap(width, height);
 
             image.SetPixel(random.Next(width), random.Next(height), Color.Black);
 
-            using (MemoryStream memoryStream = new MemoryStream())
+            using (var memoryStream = new MemoryStream())
             {
                 image.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Bmp);
                 bitmapData = memoryStream.ToArray();
             }
+
             return bitmapData;
         }
     }

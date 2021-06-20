@@ -44,19 +44,19 @@ namespace Mosey.Services.Imaging.Extensions
         /// <returns>A <see cref="EncoderParameters"/> collection containing the specified <see cref="EncoderParameter"/>s</returns>
         public static EncoderParameters AddParams(this EncoderParameters value, EncoderValue? compression = null, long? quality = null, long? colorDepth = null, EncoderValue? transform = null, EncoderValue? frame = null)
         {
-            if (quality < 0 || quality > 100)
+            if (quality is < 0 or > 100)
             {
                 throw new ArgumentOutOfRangeException(nameof(quality), quality.Value, $"{nameof(quality)} is a percentage and must be between 0 and 100");
             }
 
-            if (colorDepth <= 0 || colorDepth > 48)
+            if (colorDepth is <= 0 or > 48)
             {
                 throw new ArgumentOutOfRangeException(nameof(colorDepth), colorDepth.Value, $"{nameof(colorDepth)} out of range");
             }
 
             // Replace existing values in the paramter list if they already exist
             // Otherwise just add them to the collection
-            System.Collections.Generic.List<EncoderParameter> encoderParams = value.Param.Where(e => e is not null).ToList();
+            var encoderParams = value.Param.Where(e => e is not null).ToList();
             if (compression is not null)
             {
                 encoderParams.AddOrUpdate(new EncoderParameter(Encoder.Compression, (long)compression));
@@ -84,7 +84,7 @@ namespace Mosey.Services.Imaging.Extensions
 
             // Unfortunately the parameters can't be appended to the original collection directly
             // Create a new collection now that we know the total array size
-            EncoderParameters paramCollection = new EncoderParameters(encoderParams.Count);
+            var paramCollection = new EncoderParameters(encoderParams.Count);
             for (var i = 0; i < encoderParams.Count; i++)
             {
                 paramCollection.Param[i] = encoderParams[i];

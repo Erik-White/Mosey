@@ -17,7 +17,7 @@ namespace Mosey.GUI.Configuration
 
         public AppSettings Copy()
         {
-            AppSettings copy = new AppSettings
+            var copy = new AppSettings
             {
                 ImageFile = (ImageFileConfig)ImageFile.Clone(),
                 ScanTimer = (IntervalTimerConfig)ScanTimer.Clone(),
