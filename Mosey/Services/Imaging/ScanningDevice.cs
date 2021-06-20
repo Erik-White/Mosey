@@ -16,39 +16,39 @@ namespace Mosey.Services.Imaging
     /// </summary>
     public class ScanningDevice : PropertyChangedBase, IImagingDevice
     {
-        public string Name { get { return _scannerSettings.Name; } }
-        public int ID { get { return GetSimpleID(_scannerSettings.Id); } }
-        public string DeviceID { get { return _scannerSettings.Id; } }
-        public IList<KeyValuePair<string, object>> DeviceSettings { get { return _scannerSettings.ScannerDeviceSettings.ToList(); } }
+        public string Name => _scannerSettings.Name;
+        public int ID => GetSimpleID(_scannerSettings.Id);
+        public string DeviceID => _scannerSettings.Id;
+        public IList<KeyValuePair<string, object>> DeviceSettings => _scannerSettings.ScannerDeviceSettings.ToList();
 
         public IList<byte[]> Images { get; protected internal set; } = new List<byte[]>();
         public IImagingDeviceConfig ImageSettings { get; set; }
 
         /// <inheritdoc cref="ScannerSettings.IsAutomaticDocumentFeeder"/>
-        public bool IsAutomaticDocumentFeeder { get { return _scannerSettings.IsAutomaticDocumentFeeder; } }
+        public bool IsAutomaticDocumentFeeder => _scannerSettings.IsAutomaticDocumentFeeder;
 
         public bool IsConnected
         {
-            get { return _isConnected; }
-            protected internal set { SetField(ref _isConnected, value); }
+            get => _isConnected;
+            protected internal set => SetField(ref _isConnected, value);
         }
 
         /// <inheritdoc cref="ScannerSettings.IsDuplex"/>
-        public bool IsDuplex { get { return _scannerSettings.IsDuplex; } }
+        public bool IsDuplex => _scannerSettings.IsDuplex;
 
         public bool IsEnabled
         {
-            get { return _isEnabled; }
-            set { SetField(ref _isEnabled, value); }
+            get => _isEnabled;
+            set => SetField(ref _isEnabled, value);
         }
 
         /// <inheritdoc cref="ScannerSettings.IsFlatbed"/>
-        public bool IsFlatbed { get { return _scannerSettings.IsFlatbed; } }
+        public bool IsFlatbed => _scannerSettings.IsFlatbed;
 
         public bool IsImaging
         {
-            get { return _isImaging; }
-            private set { SetField(ref _isImaging, value); }
+            get => _isImaging;
+            private set => SetField(ref _isImaging, value);
         }
 
         /// <summary>
@@ -56,12 +56,12 @@ namespace Mosey.Services.Imaging
         /// </summary>
         public int ScanRetries
         {
-            get { return _scanRetries; }
-            set { SetField(ref _scanRetries, value); }
+            get => _scanRetries;
+            set => SetField(ref _scanRetries, value);
         }
 
         /// <inheritdoc cref="ScannerSettings.SupportedResolutions"/>
-        public IList<int> SupportedResolutions { get { return _scannerSettings.SupportedResolutions; } }
+        public IList<int> SupportedResolutions => _scannerSettings.SupportedResolutions;
 
         /// <summary>
         /// The image format used for encoding images captured by the <see cref="ScanningDevice"/>.
@@ -110,15 +110,9 @@ namespace Mosey.Services.Imaging
             _fileSystem = fileSystem ?? new FileSystem();
         }
 
-        public void ClearImages()
-        {
-            Images = new List<byte[]>();
-        }
+        public void ClearImages() => Images = new List<byte[]>();
 
-        public void GetImage()
-        {
-            GetImage(ImageFormat.Bmp);
-        }
+        public void GetImage() => GetImage(ImageFormat.Bmp);
 
         /// <summary>
         /// Retrieve an image from the physical imaging device.
@@ -193,7 +187,7 @@ namespace Mosey.Services.Imaging
         /// </summary>
         public void SaveImage()
         {
-            string directory = _fileSystem.Path.Combine(
+            var directory = _fileSystem.Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
                 System.Reflection.Assembly.GetExecutingAssembly().GetName().Name);
             SaveImage("image", directory, ImageFormat.Png);
@@ -253,20 +247,11 @@ namespace Mosey.Services.Imaging
             }
         }
 
-        public bool Equals(IImagingDevice device)
-        {
-            return device is not null && DeviceID == device.DeviceID;
-        }
+        public bool Equals(IImagingDevice device) => device is not null && DeviceID == device.DeviceID;
 
-        public override bool Equals(object obj)
-        {
-            return Equals(obj as ScanningDevice);
-        }
+        public override bool Equals(object obj) => Equals(obj as ScanningDevice);
 
-        public override int GetHashCode()
-        {
-            return DeviceID.GetHashCode();
-        }
+        public override int GetHashCode() => DeviceID.GetHashCode();
 
         /// <summary>
         /// Store image byte arrays to disk.
@@ -281,18 +266,20 @@ namespace Mosey.Services.Imaging
         /// <returns>A collection of file path <see cref="string"/>s for the newly created images</returns>
         protected internal IEnumerable<string> SaveImagesToDisk(IEnumerable<byte[]> images, string filePath, ImageFormat format = ImageFormat.Png, EncoderParameters encoderParams = null)
         {
-            int count = 1;
-            string fileName = Path.GetFileName(filePath);
+            var count = 1;
+            var fileName = Path.GetFileName(filePath);
 
             // Write all images to disk
             foreach (var imageBytes in Images)
             {
                 // Append count to filename in case of multiple images
-                string savePath = filePath;
+                var savePath = filePath;
                 if (images.Count() > 1)
+                {
                     savePath = savePath.Replace(
                         fileName,
                         $"{Path.GetFileNameWithoutExtension(fileName)}_{count}{Path.GetExtension(filePath)}");
+                }
 
                 SaveImageToDisk(imageBytes, savePath, format, encoderParams);
 
@@ -328,9 +315,9 @@ namespace Mosey.Services.Imaging
         private static int GetSimpleID(string deviceID)
         {
             // Get the last two characters of the device instance path
-            string shortID = deviceID.Substring(Math.Max(0, deviceID.Length - 2));
+            var shortID = deviceID.Substring(Math.Max(0, deviceID.Length - 2));
 
-            if (int.TryParse(shortID, out int intID))
+            if (int.TryParse(shortID, out var intID))
             {
                 return intID;
             }

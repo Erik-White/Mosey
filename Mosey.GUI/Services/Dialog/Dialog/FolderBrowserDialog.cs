@@ -18,8 +18,8 @@ namespace Mosey.GUI.Services.Dialog
         /// </summary>
         public string Title
         {
-            get { return _title ?? string.Empty; }
-            set { _title = value; }
+            get => _title ?? string.Empty;
+            set => _title = value;
         }
 
         /// <summary>
@@ -27,39 +27,21 @@ namespace Mosey.GUI.Services.Dialog
         /// </summary>
         public string InitialDirectory
         {
-            get
-            {
-                return _initialDirectory ?? Environment.GetFolderPath(RootDirectory).ToString();
-            }
-            set
-            {
-                _initialDirectory = value;
-            }
+            get => _initialDirectory ?? Environment.GetFolderPath(RootDirectory).ToString();
+            set => _initialDirectory = value;
         }
 
         public Environment.SpecialFolder RootDirectory { get; set; }
 
         public string SelectedPath
         {
-            get
-            {
-                return _selectedPath ?? string.Empty;
-            }
-            set
-            {
-                _selectedPath = value;
-            }
+            get => _selectedPath ?? string.Empty;
+            set => _selectedPath = value;
         }
 
-        public FolderBrowserDialog()
-        {
-            RootDirectory = Environment.SpecialFolder.MyComputer;
-        }
+        public FolderBrowserDialog() => RootDirectory = Environment.SpecialFolder.MyComputer;
 
-        public FolderBrowserDialog(Environment.SpecialFolder rootDirectory)
-        {
-            RootDirectory = rootDirectory;
-        }
+        public FolderBrowserDialog(Environment.SpecialFolder rootDirectory) => RootDirectory = rootDirectory;
 
         /// <summary>
         /// Display the dialog window
@@ -67,10 +49,13 @@ namespace Mosey.GUI.Services.Dialog
         /// <returns>A <c>bool</c> that indicates whether a path was selected</returns>
         public bool? ShowDialog()
         {
-            using (CommonOpenFileDialog dialog = CreateDialog(RootDirectory, InitialDirectory))
+            using (var dialog = CreateDialog(RootDirectory, InitialDirectory))
             {
                 var result = dialog.ShowDialog() == CommonFileDialogResult.Ok;
-                if (result) SelectedPath = dialog.FileName;
+                if (result)
+                {
+                    SelectedPath = dialog.FileName;
+                }
 
                 return result;
             }
@@ -84,19 +69,20 @@ namespace Mosey.GUI.Services.Dialog
         /// <returns>A new instance of a <c>CommonOpenFileDialog</c></returns>
         private CommonOpenFileDialog CreateDialog(Environment.SpecialFolder rootDirectory, string initialDirectory)
         {
-            CommonOpenFileDialog dialog = new CommonOpenFileDialog();
+            CommonOpenFileDialog dialog = new CommonOpenFileDialog
+            {
+                IsFolderPicker = true,
+                EnsureFileExists = true,
+                EnsurePathExists = true,
+                EnsureReadOnly = false,
+                EnsureValidNames = true,
+                Multiselect = false,
+                ShowPlacesList = true,
 
-            dialog.IsFolderPicker = true;
-            dialog.EnsureFileExists = true;
-            dialog.EnsurePathExists = true;
-            dialog.EnsureReadOnly = false;
-            dialog.EnsureValidNames = true;
-            dialog.Multiselect = false;
-            dialog.ShowPlacesList = true;
-
-            dialog.DefaultDirectory = Environment.GetFolderPath(rootDirectory).ToString();
-            dialog.InitialDirectory = initialDirectory;
-            dialog.Title = Title;
+                DefaultDirectory = Environment.GetFolderPath(rootDirectory).ToString(),
+                InitialDirectory = initialDirectory,
+                Title = Title
+            };
 
             return dialog;
         }

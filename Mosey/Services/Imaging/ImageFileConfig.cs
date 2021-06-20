@@ -12,9 +12,6 @@ namespace Mosey.Services.Imaging
         public string DateFormat { get; set; }
         public string TimeFormat { get; set; }
 
-        public object Clone()
-        {
-            return MemberwiseClone();
-        }
+        public object Clone() => MemberwiseClone();
     }
 }

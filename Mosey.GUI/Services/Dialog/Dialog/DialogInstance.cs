@@ -12,9 +12,6 @@ namespace Mosey.GUI.Services.Dialog
         /// Initializes a new <see cref="DialogInstance"/>.
         /// </summary>
         /// <param name="settings">The settings for the message dialog.</param>
-        public DialogInstance(IDialogSettings settings)
-        {
-            DialogSettings = settings;
-        }
+        public DialogInstance(IDialogSettings settings) => DialogSettings = settings;
     }
 }

@@ -54,10 +54,8 @@ namespace Mosey.Models
             }
         }
 
-        private void Item_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
+        private void Item_PropertyChanged(object sender, PropertyChangedEventArgs e) =>
             // Launch an event Reset with name of property changed
             base.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-        }
     }
 }

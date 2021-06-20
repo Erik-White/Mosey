@@ -26,7 +26,10 @@ namespace System.Threading.Tasks.Schedulers
         public StaTaskScheduler(int numberOfThreads, bool disableComObjectEagerCleanup = false)
         {
             // Validate arguments
-            if (numberOfThreads < 1) throw new ArgumentOutOfRangeException("concurrencyLevel");
+            if (numberOfThreads < 1)
+            {
+                throw new ArgumentOutOfRangeException("concurrencyLevel");
+            }
 
             // Initialize the tasks collection
             _tasks = new BlockingCollection<Task>();
@@ -34,7 +37,7 @@ namespace System.Threading.Tasks.Schedulers
             // Create the threads to be used by this scheduler
             _threads = Enumerable.Range(0, numberOfThreads).Select(i =>
             {
-                var thread = new Thread(() =>
+                Thread thread = new Thread(() =>
                 {
                     // Continually get the next task and try to execute it.
                     // This will continue until the scheduler is disposed and no more tasks remain.
@@ -58,19 +61,15 @@ namespace System.Threading.Tasks.Schedulers
 
         /// <summary>Queues a Task to be executed by this scheduler.</summary>
         /// <param name="task">The task to be executed.</param>
-        protected override void QueueTask(Task task)
-        {
+        protected override void QueueTask(Task task) =>
             // Push it into the blocking collection of tasks
             _tasks.Add(task);
-        }
 
         /// <summary>Provides a list of the scheduled tasks for the debugger to consume.</summary>
         /// <returns>An enumerable of all tasks currently scheduled.</returns>
-        protected override IEnumerable<Task> GetScheduledTasks()
-        {
+        protected override IEnumerable<Task> GetScheduledTasks() =>
             // Serialize the contents of the blocking collection of tasks for the debugger
-            return _tasks.ToArray();
-        }
+            _tasks.ToArray();
 
         /// <summary>Determines whether a Task may be inlined.</summary>
         /// <param name="task">The task to be executed.</param>
@@ -85,10 +84,7 @@ namespace System.Threading.Tasks.Schedulers
         }
 
         /// <summary>Gets the maximum concurrency level supported by this scheduler.</summary>
-        public override int MaximumConcurrencyLevel
-        {
-            get { return _threads.Count; }
-        }
+        public override int MaximumConcurrencyLevel => _threads.Count;
 
         /// <summary>
         /// Cleans up the scheduler by indicating that no more tasks will be queued.
@@ -102,7 +98,10 @@ namespace System.Threading.Tasks.Schedulers
                 _tasks.CompleteAdding();
 
                 // Wait for all threads to finish processing tasks
-                foreach (var thread in _threads) thread.Join();
+                foreach (var thread in _threads)
+                {
+                    thread.Join();
+                }
 
                 // Cleanup
                 _tasks.Dispose();

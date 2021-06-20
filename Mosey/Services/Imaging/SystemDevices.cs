@@ -19,10 +19,7 @@ namespace Mosey.Services.Imaging
         /// <inheritdoc/>
         /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
-        public IEnumerable<byte[]> PerformScan(ScannerSettings settings, IImagingDeviceConfig config, ScanningDevice.ImageFormat format)
-        {
-            return PerformScan(settings, config, format, 1, 1000);
-        }
+        public IEnumerable<byte[]> PerformScan(ScannerSettings settings, IImagingDeviceConfig config, ScanningDevice.ImageFormat format) => PerformScan(settings, config, format, 1, 1000);
         /// <inheritdoc/>
         /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
@@ -43,10 +40,7 @@ namespace Mosey.Services.Imaging
         /// <inheritdoc/>
         /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
-        public IList<IDictionary<string, object>> ScannerProperties()
-        {
-            return ScannerProperties(1);
-        }
+        public IList<IDictionary<string, object>> ScannerProperties() => ScannerProperties(1);
 
         /// <inheritdoc/>
         /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
@@ -66,10 +60,7 @@ namespace Mosey.Services.Imaging
         /// <inheritdoc/>
         /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
-        public IEnumerable<ScannerSettings> ScannerSettings()
-        {
-            return ScannerSettings(1);
-        }
+        public IEnumerable<ScannerSettings> ScannerSettings() => ScannerSettings(1);
 
         /// <inheritdoc/>
         /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
@@ -90,7 +81,7 @@ namespace Mosey.Services.Imaging
         /// <returns>A <see cref="ScannerDevice"/> instance configured using <paramref name="config"/></returns>
         private ScannerDevice ConfiguredScannerDevice(ScannerSettings settings, IImagingDeviceConfig config)
         {
-            var device = new ScannerDevice(settings);
+            ScannerDevice device = new ScannerDevice(settings);
             var supportedResolutions = settings.SupportedResolutions;
 
             // Check that the selected resolution is supported by this device
@@ -156,7 +147,7 @@ namespace Mosey.Services.Imaging
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
         private static T WIARetry<T>(Func<T> method, int connectRetries = 1, SemaphoreSlim semaphore = null, int delay = 1000)
         {
-            var result = default(T);
+            T result = default(T);
             semaphore?.Wait();
 
             try

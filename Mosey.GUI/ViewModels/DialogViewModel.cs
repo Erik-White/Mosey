@@ -66,7 +66,10 @@ namespace Mosey.GUI.ViewModels
                 timeout
                 );
 
-            if (dialogResult == DialogResult.Canceled) _log.LogDebug($"{nameof(ImagingTimeDialog)} closed by CancellationToken before user input recieved");
+            if (dialogResult == DialogResult.Canceled)
+            {
+                _log.LogDebug($"{nameof(ImagingTimeDialog)} closed by CancellationToken before user input recieved");
+            }
 
             _log.LogDebug($"User input return from {nameof(ImagingTimeDialog)}: {dialogResult}");
 
@@ -101,7 +104,10 @@ namespace Mosey.GUI.ViewModels
                 timeout
                 );
 
-            if (dialogResult == DialogResult.Canceled) _log.LogDebug($"{nameof(DiskSpaceDialog)} closed by CancellationToken before user input recieved");
+            if (dialogResult == DialogResult.Canceled)
+            {
+                _log.LogDebug($"{nameof(DiskSpaceDialog)} closed by CancellationToken before user input recieved");
+            }
 
             _log.LogDebug($"User input return from {nameof(DiskSpaceDialog)}: {dialogResult}");
 
@@ -135,7 +141,10 @@ namespace Mosey.GUI.ViewModels
                 timeout
                 );
 
-            if (dialogResult == DialogResult.Canceled) _log.LogDebug($"{nameof(StopScanDialog)} closed by CancellationToken before user input recieved");
+            if (dialogResult == DialogResult.Canceled)
+            {
+                _log.LogDebug($"{nameof(StopScanDialog)} closed by CancellationToken before user input recieved");
+            }
 
             _log.LogDebug($"User input return from {nameof(StopScanDialog)}: {dialogResult}");
 
@@ -153,8 +162,8 @@ namespace Mosey.GUI.ViewModels
         {
             _log.LogDebug($"{nameof(ExceptionDialog)} initiated.");
 
-            string errorTitle = "An error occurred";
-            string errorMessage = "";
+            var errorTitle = "An error occurred";
+            var errorMessage = "";
 
             if (ex is COMException)
             {
@@ -178,7 +187,10 @@ namespace Mosey.GUI.ViewModels
                 timeout
                 );
 
-            if (dialogResult == DialogResult.Canceled) _log.LogDebug($"{nameof(ExceptionDialog)} closed by CancellationToken before user input recieved");
+            if (dialogResult == DialogResult.Canceled)
+            {
+                _log.LogDebug($"{nameof(ExceptionDialog)} closed by CancellationToken before user input recieved");
+            }
 
             _log.LogDebug($"User input return from {nameof(ExceptionDialog)}: {dialogResult}");
 

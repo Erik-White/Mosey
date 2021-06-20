@@ -14,7 +14,7 @@ namespace Mosey.GUI.Services.Dialog
         /// <returns>The <see cref="DialogResult"/> selected by the user, or <see cref="DialogResult.Canceled"/> if the dialog is closed by <see cref="CancellationToken"/></returns>
         public static async Task<DialogResult> ShowMessageWithTimeoutAsync(this IDialogManager value, object context, string title, string message, DialogStyle style = DialogStyle.Affirmative, IDialogSettings settings = null, int timeout = 5000)
         {
-            using (var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(settings.CancellationToken))
+            using (CancellationTokenSource linkedSource = CancellationTokenSource.CreateLinkedTokenSource(settings.CancellationToken))
             {
                 settings.CancellationToken = linkedSource.Token;
                 linkedSource.CancelAfter(timeout);

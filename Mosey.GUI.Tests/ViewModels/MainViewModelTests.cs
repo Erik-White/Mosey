@@ -1,16 +1,15 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using NUnit.Framework;
 using AutoFixture.NUnit3;
-using NSubstitute;
 using FluentAssertions;
-using Mosey.GUI.Models;
+using Mosey.Models;
 using Mosey.Tests.AutoData;
 using Mosey.Tests.Extensions;
-using Mosey.Models;
+using NSubstitute;
+using NUnit.Framework;
 
 namespace Mosey.GUI.ViewModels.Tests
 {
@@ -19,10 +18,7 @@ namespace Mosey.GUI.ViewModels.Tests
         public class ConstructorShould
         {
             [Theory, MainViewModelAutoData]
-            public void InitializeProperties(MainViewModel sut)
-            {
-                sut.AssertAllPropertiesAreNotDefault();
-            }
+            public void InitializeProperties(MainViewModel sut) => sut.AssertAllPropertiesAreNotDefault();
 
             [Theory, MainViewModelAutoData]
             public void InitializeScanningDevicesCollection([Frozen] IEnumerable<IImagingDevice> imagingDevices, MainViewModel sut)
@@ -64,7 +60,7 @@ namespace Mosey.GUI.ViewModels.Tests
             [Theory, MainViewModelAutoData]
             public async Task RepeatRefreshDevices([Frozen] IImagingDevices<IImagingDevice> imagingDevices, MainViewModel sut)
             {
-                using var cts = new CancellationTokenSource();
+                using CancellationTokenSource cts = new CancellationTokenSource();
                 cts.CancelAfter(2000);
 
                 await sut.RefreshDevicesAsync(0, cts.Token);
@@ -79,7 +75,7 @@ namespace Mosey.GUI.ViewModels.Tests
             [Theory, MainViewModelAutoData]
             public async Task CancelTask([Frozen] IImagingDevices<IImagingDevice> imagingDevices, MainViewModel sut)
             {
-                using var cts = new CancellationTokenSource();
+                using CancellationTokenSource cts = new CancellationTokenSource();
                 cts.CancelAfter(0);
 
                 await sut.RefreshDevicesAsync(0, cts.Token);
@@ -91,7 +87,7 @@ namespace Mosey.GUI.ViewModels.Tests
             [Theory, MainViewModelAutoData]
             public async Task RaisePropertyChanged(MainViewModel sut)
             {
-                using var cts = new CancellationTokenSource();
+                using CancellationTokenSource cts = new CancellationTokenSource();
                 cts.CancelAfter(1000);
 
                 using (var monitoredSubject = sut.Monitor())

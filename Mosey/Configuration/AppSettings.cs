@@ -58,28 +58,16 @@ namespace Mosey.Configuration
         /// <summary>
         /// A common set of resolutions that are support by most devices.
         /// </summary>
-        public IEnumerable<int> StandardResolutions
-        {
-            get
-            {
-                return ResolutionData.Select(r => r.Resolution).Distinct().ToList();
-            }
-        }
+        public IEnumerable<int> StandardResolutions => ResolutionData.Select(r => r.Resolution).Distinct().ToList();
 
-        public object Clone()
-        {
-            return MemberwiseClone();
-        }
+        public object Clone() => MemberwiseClone();
 
         /// <summary>
         /// Get the available meta data for a particular image resolution
         /// </summary>
         /// <param name="resolution">An image resolution, in DPI</param>
         /// <returns></returns>
-        public ResolutionMetaData GetResolutionMetaData(int resolution)
-        {
-            return ResolutionData.Where(r => r.Resolution == resolution).FirstOrDefault();
-        }
+        public ResolutionMetaData GetResolutionMetaData(int resolution) => ResolutionData.Where(r => r.Resolution == resolution).FirstOrDefault();
 
         /// <summary>
         /// Information related to an image resolution.

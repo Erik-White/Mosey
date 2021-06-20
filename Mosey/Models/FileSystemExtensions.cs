@@ -13,10 +13,7 @@ namespace Mosey.Models
         /// <returns>A <see cref="DriveInfo"/> instance that represents the logical drive <paramref name="driveName"/></returns>
         /// <exception cref="IOException"></exception>
         /// <exception cref="UnauthorizedAccessException"></exception>
-        public static IDriveInfo GetDriveInfo(string driveName, IFileSystem fileSystem)
-        {
-            return fileSystem.DriveInfo.GetDrives().Where(drive => drive.Name == driveName).FirstOrDefault();
-        }
+        public static IDriveInfo GetDriveInfo(string driveName, IFileSystem fileSystem) => fileSystem.DriveInfo.GetDrives().Where(drive => drive.Name == driveName).FirstOrDefault();
 
         /// <summary>
         /// The available free space of logical a drive on the system that matches <paramref name="driveName"/>.
@@ -25,10 +22,7 @@ namespace Mosey.Models
         /// <returns>The available free space, in bytes</returns>
         /// <exception cref="IOException"></exception>
         /// <exception cref="UnauthorizedAccessException"></exception>
-        public static long AvailableFreeSpace(string driveName, IFileSystem fileSystem)
-        {
-            return GetDriveInfo(driveName, fileSystem).AvailableFreeSpace;
-        }
+        public static long AvailableFreeSpace(string driveName, IFileSystem fileSystem) => GetDriveInfo(driveName, fileSystem).AvailableFreeSpace;
 
         /// <summary>
         /// Check is a file path is a Universal Naming Convention (UNC) network path
@@ -40,7 +34,7 @@ namespace Mosey.Models
             if (!path.StartsWith(@"/") && !path.StartsWith(@"\"))
             {
                 // Path may not start with a slash, but could be a network drive
-                string rootPath = fileSystem.Path.GetPathRoot(path);
+                var rootPath = fileSystem.Path.GetPathRoot(path);
                 var driveInfo = fileSystem.DriveInfo.FromDriveName(rootPath);
 
                 return driveInfo.DriveType == System.IO.DriveType.Network;

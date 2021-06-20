@@ -11,12 +11,12 @@ namespace Mosey.Services
     public class IntervalTimer : IIntervalTimer
     {
         public DateTime StartTime { get; private set; }
-        public DateTime FinishTime { get { return StartTime.Add(Repetitions * Interval) + Delay; } }
+        public DateTime FinishTime => StartTime.Add(Repetitions * Interval) + Delay;
         public TimeSpan Delay { get; private set; } = TimeSpan.Zero;
         public TimeSpan Interval { get; private set; } = TimeSpan.FromSeconds(1);
         public int Repetitions { get; private set; } = -1;
         public int RepetitionsCount { get; private set; }
-        public bool Enabled { get { return (timer != null); } }
+        public bool Enabled => (timer != null);
         public bool Paused { get; private set; }
         public event EventHandler Tick;
         public event EventHandler Complete;
@@ -46,10 +46,7 @@ namespace Mosey.Services
         /// <summary>
         /// Starts a timer using the current properties
         /// </summary>
-        public void Start()
-        {
-            Start(Delay, Interval, Repetitions);
-        }
+        public void Start() => Start(Delay, Interval, Repetitions);
 
         /// <summary>
         /// Starts a timer with no repetition limit
@@ -57,10 +54,7 @@ namespace Mosey.Services
         /// </summary>
         /// <param name="delay">The delay before starting the first interval</param>
         /// <param name="interval">The time between each callback</param>
-        public void Start(TimeSpan delay, TimeSpan interval)
-        {
-            Start(delay, interval, -1);
-        }
+        public void Start(TimeSpan delay, TimeSpan interval) => Start(delay, interval, -1);
 
         /// <summary>
         /// Start a new timer. If delay is zero then the first callback will begin immediately
@@ -87,19 +81,13 @@ namespace Mosey.Services
         /// Raises an event when an interval has elapsed
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void OnTick(EventArgs e)
-        {
-            Tick?.Invoke(this, EventArgs.Empty);
-        }
+        protected virtual void OnTick(EventArgs e) => Tick?.Invoke(this, EventArgs.Empty);
 
         /// <summary>
         /// Raises an event when the timer has run to completion
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void OnComplete(EventArgs e)
-        {
-            Complete?.Invoke(this, EventArgs.Empty);
-        }
+        protected virtual void OnComplete(EventArgs e) => Complete?.Invoke(this, EventArgs.Empty);
 
         /// <summary>
         /// Timer callback method. Continues the timer until the maximum repetition count is reached
@@ -187,10 +175,7 @@ namespace Mosey.Services
             }
         }
 
-        public virtual object Clone()
-        {
-            return MemberwiseClone();
-        }
+        public virtual object Clone() => MemberwiseClone();
 
         public void Dispose()
         {
@@ -206,13 +191,17 @@ namespace Mosey.Services
                 {
                     if (Tick != null)
                     {
-                        foreach (Delegate del in Tick.GetInvocationList())
+                        foreach (var del in Tick.GetInvocationList())
+                        {
                             Tick -= (del as EventHandler);
+                        }
                     }
                     if (Complete != null)
                     {
-                        foreach (Delegate del in Complete.GetInvocationList())
+                        foreach (var del in Complete.GetInvocationList())
+                        {
                             Complete -= (del as EventHandler);
+                        }
                     }
                     if (timer != null)
                     {
@@ -239,9 +228,6 @@ namespace Mosey.Services
         public TimeSpan Interval { get; set; }
         public int Repetitions { get; set; }
 
-        public object Clone()
-        {
-            return MemberwiseClone();
-        }
+        public object Clone() => MemberwiseClone();
     }
 }

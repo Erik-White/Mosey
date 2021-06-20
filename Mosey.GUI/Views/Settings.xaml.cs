@@ -7,9 +7,6 @@ namespace Mosey.GUI.Views
     /// </summary>
     public partial class Settings : UserControl
     {
-        public Settings()
-        {
-            InitializeComponent();
-        }
+        public Settings() => InitializeComponent();
     }
 }

@@ -19,7 +19,7 @@ namespace Mosey.Services.Imaging.Extensions
         /// <returns>An <see cref="Image"/> instance in the specified format and encoding</returns>
         public static Image AsFormat(this Image value, ImageFormat format, EncoderParameters encoderParameters = null)
         {
-            using (var ms = value.ToMemoryStream(format, encoderParameters))
+            using (System.IO.MemoryStream ms = value.ToMemoryStream(format, encoderParameters))
             {
                 return Image.FromStream(ms);
             }
@@ -30,10 +30,7 @@ namespace Mosey.Services.Imaging.Extensions
         /// </summary>
         /// <param name="value">An <see cref="Image"/> instance</param>
         /// <returns>A <see cref="byte"/> array</returns>
-        public static byte[] ToBytes(this Image value)
-        {
-            return value.ToBytes(value.RawFormat);
-        }
+        public static byte[] ToBytes(this Image value) => value.ToBytes(value.RawFormat);
 
         /// <summary>
         /// Create a <see cref="byte"/> array from an <see cref="Image"/> instance.
@@ -41,10 +38,7 @@ namespace Mosey.Services.Imaging.Extensions
         /// <param name="value">An <see cref="Image"/> instance</param>
         /// <param name="format">The image format</param>
         /// <returns>An image <see cref="byte"/> array in the specified format</returns>
-        public static byte[] ToBytes(this Image value, ImageFormat format)
-        {
-            return value.ToBytes(format);
-        }
+        public static byte[] ToBytes(this Image value, ImageFormat format) => value.ToBytes(format);
 
         /// <summary>
         /// Create a <see cref="byte"/> array from an <see cref="Image"/> instance.
@@ -55,7 +49,7 @@ namespace Mosey.Services.Imaging.Extensions
         /// <returns>An image <see cref="byte"/> array in the specified format and encoding</returns>
         public static byte[] ToBytes(this Image value, ImageFormat format, EncoderParameters encoderParameters = null)
         {
-            using (var ms = value.ToMemoryStream(format, encoderParameters))
+            using (System.IO.MemoryStream ms = value.ToMemoryStream(format, encoderParameters))
             {
                 return ms.ToArray();
             }
@@ -66,10 +60,7 @@ namespace Mosey.Services.Imaging.Extensions
         /// </summary>
         /// <param name="value">An image format instance</param>
         /// <returns>An <see cref="ImageCodecInfo"/> instance corresponding to the <see cref="ImageFormat"/></returns>
-        public static ImageCodecInfo CodecInfo(this ImageFormat value)
-        {
-            return ImageCodecInfo.GetImageDecoders().First(codec => codec.FormatID == value.Guid);
-        }
+        public static ImageCodecInfo CodecInfo(this ImageFormat value) => ImageCodecInfo.GetImageDecoders().First(codec => codec.FormatID == value.Guid);
 
         /// <summary>
         /// Add optional <see cref="EncoderParameter"/>s to a <see cref="EncoderParameters"/> collection.
@@ -94,17 +85,36 @@ namespace Mosey.Services.Imaging.Extensions
 
             // Replace existing values in the paramter list if they already exist
             // Otherwise just add them to the collection
-            var encoderParams = value.Param.Where(e => e != null).ToList();
-            if (compression != null) encoderParams.AddOrUpdate(new EncoderParameter(Encoder.Compression, (long)compression));
-            if (quality != null) encoderParams.AddOrUpdate(new EncoderParameter(Encoder.Quality, (long)quality));
-            if (colorDepth != null) encoderParams.AddOrUpdate(new EncoderParameter(Encoder.ColorDepth, (long)colorDepth));
-            if (transform != null) encoderParams.AddOrUpdate(new EncoderParameter(Encoder.Transformation, (long)transform));
-            if (frame != null) encoderParams.AddOrUpdate(new EncoderParameter(Encoder.SaveFlag, (long)frame));
+            System.Collections.Generic.List<EncoderParameter> encoderParams = value.Param.Where(e => e != null).ToList();
+            if (compression != null)
+            {
+                encoderParams.AddOrUpdate(new EncoderParameter(Encoder.Compression, (long)compression));
+            }
+
+            if (quality != null)
+            {
+                encoderParams.AddOrUpdate(new EncoderParameter(Encoder.Quality, (long)quality));
+            }
+
+            if (colorDepth != null)
+            {
+                encoderParams.AddOrUpdate(new EncoderParameter(Encoder.ColorDepth, (long)colorDepth));
+            }
+
+            if (transform != null)
+            {
+                encoderParams.AddOrUpdate(new EncoderParameter(Encoder.Transformation, (long)transform));
+            }
+
+            if (frame != null)
+            {
+                encoderParams.AddOrUpdate(new EncoderParameter(Encoder.SaveFlag, (long)frame));
+            }
 
             // Unfortunately the parameters can't be appended to the original collection directly
             // Create a new collection now that we know the total array size
-            var paramCollection = new EncoderParameters(encoderParams.Count);
-            for (int i = 0; i < encoderParams.Count; i++)
+            EncoderParameters paramCollection = new EncoderParameters(encoderParams.Count);
+            for (var i = 0; i < encoderParams.Count; i++)
             {
                 paramCollection.Param[i] = encoderParams[i];
             }

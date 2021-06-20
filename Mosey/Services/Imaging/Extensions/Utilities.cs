@@ -16,7 +16,7 @@ namespace Mosey.Services.Imaging.Extensions
         internal static List<EncoderParameter> AddOrUpdate(this List<EncoderParameter> value, EncoderParameter encoderParameter)
         {
             // Check if the encoder is already present in the list
-            int paramIndex = value.FindIndex(e => e != null && e.Encoder == encoderParameter.Encoder);
+            var paramIndex = value.FindIndex(e => e != null && e.Encoder == encoderParameter.Encoder);
             if (paramIndex >= 0)
             {
                 // Update the existing value
@@ -42,7 +42,7 @@ namespace Mosey.Services.Imaging.Extensions
         /// <returns>An <see cref="Image"/> <see cref="MemoryStream"/> in the specified format and encoding</returns>
         internal static MemoryStream ToMemoryStream(this Image value, ImageFormat format, EncoderParameters encoderParameters = null)
         {
-            using (var ms = new MemoryStream())
+            using (MemoryStream ms = new MemoryStream())
             {
                 value.Save(ms, format.CodecInfo(), encoderParameters);
 

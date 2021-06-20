@@ -12,14 +12,14 @@ namespace Mosey.Tests.AutoData
     {
         private readonly int _size;
 
-        public CollectionSizeAttribute(int size)
-        {
-            _size = size;
-        }
+        public CollectionSizeAttribute(int size) => _size = size;
 
         public override ICustomization GetCustomization(ParameterInfo parameter)
         {
-            if (parameter == null) throw new ArgumentNullException(nameof(parameter));
+            if (parameter == null)
+            {
+                throw new ArgumentNullException(nameof(parameter));
+            }
 
             var objectType = parameter.ParameterType.GetGenericArguments()[0];
 

@@ -35,7 +35,7 @@ namespace Mosey.Tests.Extensions
             // Return type is an object, so type cast expression will be added to value types
             if (!(exp.Body is MemberExpression body))
             {
-                var ubody = (UnaryExpression)exp.Body;
+                UnaryExpression ubody = (UnaryExpression)exp.Body;
                 body = ubody.Operand as MemberExpression;
             }
 

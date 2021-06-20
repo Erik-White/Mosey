@@ -21,16 +21,19 @@ namespace Mosey.GUI.Views.Controls
         {
             base.OnVisualChildrenChanged(visualAdded, visualRemoved);
 
-            int curRow = -1;
-            int curCol = 1;
+            var curRow = -1;
+            var curCol = 1;
 
             RowDefinitions.Clear();
 
             if (Children != null)
+            {
                 foreach (System.Windows.UIElement curChild in Children)
                 {
                     if (curCol == 0)
+                    {
                         curCol = 1;
+                    }
                     else
                     {
                         curCol = 0;
@@ -41,6 +44,7 @@ namespace Mosey.GUI.Views.Controls
                     Grid.SetRow(curChild, curRow);
                     Grid.SetColumn(curChild, curCol);
                 }
+            }
 
             RowDefinitions.Add(new RowDefinition() { Height = new System.Windows.GridLength(1, System.Windows.GridUnitType.Star) });
         }

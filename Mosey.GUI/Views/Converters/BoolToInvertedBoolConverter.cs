@@ -16,21 +16,17 @@ namespace Mosey.GUI.Views.Converters
         {
             if (value is bool)
             {
-                bool boolValue = (bool)value;
+                var boolValue = (bool)value;
                 return !boolValue;
             }
             else
+            {
                 return false;
+            }
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException("ConvertBack() of BoolToInvertedBoolConverter is not implemented");
-        }
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException("ConvertBack() of BoolToInvertedBoolConverter is not implemented");
 
-        public override object ProvideValue(IServiceProvider serviceProvider)
-        {
-            return this;
-        }
+        public override object ProvideValue(IServiceProvider serviceProvider) => this;
     }
 }

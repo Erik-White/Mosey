@@ -1,16 +1,16 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
-using FluentAssertions;
-using NUnit.Framework;
+using System.Linq;
+using System.Runtime.InteropServices;
 using AutoFixture.NUnit3;
 using DNTScanner.Core;
+using FluentAssertions;
 using Mosey.Tests.AutoData;
 using Mosey.Tests.Customizations;
 using Mosey.Tests.Extensions;
+using NUnit.Framework;
 
 namespace Mosey.Services.Imaging.Tests
 {
@@ -168,7 +168,7 @@ namespace Mosey.Services.Imaging.Tests
             [Theory, ScanningDeviceAutoData]
             public void WriteImageDataToDisk([CollectionSize(2)] IList<byte[]> images, [Frozen] IFileSystem fileSystem, [Greedy] ScanningDevice sut)
             {
-                var fs = fileSystem as MockFileSystem;
+                MockFileSystem fs = fileSystem as MockFileSystem;
                 sut.Images = images;
 
                 var result = sut.SaveImage(filename, directory, ScannerSettingsCustomization.SupportedImageFormat);
@@ -186,10 +186,7 @@ namespace Mosey.Services.Imaging.Tests
         public class EqualsShould
         {
             [Theory, ScanningDeviceAutoData]
-            public void BeEquivalentToClone([Frozen] ScannerSettings _, ScanningDevice sut, ScanningDevice clone)
-            {
-                sut.Equals(clone).Should().BeTrue();
-            }
+            public void BeEquivalentToClone([Frozen] ScannerSettings _, ScanningDevice sut, ScanningDevice clone) => sut.Equals(clone).Should().BeTrue();
 
             [Theory, ScanningDeviceAutoData]
             public void EqualSettingsHash([Frozen] ScannerSettings settings, ScanningDevice sut)

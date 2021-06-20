@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading;
+﻿using System.Threading;
 using Mosey.GUI.Models.Dialog;
 
 namespace Mosey.GUI.Services.Dialog
@@ -21,11 +20,11 @@ namespace Mosey.GUI.Services.Dialog
             DefaultText = "";
             DefaultButtonFocus = DialogResult.Negative;
             CancellationToken = CancellationToken.None;
-            DialogTitleFontSize = Double.NaN;
-            DialogMessageFontSize = Double.NaN;
-            DialogButtonFontSize = Double.NaN;
+            DialogTitleFontSize = double.NaN;
+            DialogMessageFontSize = double.NaN;
+            DialogButtonFontSize = double.NaN;
             DialogResultOnCancel = null;
-            MaximumBodyHeight = Double.NaN;
+            MaximumBodyHeight = double.NaN;
         }
 
         /// <summary>

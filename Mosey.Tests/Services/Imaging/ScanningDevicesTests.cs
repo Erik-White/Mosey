@@ -1,14 +1,14 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
-using NUnit.Framework;
+using System.Linq;
 using AutoFixture.NUnit3;
-using Moq;
-using FluentAssertions;
 using DNTScanner.Core;
+using FluentAssertions;
+using Moq;
 using Mosey.Models;
-using Mosey.Tests.Extensions;
 using Mosey.Tests.AutoData;
+using Mosey.Tests.Extensions;
+using NUnit.Framework;
 
 namespace Mosey.Services.Imaging.Tests
 {
@@ -59,7 +59,7 @@ namespace Mosey.Services.Imaging.Tests
                 [Frozen, CollectionSize(1)] IEnumerable<ScannerSettings> _,
                 [Greedy] ScanningDevices sut)
             {
-                var existingInstance = new ScanningDevice(settings, deviceConfig);
+                ScanningDevice existingInstance = new ScanningDevice(settings, deviceConfig);
 
                 sut.Invoking(x => x.AddDevice(existingInstance))
                     .Should().Throw<ArgumentException>();
@@ -136,11 +136,11 @@ namespace Mosey.Services.Imaging.Tests
                 systemDevices
                     .Setup(mock => mock.ScannerSettings(It.IsAny<int>()))
                     .Returns(scannerSettings);
-                var sut = new ScanningDevices(null, systemDevices.Object);
+                ScanningDevices sut = new ScanningDevices(null, systemDevices.Object);
                 var initalDevices = sut.Devices;
 
                 // Add the existing DeviceIds except one so the device will appear disconnected
-                var scannerProperties = new List<IDictionary<string, object>>();
+                List<IDictionary<string, object>> scannerProperties = new List<IDictionary<string, object>>();
                 foreach (var deviceID in sut.Devices.Skip(1).Select(d => d.DeviceID))
                 {
                     scannerProperties.Add(new Dictionary<string, object>() { { "Unique Device ID", deviceID } });
@@ -171,12 +171,12 @@ namespace Mosey.Services.Imaging.Tests
                 systemDevices
                     .Setup(mock => mock.ScannerSettings(It.IsAny<int>()))
                     .Returns(scannerSettings);
-                var sut = new ScanningDevices(null, systemDevices.Object);
+                ScanningDevices sut = new ScanningDevices(null, systemDevices.Object);
                 var initalDevices = sut.Devices;
 
                 // Add an extra scanner to the collection
                 scannerSettings = scannerSettings.Append(newScannerSettings);
-                var scannerProperties = new List<IDictionary<string, object>>();
+                List<IDictionary<string, object>> scannerProperties = new List<IDictionary<string, object>>();
                 foreach (var deviceID in sut.Devices.Select(d => d.DeviceID).Append(newScannerSettings.Id))
                 {
                     scannerProperties.Add(new Dictionary<string, object>() { { "Unique Device ID", deviceID } });

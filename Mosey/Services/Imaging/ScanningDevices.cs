@@ -49,17 +49,11 @@ namespace Mosey.Services.Imaging
         /// </summary>
         /// <param name="deviceID">A unique <see cref="IDevice.DeviceID"/> to match to a device listed by the WIA driver</param>
         /// <returns>A <see cref="ScanningDevice"/> instance matching the <paramref name="deviceID"/>, or <see langword="null"/> if no matching device can be found</returns>
-        public ScanningDevice AddDevice(string deviceID)
-        {
-            return AddDevice(deviceID, null);
-        }
+        public ScanningDevice AddDevice(string deviceID) => AddDevice(deviceID, null);
 
         /// <inheritdoc/>
         /// <exception cref="ArgumentException">If a device with the same <see cref="IDevice.DeviceID"/> already exists in the collection</exception>
-        public void AddDevice(IDevice device)
-        {
-            AddDevice((ScanningDevice)device);
-        }
+        public void AddDevice(IDevice device) => AddDevice((ScanningDevice)device);
 
         /// <summary>
         /// Add a <see cref="ScanningDevice"/> to the collection.
@@ -101,30 +95,21 @@ namespace Mosey.Services.Imaging
             return device;
         }
 
-        public void DisableAll()
-        {
-            SetByEnabled(false);
-        }
+        public void DisableAll() => SetByEnabled(false);
 
-        public void EnableAll()
-        {
-            SetByEnabled(true);
-        }
+        public void EnableAll() => SetByEnabled(true);
 
         /// <summary>
         /// Retrieve <see cref="ScanningDevice"/>s that are connected to the system and add them to the collection.
         /// Update the status of any devices are already present in the collection.
         /// </summary>
-        public void RefreshDevices()
-        {
-            RefreshDevices(new ScanningDeviceSettings());
-        }
+        public void RefreshDevices() => RefreshDevices(new ScanningDeviceSettings());
 
         /// <inheritdoc cref="RefreshDevices()"/>
         public void RefreshDevices(IImagingDeviceConfig deviceConfig, bool enableDevices = true)
         {
             const string DEVICE_ID_KEY = "Unique Device ID";
-            var deviceIds = new List<string>();
+            List<string> deviceIds = new List<string>();
 
             // Check the static properties for changed IDs and only retrieve ScannerSetting instances if necessary.
             // This saves connecting the devices via the WIA driver and is much faster
@@ -153,7 +138,7 @@ namespace Mosey.Services.Imaging
             // These devices can no longer be found and are disconnected
             foreach (var deviceId in currentDevices.Except(deviceIds))
             {
-                var device = (ScanningDevice)_devices.FirstOrDefault(d => d.DeviceID == deviceId);
+                ScanningDevice device = (ScanningDevice)_devices.FirstOrDefault(d => d.DeviceID == deviceId);
                 device.IsConnected = false;
             }
 
@@ -167,11 +152,11 @@ namespace Mosey.Services.Imaging
             // These devices are already in the collection, but previously disconnected
             foreach (var deviceId in currentDevices.Intersect(deviceIds))
             {
-                var existingDevice = (ScanningDevice)_devices.FirstOrDefault(d => d.DeviceID == deviceId && !d.IsConnected);
+                ScanningDevice existingDevice = (ScanningDevice)_devices.FirstOrDefault(d => d.DeviceID == deviceId && !d.IsConnected);
                 if (existingDevice is not null)
                 {
                     // Remove the existing device and replace with the updated
-                    bool enabled = existingDevice.IsEnabled;
+                    var enabled = existingDevice.IsEnabled;
                     _devices.Remove(existingDevice);
 
                     var device = AddDevice(deviceId, deviceConfig);
@@ -180,10 +165,7 @@ namespace Mosey.Services.Imaging
             }
         }
 
-        public void SetDeviceEnabled(string deviceID, bool enabled)
-        {
-            _devices.First(x => x.DeviceID == deviceID).IsEnabled = enabled;
-        }
+        public void SetDeviceEnabled(string deviceID, bool enabled) => _devices.First(x => x.DeviceID == deviceID).IsEnabled = enabled;
 
         /// <summary>
         /// A collection of <see cref="IImagingDevice"/> instances representing physical devices connected to the system.
@@ -232,7 +214,7 @@ namespace Mosey.Services.Imaging
         private void SetByEnabled(bool enabled)
         {
             // Set the IsEnabled property on all members of the collection
-            foreach (IImagingDevice device in _devices)
+            foreach (var device in _devices)
             {
                 device.IsEnabled = enabled;
             }

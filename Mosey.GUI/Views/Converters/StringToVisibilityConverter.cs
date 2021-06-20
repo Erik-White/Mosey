@@ -18,24 +18,21 @@ namespace Mosey.GUI.Views.Converters
 
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            var matchedVisibility = (Visibility)Enum.Parse(typeof(Visibility), MatchedVisibility, true);
-            var defaultVisibility = (Visibility)Enum.Parse(typeof(Visibility), DefaultVisibility, true);
+            Visibility matchedVisibility = (Visibility)Enum.Parse(typeof(Visibility), MatchedVisibility, true);
+            Visibility defaultVisibility = (Visibility)Enum.Parse(typeof(Visibility), DefaultVisibility, true);
 
             if (value == null || (string)value != (string)parameter)
+            {
                 return defaultVisibility;
+            }
             else
+            {
                 return matchedVisibility;
-
+            }
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
 
-        public override object ProvideValue(IServiceProvider serviceProvider)
-        {
-            return this;
-        }
+        public override object ProvideValue(IServiceProvider serviceProvider) => this;
     }
 }
