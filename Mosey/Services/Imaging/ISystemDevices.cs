@@ -32,20 +32,20 @@ namespace Mosey.Services.Imaging
         /// Static device properties are limited, but can be retrieved without establishing a connection to the device.
         /// </remarks>
         /// <returns>A list of the static device properties</returns>
-        public IList<IDictionary<string, object>> ScannerProperties();
+        IList<IDictionary<string, object>> ScannerProperties();
 
         /// <inheritdoc cref="ScannerProperties"/>
         /// <param name="connectRetries">The number of retry attempts allowed if connecting to the WIA driver was unsuccessful</param>
-        public IList<IDictionary<string, object>> ScannerProperties(int connectRetries);
+        IList<IDictionary<string, object>> ScannerProperties(int connectRetries);
 
         /// <summary>
         /// A collection of <see cref="ScannerSettings"/> representing physical devices connected to the system.
         /// </summary>
         /// <returns>A collection of <see cref="ScannerSettings"/> representing physical devices connected to the system.</returns>
-        public IEnumerable<ScannerSettings> ScannerSettings();
+        IEnumerable<ScannerSettings> ScannerSettings();
 
         /// <inheritdoc cref="ScannerSettings"/>
         /// <param name="connectRetries">The number of retry attempts allowed if connecting to the WIA driver was unsuccessful</param>
-        public IEnumerable<ScannerSettings> ScannerSettings(int connectRetries);
+        IEnumerable<ScannerSettings> ScannerSettings(int connectRetries);
     }
 }

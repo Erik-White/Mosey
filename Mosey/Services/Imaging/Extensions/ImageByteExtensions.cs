@@ -1,5 +1,4 @@
-﻿using System;
-using System.Drawing;
+﻿using System.Drawing;
 using System.Drawing.Imaging;
 
 namespace Mosey.Services.Imaging.Extensions
@@ -9,8 +8,6 @@ namespace Mosey.Services.Imaging.Extensions
     /// </summary>
     public static class ImageByteExtensions
     {
-        private static readonly ImageConverter _imageConverter = new ImageConverter();
-
         /// <summary>
         /// Convert an image <see cref="byte"/> array to a specified format and encoding.
         /// </summary>
@@ -30,7 +27,8 @@ namespace Mosey.Services.Imaging.Extensions
         /// <returns>An <see cref="Image"/> instance</returns>
         public static Image ToImage(this byte[] value)
         {
-            return (Image)_imageConverter.ConvertFrom(value);
+            var ms = new System.IO.MemoryStream(value);
+            return Image.FromStream(ms);
         }
 
         /// <summary>

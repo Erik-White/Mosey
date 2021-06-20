@@ -1,13 +1,13 @@
-﻿using DNTScanner.Core;
-using Mosey.Models;
-using Mosey.Services.Imaging.Extensions;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing.Imaging;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Runtime.InteropServices;
+using DNTScanner.Core;
+using Mosey.Models;
+using Mosey.Services.Imaging.Extensions;
 
 namespace Mosey.Services.Imaging
 {
@@ -20,7 +20,7 @@ namespace Mosey.Services.Imaging
         public int ID { get { return GetSimpleID(_scannerSettings.Id); } }
         public string DeviceID { get { return _scannerSettings.Id; } }
         public IList<KeyValuePair<string, object>> DeviceSettings { get { return _scannerSettings.ScannerDeviceSettings.ToList(); } }
-        
+
         public IList<byte[]> Images { get; protected internal set; } = new List<byte[]>();
         public IImagingDeviceConfig ImageSettings { get; set; }
 
@@ -193,7 +193,9 @@ namespace Mosey.Services.Imaging
         /// </summary>
         public void SaveImage()
         {
-            string directory = _fileSystem.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(), System.Reflection.Assembly.GetExecutingAssembly().GetName().Name);
+            string directory = _fileSystem.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
+                System.Reflection.Assembly.GetExecutingAssembly().GetName().Name);
             SaveImage("image", directory, ImageFormat.Png);
         }
 
@@ -287,7 +289,7 @@ namespace Mosey.Services.Imaging
             {
                 // Append count to filename in case of multiple images
                 string savePath = filePath;
-                if (images.Count() > 1) 
+                if (images.Count() > 1)
                     savePath = savePath.Replace(
                         fileName,
                         $"{Path.GetFileNameWithoutExtension(fileName)}_{count}{Path.GetExtension(filePath)}");

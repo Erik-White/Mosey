@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Linq;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Linq;
 
 namespace Mosey.Services.Imaging.Extensions
 {
