@@ -21,21 +21,21 @@ namespace System.Threading.Tasks.Schedulers
         private readonly List<Thread> _threads;
 
         /// <summary>Initializes a new instance of the StaTaskScheduler class with the specified concurrency level.</summary>
-        /// <param name="numberOfThreads">The number of threads that should be created and used by this scheduler.</param>
+        /// <param name="concurrencyLevel">The number of threads that should be created and used by this scheduler.</param>
         /// <param name="disableComObjectEagerCleanup">Whether automatic cleanup of runtime callable wrappers (RCW) should be disabled.</param>
-        public StaTaskScheduler(int numberOfThreads, bool disableComObjectEagerCleanup = false)
+        public StaTaskScheduler(int concurrencyLevel, bool disableComObjectEagerCleanup = false)
         {
             // Validate arguments
-            if (numberOfThreads < 1)
+            if (concurrencyLevel < 1)
             {
-                throw new ArgumentOutOfRangeException("concurrencyLevel");
+                throw new ArgumentOutOfRangeException(nameof(concurrencyLevel));
             }
 
             // Initialize the tasks collection
             _tasks = new BlockingCollection<Task>();
 
             // Create the threads to be used by this scheduler
-            _threads = Enumerable.Range(0, numberOfThreads).Select(i =>
+            _threads = Enumerable.Range(0, concurrencyLevel).Select(i =>
             {
                 var thread = new Thread(() =>
                 {
