@@ -12,7 +12,7 @@ namespace Mosey.Services.Imaging
     /// <summary>
     /// Provides access to the WIA driver devices via DNTScanner.Core
     /// </summary>
-    internal sealed class SystemDevices : ISystemImagingDevices<ScannerSettings>
+    internal sealed class SystemScanningDevices : ISystemImagingDevices<ScannerSettings>
     {
         private static readonly SemaphoreSlim _semaphore = new(1, 1);
 

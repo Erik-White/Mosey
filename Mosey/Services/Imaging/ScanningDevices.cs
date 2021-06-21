@@ -22,10 +22,10 @@ namespace Mosey.Services.Imaging
         /// </summary>
         public int ConnectRetries
         {
-            get => _systemDevices is SystemDevices systemDevices ? systemDevices.ConnectRetries : 0;
+            get => _systemDevices is SystemScanningDevices systemDevices ? systemDevices.ConnectRetries : 0;
             set
             {
-                if (_systemDevices is SystemDevices systemDevices)
+                if (_systemDevices is SystemScanningDevices systemDevices)
                 {
                     systemDevices.ConnectRetries = value;
                 }
@@ -55,7 +55,7 @@ namespace Mosey.Services.Imaging
         /// <param name="systemDevices">An <see cref="ISystemImagingDevices"/> instance that provide access to the WIA driver devices</param>
         public ScanningDevices(IImagingDeviceConfig deviceConfig, ISystemImagingDevices<ScannerSettings> systemDevices)
         {
-            _systemDevices = systemDevices ?? new SystemDevices();
+            _systemDevices = systemDevices ?? new SystemScanningDevices();
             GetDevices(deviceConfig);
         }
 
@@ -189,7 +189,7 @@ namespace Mosey.Services.Imaging
         /// <param name="deviceConfig">Used to initialize the <see cref="ScanningDevice"/> instances</param>
         /// <returns>A collection of <see cref="ScanningDevice"/> instances representing physical scanning devices connected to the system</returns>
         /// <param name="connectRetries">The number of retry attempts allowed if connecting to the WIA driver was unsuccessful</param>
-        private IEnumerable<IImagingDevice> ScannerDevices(IImagingDeviceConfig deviceConfig, int connectRetries = 1)
+        private IEnumerable<IImagingDevice> ScannerDevices(IImagingDeviceConfig deviceConfig)
         {
             foreach (var settings in _systemDevices.GetDeviceSettings())
             {
@@ -210,7 +210,7 @@ namespace Mosey.Services.Imaging
 
             // Populate a new collection of scanners using specified image settings
             _devices.Clear();
-            foreach (ScanningDevice device in ScannerDevices(deviceConfig, ConnectRetries))
+            foreach (ScanningDevice device in ScannerDevices(deviceConfig))
             {
                 device.IsEnabled = true;
                 AddDevice(device);
