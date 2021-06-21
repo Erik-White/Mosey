@@ -1,8 +1,8 @@
-﻿using FluentAssertions;
-using NUnit.Framework;
-using AutoFixture.NUnit3;
+﻿using AutoFixture.NUnit3;
+using FluentAssertions;
 using Mosey.Tests.AutoData;
 using Mosey.Tests.Extensions;
+using NUnit.Framework;
 
 namespace Mosey.Services.Imaging.Tests
 {
@@ -27,17 +27,12 @@ namespace Mosey.Services.Imaging.Tests
         public class ConstructorShould
         {
             [Theory, AutoNSubstituteData]
-            public void InitializeAllProperties(ScanningDeviceSettings sut)
-            {
-                sut.AssertAllPropertiesAreNotDefault();
-            }
+            public void InitializeAllProperties(ScanningDeviceSettings sut) => sut.AssertAllPropertiesAreNotDefault();
 
             [Theory, AutoNSubstituteData]
-            public void InitializeAllPropertiesWithGreedy([Greedy] ScanningDeviceSettings sut)
-            {
+            public void InitializeAllPropertiesWithGreedy([Greedy] ScanningDeviceSettings sut) =>
                 // AutoFixture uses least greedy constructor by default
                 sut.AssertAllPropertiesAreNotDefault();
-            }
         }
 
         public class CloneShould

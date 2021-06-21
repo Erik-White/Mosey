@@ -6,13 +6,14 @@ using System.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Mosey.Configuration;
+using Mosey.GUI.Configuration;
 using Mosey.GUI.Models;
 using Mosey.GUI.Models.Dialog;
 using Mosey.GUI.Services;
 using Mosey.GUI.Services.Dialog;
 using Mosey.GUI.ViewModels;
 using Mosey.Models;
+using Mosey.Models.Imaging;
 using Mosey.Services;
 using Mosey.Services.Imaging;
 
@@ -39,20 +40,18 @@ namespace Mosey.GUI
                 // Configuration
                 .Configure<AppSettings>(_appConfig)
                 .ConfigureWritable<AppSettings>(_userConfig, name: "UserSettings", file: "usersettings.json")
-                .PostConfigureAll<AppSettings>(
-                    config =>
+                .PostConfigureAll<AppSettings>(config =>
+                {
+                    if (string.IsNullOrEmpty(config.ImageFile.Directory))
                     {
-                        if (string.IsNullOrEmpty(config.ImageFile.Directory))
-                        {
-                            // Ensure default directory is user's Pictures folder
-                            config.ImageFile.Directory = Path.Combine
-                            (
-                                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
-                                "Mosey"
-                            );
-                        }
+                        // Ensure default directory is user's Pictures folder
+                        config.ImageFile.Directory = Path.Combine
+                        (
+                            Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
+                            "Mosey"
+                        );
                     }
-                )
+                })
 
                 // Logging
                 .AddLogging(options =>

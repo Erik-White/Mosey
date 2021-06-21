@@ -2,34 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Mosey.Models;
-using Mosey.Services;
-using Mosey.Services.Imaging;
 
-namespace Mosey.Configuration
+namespace Mosey.GUI.Configuration
 {
-    public class AppSettings : IConfigGroup<AppSettings>
-    {
-        public ImageFileConfig ImageFile { get; set; }
-        public IntervalTimerConfig ScanTimer { get; set; }
-        public IntervalTimerConfig UITimer { get; set; }
-        public ScanningDeviceSettings Image { get; set; }
-        public DeviceConfig Device { get; set; }
-
-        public AppSettings Copy()
-        {
-            AppSettings copy = new AppSettings
-            {
-                ImageFile = (ImageFileConfig)ImageFile.Clone(),
-                ScanTimer = (IntervalTimerConfig)ScanTimer.Clone(),
-                UITimer = (IntervalTimerConfig)UITimer.Clone(),
-                Image = (ScanningDeviceSettings)Image.Clone(),
-                Device = (DeviceConfig)Device.Clone()
-            };
-
-            return copy;
-        }
-    }
-
     /// <summary>
     /// Configurations settings related to physical scanning devices.
     /// </summary>
@@ -58,28 +33,16 @@ namespace Mosey.Configuration
         /// <summary>
         /// A common set of resolutions that are support by most devices.
         /// </summary>
-        public IEnumerable<int> StandardResolutions
-        {
-            get
-            {
-                return ResolutionData.Select(r => r.Resolution).Distinct().ToList();
-            }
-        }
+        public IEnumerable<int> StandardResolutions => ResolutionData.Select(r => r.Resolution).Distinct().ToList();
 
-        public object Clone()
-        {
-            return MemberwiseClone();
-        }
+        public object Clone() => MemberwiseClone();
 
         /// <summary>
         /// Get the available meta data for a particular image resolution
         /// </summary>
         /// <param name="resolution">An image resolution, in DPI</param>
         /// <returns></returns>
-        public ResolutionMetaData GetResolutionMetaData(int resolution)
-        {
-            return ResolutionData.Where(r => r.Resolution == resolution).FirstOrDefault();
-        }
+        public ResolutionMetaData GetResolutionMetaData(int resolution) => ResolutionData.Where(r => r.Resolution == resolution).FirstOrDefault();
 
         /// <summary>
         /// Information related to an image resolution.

@@ -10,9 +10,12 @@ using System.Windows.Input;
 using AsyncAwaitBestPractices.MVVM;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Mosey.Configuration;
+using Mosey.GUI.Configuration;
 using Mosey.GUI.Models;
+using Mosey.GUI.ViewModels.Extensions;
 using Mosey.Models;
+using Mosey.Models.Imaging;
+using Mosey.Services;
 
 namespace Mosey.GUI.ViewModels
 {
@@ -39,19 +42,16 @@ namespace Mosey.GUI.ViewModels
         private DeviceConfig _userDeviceConfig;
 
         // Threading
-        private readonly object _scanningDevicesLock = new object();
-        private readonly static StaTaskScheduler _staQueue = new StaTaskScheduler(numberOfThreads: 1);
-        private readonly static SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-        private CancellationTokenSource _cancelScanTokenSource = new CancellationTokenSource();
+        private readonly object _scanningDevicesLock = new();
+        private static readonly StaTaskScheduler _staQueue = new(numberOfThreads: 1);
+        private static readonly SemaphoreSlim _semaphore = new(1, 1);
+        private CancellationTokenSource _cancelScanTokenSource = new();
         private bool _disposed;
 
         #region Properties
         public string ImageFormat
         {
-            get
-            {
-                return _imageFileConfig.Format;
-            }
+            get => _imageFileConfig.Format;
             set
             {
                 _imageFileConfig.Format = value;
@@ -60,12 +60,7 @@ namespace Mosey.GUI.ViewModels
         }
 
         public List<string> ImageFormatSupported
-        {
-            get
-            {
-                return _imageFileConfig.SupportedFormats;
-            }
-        }
+            => _imageFileConfig.SupportedFormats;
 
         private string _imageSavePath;
         /// <summary>
@@ -93,23 +88,14 @@ namespace Mosey.GUI.ViewModels
         /// Calculated by multiplying the current number of <see cref="ScanRepetitions"/> by the
         /// number of currently enabled scanners, by the selected image resolution file size.
         /// </remarks>
-        public long ImagesRequiredDiskSpace
-        {
-            get
-            {
-                return ScanRepetitions
+        public long ImagesRequiredDiskSpace => ScanRepetitions
                     * ScanningDevices.Devices.Count(d => d.IsEnabled)
                     * _userDeviceConfig.GetResolutionMetaData(_imageConfig.Resolution).FileSize;
-            }
-        }
 
         private bool _isWaiting;
         public bool IsWaiting
         {
-            get
-            {
-                return _isWaiting;
-            }
+            get => _isWaiting;
             set
             {
                 _isWaiting = value;
@@ -129,11 +115,7 @@ namespace Mosey.GUI.ViewModels
             }
             set
             {
-                if (value < 1)
-                {
-                    value = 1;
-                }
-                _scanDelay = TimeSpan.FromMinutes(value);
+                _scanDelay = TimeSpan.FromMinutes(value < 1 ? 1 : value);
                 RaisePropertyChanged(nameof(ScanDelay));
             }
         }
@@ -150,11 +132,7 @@ namespace Mosey.GUI.ViewModels
             }
             set
             {
-                if (value < 1)
-                {
-                    value = 1;
-                }
-                _scanInterval = TimeSpan.FromMinutes(value);
+                _scanInterval = TimeSpan.FromMinutes(value < 1 ? 1 : value);
                 RaisePropertyChanged(nameof(ScanInterval));
             }
         }
@@ -165,49 +143,24 @@ namespace Mosey.GUI.ViewModels
             get
             {
                 // Use the default setting if no value is set
-                _scanRepetitions = _scanRepetitions > 0 ? _scanRepetitions : _scanTimerConfig.Repetitions;
+                _scanRepetitions = _scanRepetitions > 0
+                    ? _scanRepetitions
+                    : _scanTimerConfig.Repetitions;
 
                 return _scanRepetitions;
             }
             set
             {
-                if (value < 1)
-                {
-                    value = 1;
-                }
-                _scanRepetitions = value;
+                _scanRepetitions = value < 1 ? 1 : value;
                 RaisePropertyChanged(nameof(ScanRepetitions));
             }
         }
 
         public int ScanRepetitionsCount
-        {
-            get
-            {
-                if (_scanTimer != null)
-                {
-                    return _scanTimer.RepetitionsCount;
-                }
-                else
-                {
-                    return 0;
-                }
-            }
-        }
+            => _scanTimer is not null ? _scanTimer.RepetitionsCount : 0;
+
         public bool IsScanRunning
-        {
-            get
-            {
-                if (_scanTimer != null)
-                {
-                    return _scanTimer.Enabled || ScanningDevices.IsImagingInProgress;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-        }
+            => _scanTimer is not null && (_scanTimer.Enabled || ScanningDevices.IsImagingInProgress);
 
         public TimeSpan ScanNextTime
         {
@@ -215,7 +168,7 @@ namespace Mosey.GUI.ViewModels
             {
                 if (IsScanRunning && _scanTimer.RepetitionsCount != 0)
                 {
-                    DateTime scanNext = _scanTimer.StartTime.Add((_scanTimer.RepetitionsCount) * _scanTimer.Interval);
+                    var scanNext = _scanTimer.StartTime.Add((_scanTimer.RepetitionsCount) * _scanTimer.Interval);
                     return scanNext.Subtract(DateTime.Now);
                 }
                 else
@@ -226,33 +179,17 @@ namespace Mosey.GUI.ViewModels
         }
 
         public DateTime ScanFinishTime
-        {
-            get
-            {
-                if (IsScanRunning)
-                {
-                    return _scanTimer.FinishTime;
-                }
-                else
-                {
-                    return DateTime.MinValue;
-                }
-            }
-        }
+            => IsScanRunning ? _scanTimer.FinishTime : DateTime.MinValue;
 
         /// <inheritdoc cref="IImagingDevices{T}"/>
         public IImagingDevices<IImagingDevice> ScanningDevices { get; private set; }
 
         /// <inheritdoc cref="IImagingDevices{T}"/>
         public ObservableItemsCollection<IImagingDevice> Devices
-        {
-            get
-            {
-                return (ObservableItemsCollection<IImagingDevice>)ScanningDevices.Devices;
-            }
-        }
+            => (ObservableItemsCollection<IImagingDevice>)ScanningDevices.Devices;
 
-        public ICollection<IViewModel> ViewModelChildren { get; private set; } = new System.Collections.ObjectModel.ObservableCollection<IViewModel>();
+        public ICollection<IViewModel> ViewModelChildren { get; private set; }
+            = new System.Collections.ObjectModel.ObservableCollection<IViewModel>();
 
         public SettingsViewModel SettingsViewModel
         {
@@ -312,7 +249,9 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                _EnableScannersCommand = new RelayCommand(o => ScanningDevices.EnableAll(), o => !ScanningDevices.IsEmpty && !IsScanRunning);
+                _EnableScannersCommand ??= new RelayCommand(
+                    o => ScanningDevices.EnableAll(),
+                    o => !ScanningDevices.IsEmpty && !IsScanRunning);
 
                 return _EnableScannersCommand;
             }
@@ -323,7 +262,9 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                _ManualScanCommand = new RelayCommand(o => _ = ScanAsync(), o => !ScanningDevices.IsEmpty && !ScanningDevices.IsImagingInProgress && !IsScanRunning);
+                _ManualScanCommand ??= new RelayCommand(
+                    o => _ = ScanAsync(),
+                    o => !ScanningDevices.IsEmpty && !ScanningDevices.IsImagingInProgress && !IsScanRunning);
 
                 return _ManualScanCommand;
             }
@@ -334,35 +275,23 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                _StartScanCommand = new RelayCommand(o => StartScanWithDialog(), o => !ScanningDevices.IsEmpty && !ScanningDevices.IsImagingInProgress && !IsScanRunning && !_scanTimer.Paused);
+                _StartScanCommand ??= new RelayCommand(
+                    o => StartScanWithDialog(),
+                    o => !ScanningDevices.IsEmpty && !ScanningDevices.IsImagingInProgress && !IsScanRunning && !_scanTimer.Paused);
 
                 return _StartScanCommand;
             }
         }
 
         public ICommand StartStopScanCommand
-        {
-            get
-            {
-                if (IsScanRunning)
-                {
-                    return StopScanCommand;
-                }
-                else
-                {
-                    return StartScanCommand;
-                }
-
-            }
-        }
+            => IsScanRunning ? StopScanCommand : StartScanCommand;
 
         private ICommand _PauseScanCommand;
         public ICommand PauseScanCommand
         {
             get
             {
-                if (_PauseScanCommand == null)
-                    _PauseScanCommand = new RelayCommand(o => _scanTimer.Pause(), o => IsScanRunning && !_scanTimer.Paused);
+                _PauseScanCommand ??= new RelayCommand(o => _scanTimer.Pause(), o => IsScanRunning && !_scanTimer.Paused);
 
                 return _PauseScanCommand;
             }
@@ -373,8 +302,7 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_ResumeScanCommand == null)
-                    _ResumeScanCommand = new RelayCommand(o => _scanTimer.Resume(), o => _scanTimer.Paused);
+                _ResumeScanCommand ??= new RelayCommand(o => _scanTimer.Resume(), o => _scanTimer.Paused);
 
                 return _ResumeScanCommand;
             }
@@ -385,8 +313,9 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_StopScanCommand == null)
-                    _StopScanCommand = new AsyncCommand(() => StopScanWithDialog(), _ => IsScanRunning && !_cancelScanTokenSource.IsCancellationRequested);
+                _StopScanCommand ??= new AsyncCommand(
+                    () => StopScanWithDialog(),
+                    _ => IsScanRunning && !_cancelScanTokenSource.IsCancellationRequested);
 
                 return _StopScanCommand;
             }
@@ -397,8 +326,9 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_RefreshScannersCommand == null)
-                    _RefreshScannersCommand = new RelayCommand(o => RefreshDevices(), o => !ScanningDevices.IsImagingInProgress && !IsScanRunning);
+                _RefreshScannersCommand ??= new RelayCommand(
+                    o => RefreshDevices(),
+                    o => !ScanningDevices.IsImagingInProgress && !IsScanRunning);
 
                 return _RefreshScannersCommand;
             }
@@ -409,8 +339,7 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_SelectFolderCommand == null)
-                    _SelectFolderCommand = new RelayCommand(o => ImageDirectoryDialog());
+                _SelectFolderCommand ??= new RelayCommand(o => ImageDirectoryDialog());
 
                 return _SelectFolderCommand;
             }
@@ -513,19 +442,19 @@ namespace Mosey.GUI.ViewModels
             // Check that disk space is sufficient for selected resolution
             try
             {
-                long availableDiskSpace = FileSystemExtensions.AvailableFreeSpace(
+                var availableDiskSpace = FileSystemExtensions.AvailableFreeSpace(
                     _fileSystem.Path.GetPathRoot(_imageFileConfig.Directory),
                     _fileSystem);
                 if (ImagesRequiredDiskSpace * 1.5 > availableDiskSpace)
                 {
                     if (!await _dialog.DiskSpaceDialog(ImagesRequiredDiskSpace, availableDiskSpace))
                     {
-                        _log.LogDebug($"Scanning not started due to low disk space: {Format.ByteSize(ImagesRequiredDiskSpace)} required, {Format.ByteSize(availableDiskSpace)} available.");
+                        _log.LogDebug($"Scanning not started due to low disk space: {StringFormat.ByteSize(ImagesRequiredDiskSpace)} required, {StringFormat.ByteSize(availableDiskSpace)} available.");
                         return;
                     }
                 }
             }
-            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 _log.LogWarning(ex, $"Unable to show {nameof(DialogViewModel.DiskSpaceDialog)} on path {_imageFileConfig.Directory} due to {ex.GetType()}");
             }
@@ -618,10 +547,7 @@ namespace Mosey.GUI.ViewModels
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void UITimer_Tick(object sender, EventArgs e)
-        {
-            RaisePropertyChanged(nameof(ScanNextTime));
-        }
+        private void UITimer_Tick(object sender, EventArgs e) => RaisePropertyChanged(nameof(ScanNextTime));
 
         /// <summary>
         /// Update <see cref="ScanningDevices"/> with any newly connected scanners
@@ -629,7 +555,7 @@ namespace Mosey.GUI.ViewModels
         private void RefreshDevices()
         {
             _log.LogDebug($"Device refresh initiated with {nameof(RefreshDevices)}");
-            bool enableDevices = !IsScanRunning ? _userDeviceConfig.EnableWhenConnected : _userDeviceConfig.EnableWhenScanning;
+            var enableDevices = !IsScanRunning ? _userDeviceConfig.EnableWhenConnected : _userDeviceConfig.EnableWhenScanning;
             ScanningDevices.RefreshDevices(_imageConfig, enableDevices);
 
             RaisePropertyChanged(nameof(ScanningDevices));
@@ -662,7 +588,7 @@ namespace Mosey.GUI.ViewModels
                 try
                 {
                     _log.LogTrace($"Initiating device refresh in {nameof(RefreshDevicesAsync)}");
-                    bool enableDevices = !IsScanRunning ? _userDeviceConfig.EnableWhenConnected : _userDeviceConfig.EnableWhenScanning;
+                    var enableDevices = !IsScanRunning ? _userDeviceConfig.EnableWhenConnected : _userDeviceConfig.EnableWhenScanning;
 
                     // Use a dedicated thread for refresh tasks
                     // The apartment state MUST be single threaded for COM interop
@@ -697,13 +623,13 @@ namespace Mosey.GUI.ViewModels
         public List<string> Scan(CancellationToken cancellationToken = default)
         {
             _log.LogDebug($"Scanning initiated with {nameof(Scan)} method.");
-            string scannerIDStr = string.Empty;
-            string saveDateTime = DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat));
-            string saveDirectory = ImageSavePath;
+            var scannerIDStr = string.Empty;
+            var saveDateTime = DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat));
+            var saveDirectory = ImageSavePath;
             var imagePaths = new List<string>();
 
             // Order devices by ID to provide clearer feedback to users
-            foreach (IImagingDevice scanner in ScanningDevices.Devices.OrderBy(o => o.DeviceID).ToList())
+            foreach (var scanner in ScanningDevices.Devices.OrderBy(o => o.DeviceID).ToList())
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -729,13 +655,13 @@ namespace Mosey.GUI.ViewModels
                         if (scanner.Images.Count() > 0)
                         {
                             _log.LogDebug("{ImageCount} images retrieved from scanner #{DeviceID}", scanner.Images.Count(), scanner.ID);
-                            string fileName = string.Join("_", _imageFileConfig.Prefix, saveDateTime);
-                            string directory = _fileSystem.Path.Combine(saveDirectory, string.Join(string.Empty, "Scanner", scannerIDStr));
+                            var fileName = string.Join("_", _imageFileConfig.Prefix, saveDateTime);
+                            var directory = _fileSystem.Path.Combine(saveDirectory, string.Join(string.Empty, "Scanner", scannerIDStr));
                             _fileSystem.Directory.CreateDirectory(directory);
 
                             // Write image(s) to filesystem and retrieve a list of saved file names
-                            IEnumerable<string> savedImages = scanner.SaveImage(fileName, directory: directory, fileFormat: ImageFormat);
-                            foreach (string image in savedImages)
+                            var savedImages = scanner.SaveImage(fileName, directory: directory, fileFormat: ImageFormat);
+                            foreach (var image in savedImages)
                             {
                                 imagePaths.Add(image);
                                 _log.LogInformation("Saved image from scanner #{DeviceID} to file: {ImagePath}", scanner.ID, image);
@@ -747,13 +673,14 @@ namespace Mosey.GUI.ViewModels
                         }
                     }
                 }
-                catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException || ex is InvalidOperationException)
+                catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException or InvalidOperationException)
                 {
                     // Device will show as disconnected, no images returned
                     _log.LogWarning(ex, "Communication error on scanner {DeviceName} (#{DeviceID}) while attempting scan.", scanner.Name, scannerIDStr);
                     return imagePaths;
                 }
             }
+
             _log.LogDebug($"Scan completed with {nameof(Scan)} method.");
 
             return imagePaths;
@@ -768,7 +695,7 @@ namespace Mosey.GUI.ViewModels
         private async Task<List<string>> ScanAsync(CancellationToken cancellationToken = default)
         {
             _log.LogDebug($"Scan initiated with {nameof(ScanAsync)} method.");
-            List<string> results = new List<string>();
+            var results = new List<string>();
 
             // Ensure device refresh or other operations are complete
             await _semaphore.WaitAsync();
@@ -777,15 +704,15 @@ namespace Mosey.GUI.ViewModels
             {
                 // The apartment state MUST be single threaded for COM interop
                 // Runtime callable wrappers must be disposed manually to prevent problems with early disposal of COM servers
-                using (StaTaskScheduler staQueue = new StaTaskScheduler(numberOfThreads: 1, disableComObjectEagerCleanup: true))
+                using (var staQueue = new StaTaskScheduler(numberOfThreads: 1, disableComObjectEagerCleanup: true))
+            {
+                await Task.Factory.StartNew(() =>
                 {
-                    await Task.Factory.StartNew(() =>
-                    {
-                        // Obtain images from scanners
-                        results = Scan(cancellationToken);
-                    }, cancellationToken, TaskCreationOptions.LongRunning, staQueue)
-                    .ContinueWith(t =>
-                    {
+                    // Obtain images from scanners
+                    results = Scan(cancellationToken);
+                }, cancellationToken, TaskCreationOptions.LongRunning, staQueue)
+                .ContinueWith(t =>
+                {
                         // Manually clear (RCWs) to prevent memory leaks
                         System.Runtime.InteropServices.Marshal.CleanupUnusedObjectsInCurrentContext();
                         // Force any pending exceptions to propagate up
@@ -804,6 +731,7 @@ namespace Mosey.GUI.ViewModels
             {
                 _semaphore.Release();
             }
+
             _log.LogDebug($"Scan completed with {nameof(ScanAsync)} method.");
 
             return results;
@@ -815,29 +743,32 @@ namespace Mosey.GUI.ViewModels
         private void ImageDirectoryDialog()
         {
             // Go up one level so users can see the initial directory instead of starting inside it
-            string initialDirectory = _fileSystem.Directory.GetParent(ImageSavePath).FullName;
-            if (string.IsNullOrWhiteSpace(initialDirectory)) initialDirectory = ImageSavePath;
+            var initialDirectory = _fileSystem.Directory.GetParent(ImageSavePath).FullName;
+            if (string.IsNullOrWhiteSpace(initialDirectory))
+            {
+                initialDirectory = ImageSavePath;
+            }
 
-            string selectedDirectory = _dialog.FolderBrowserDialog(
+            var selectedDirectory = _dialog.FolderBrowserDialog(
                 initialDirectory,
                 "Choose the image file save location"
                 );
 
             // Only update the property if a path was actually returned
-            if (!string.IsNullOrWhiteSpace(selectedDirectory)) ImageSavePath = selectedDirectory;
+            if (!string.IsNullOrWhiteSpace(selectedDirectory))
+            {
+                ImageSavePath = selectedDirectory;
+            }
         }
 
-        public bool OnClosing()
-        {
-            return false;
-        }
+        public bool OnClosing() => false;
 
         public async void OnClosingAsync()
         {
             if (IsScanRunning)
             {
                 // Check with user before exiting
-                bool dialogResult = await _dialog.StopScanDialog(cancellationToken: _cancelScanTokenSource.Token);
+                var dialogResult = await _dialog.StopScanDialog(cancellationToken: _cancelScanTokenSource.Token);
                 if (dialogResult)
                 {
                     // Wait for current scan operation to complete, then exit
@@ -879,6 +810,7 @@ namespace Mosey.GUI.ViewModels
                     _uiTimer?.Dispose();
                     _staQueue?.Dispose();
                 }
+
                 _disposed = true;
             }
         }

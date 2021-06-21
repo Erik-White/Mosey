@@ -12,26 +12,26 @@ namespace Mosey.GUI.Services.Dialog
         private static readonly IDialogCoordinator Instance = new DialogCoordinator();
 
         public Task<string> ShowInputAsync(object context, string title, string message, IDialogSettings settings = null)
-        {
-            return Instance.ShowInputAsync(context, title, message, settings?.ToMetroDialogSettings());
-        }
+            => Instance.ShowInputAsync(context, title, message, settings?.ToMetroDialogSettings());
 
         public string ShowModalInputExternal(object context, string title, string message, IDialogSettings settings = null)
-        {
-            return Instance.ShowModalInputExternal(context, title, message, settings?.ToMetroDialogSettings());
-        }
+            => Instance.ShowModalInputExternal(context, title, message, settings?.ToMetroDialogSettings());
 
         public async Task<DialogResult> ShowMessageAsync(object context, string title, string message, DialogStyle style = DialogStyle.Affirmative, IDialogSettings settings = null)
         {
-            MessageDialogResult result = await Instance.ShowMessageAsync(context, title, message, style.ToMetroDialogStyle(), settings?.ToMetroDialogSettings());
+            var result = await Instance.ShowMessageAsync(
+                context, title, message, style.ToMetroDialogStyle(), settings?.ToMetroDialogSettings());
 
             return result.ToDialogResult();
         }
 
         public DialogResult ShowModalMessageExternal(object context, string title, string message, DialogStyle style = DialogStyle.Affirmative, IDialogSettings settings = null)
-        {
-            return Instance.ShowModalMessageExternal(context, title, message, style.ToMetroDialogStyle(), settings?.ToMetroDialogSettings()).ToDialogResult();
-        }
+            => Instance.ShowModalMessageExternal(
+                context,
+                title,
+                message,
+                style.ToMetroDialogStyle(),
+                settings?.ToMetroDialogSettings()).ToDialogResult();
 
         public async Task ShowDialogAsync(object context, IDialogInstance dialog, IDialogSettings settings = null)
         {
@@ -39,7 +39,7 @@ namespace Mosey.GUI.Services.Dialog
             var metroDialog = await Instance.GetCurrentDialogAsync<BaseMetroDialog>(context);
 
             // Perform a very simply check to see if the correct dialog is returned, then show it
-            if (metroDialog != null && metroDialog.Title == dialog.Title)
+            if (metroDialog is not null && metroDialog.Title == dialog.Title)
             {
                 await Instance.ShowMetroDialogAsync(context, metroDialog, settings?.ToMetroDialogSettings());
             }
@@ -51,7 +51,7 @@ namespace Mosey.GUI.Services.Dialog
             var metroDialog = await Instance.GetCurrentDialogAsync<BaseMetroDialog>(context);
 
             // Perform a very simply check to see if the correct dialog is returned, then hide it
-            if (metroDialog != null && metroDialog.Title == dialog.Title)
+            if (metroDialog is not null && metroDialog.Title == dialog.Title)
             {
                 await Instance.HideMetroDialogAsync(context, metroDialog, settings?.ToMetroDialogSettings());
             }
@@ -59,7 +59,7 @@ namespace Mosey.GUI.Services.Dialog
 
         public async Task<TDialog> GetCurrentDialogAsync<TDialog>(object context) where TDialog : IDialogInstance
         {
-            BaseMetroDialog dialog = await Instance.GetCurrentDialogAsync<BaseMetroDialog>(context);
+            var dialog = await Instance.GetCurrentDialogAsync<BaseMetroDialog>(context);
             return (TDialog)dialog.ToDialogInstance();
         }
     }

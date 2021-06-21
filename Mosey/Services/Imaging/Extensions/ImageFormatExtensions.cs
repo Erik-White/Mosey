@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing.Imaging;
+using Mosey.Models.Imaging;
 
 namespace Mosey.Services.Imaging.Extensions
 {
@@ -11,16 +12,11 @@ namespace Mosey.Services.Imaging.Extensions
         /// <param name="value">An <see cref="ScanningDevice.ImageFormat"/> instance</param>
         /// <param name="imageFormatStr">A file extension <see cref="string"/></param>
         /// <returns>An <see cref="ScanningDevice.ImageFormat"/> <see cref="Enum"/></returns>
-        public static ScanningDevice.ImageFormat FromString(this ScanningDevice.ImageFormat value, string imageFormatStr)
+        public static IImagingDevice.ImageFormat FromString(this IImagingDevice.ImageFormat _, string imageFormatStr)
         {
-            if (Enum.TryParse(imageFormatStr, ignoreCase: true, out value))
-            {
-                return value;
-            }
-            else
-            {
-                throw new ArgumentException($"{imageFormatStr} is not a supported image file extension.");
-            }
+            return Enum.TryParse(imageFormatStr, ignoreCase: true, out IImagingDevice.ImageFormat value)
+                ? value
+                : throw new ArgumentException($"{imageFormatStr} is not a supported image file extension.");
         }
 
         /// <summary>
@@ -28,7 +24,7 @@ namespace Mosey.Services.Imaging.Extensions
         /// </summary>
         /// <param name="value"></param>
         /// <returns>A <see cref="ImageFormat"/> instance</returns>
-        public static ImageFormat ToDrawingImageFormat(this ScanningDevice.ImageFormat value)
+        public static ImageFormat ToDrawingImageFormat(this IImagingDevice.ImageFormat value)
         {
             return (ImageFormat)typeof(ImageFormat)
                     .GetProperty(value.ToString(), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.IgnoreCase)
@@ -40,7 +36,7 @@ namespace Mosey.Services.Imaging.Extensions
         /// </summary>
         /// <param name="value"></param>
         /// <returns>A <see cref="DNTScanner.Core.WiaImageFormat"/> instance</returns>
-        public static DNTScanner.Core.WiaImageFormat ToWIAImageFormat(this ScanningDevice.ImageFormat value)
+        public static DNTScanner.Core.WiaImageFormat ToWIAImageFormat(this IImagingDevice.ImageFormat value)
         {
             return (DNTScanner.Core.WiaImageFormat)typeof(DNTScanner.Core.WiaImageFormat)
                     .GetProperty(value.ToString(), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.IgnoreCase)

@@ -11,19 +11,19 @@ namespace Mosey.Services
     public class IntervalTimer : IIntervalTimer
     {
         public DateTime StartTime { get; private set; }
-        public DateTime FinishTime { get { return StartTime.Add(Repetitions * Interval) + Delay; } }
+        public DateTime FinishTime => StartTime.Add(Repetitions * Interval) + Delay;
         public TimeSpan Delay { get; private set; } = TimeSpan.Zero;
         public TimeSpan Interval { get; private set; } = TimeSpan.FromSeconds(1);
         public int Repetitions { get; private set; } = -1;
         public int RepetitionsCount { get; private set; }
-        public bool Enabled { get { return (timer != null); } }
+        public bool Enabled => (timer is not null);
         public bool Paused { get; private set; }
         public event EventHandler Tick;
         public event EventHandler Complete;
         private bool disposed;
         private Timer timer;
         private TimeSpan intervalRemaining;
-        private readonly Stopwatch stopWatch = new Stopwatch();
+        private readonly Stopwatch stopWatch = new();
 
         public IntervalTimer()
         {
@@ -46,10 +46,7 @@ namespace Mosey.Services
         /// <summary>
         /// Starts a timer using the current properties
         /// </summary>
-        public void Start()
-        {
-            Start(Delay, Interval, Repetitions);
-        }
+        public void Start() => Start(Delay, Interval, Repetitions);
 
         /// <summary>
         /// Starts a timer with no repetition limit
@@ -57,10 +54,7 @@ namespace Mosey.Services
         /// </summary>
         /// <param name="delay">The delay before starting the first interval</param>
         /// <param name="interval">The time between each callback</param>
-        public void Start(TimeSpan delay, TimeSpan interval)
-        {
-            Start(delay, interval, -1);
-        }
+        public void Start(TimeSpan delay, TimeSpan interval) => Start(delay, interval, -1);
 
         /// <summary>
         /// Start a new timer. If delay is zero then the first callback will begin immediately
@@ -75,10 +69,11 @@ namespace Mosey.Services
             Repetitions = repetitions;
             StartTime = DateTime.Now;
 
-            if (timer != null)
+            if (timer is not null)
             {
                 Stop();
             }
+
             timer = new Timer(TimerInterval, null, delay, interval);
             stopWatch.Restart();
         }
@@ -87,19 +82,13 @@ namespace Mosey.Services
         /// Raises an event when an interval has elapsed
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void OnTick(EventArgs e)
-        {
-            Tick?.Invoke(this, EventArgs.Empty);
-        }
+        protected virtual void OnTick(EventArgs e) => Tick?.Invoke(this, EventArgs.Empty);
 
         /// <summary>
         /// Raises an event when the timer has run to completion
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void OnComplete(EventArgs e)
-        {
-            Complete?.Invoke(this, EventArgs.Empty);
-        }
+        protected virtual void OnComplete(EventArgs e) => Complete?.Invoke(this, EventArgs.Empty);
 
         /// <summary>
         /// Timer callback method. Continues the timer until the maximum repetition count is reached
@@ -134,7 +123,7 @@ namespace Mosey.Services
             RepetitionsCount = 0;
             stopWatch.Reset();
 
-            if (timer != null)
+            if (timer is not null)
             {
                 timer.Dispose();
                 timer = null;
@@ -148,7 +137,7 @@ namespace Mosey.Services
         /// </summary>
         public void Pause()
         {
-            if (timer != null && !Paused && stopWatch.IsRunning)
+            if (timer is not null && !Paused && stopWatch.IsRunning)
             {
                 // Pause the stopwatch and calculate the time remaining until the next callback is due
                 stopWatch.Stop();
@@ -161,6 +150,7 @@ namespace Mosey.Services
                 {
                     intervalRemaining = Interval.Subtract(stopWatch.Elapsed);
                 }
+
                 Paused = true;
             }
         }
@@ -170,7 +160,7 @@ namespace Mosey.Services
         /// </summary>
         public void Resume()
         {
-            if (timer != null)
+            if (timer is not null)
             {
                 if (intervalRemaining > TimeSpan.Zero)
                 {
@@ -183,14 +173,12 @@ namespace Mosey.Services
                     stopWatch.Restart();
                     timer.Change(Interval, Interval);
                 }
+
                 Paused = false;
             }
         }
 
-        public virtual object Clone()
-        {
-            return MemberwiseClone();
-        }
+        public virtual object Clone() => MemberwiseClone();
 
         public void Dispose()
         {
@@ -204,21 +192,28 @@ namespace Mosey.Services
             {
                 if (disposing)
                 {
-                    if (Tick != null)
+                    if (Tick is not null)
                     {
-                        foreach (Delegate del in Tick.GetInvocationList())
+                        foreach (var del in Tick.GetInvocationList())
+                        {
                             Tick -= (del as EventHandler);
+                        }
                     }
-                    if (Complete != null)
+
+                    if (Complete is not null)
                     {
-                        foreach (Delegate del in Complete.GetInvocationList())
+                        foreach (var del in Complete.GetInvocationList())
+                        {
                             Complete -= (del as EventHandler);
+                        }
                     }
-                    if (timer != null)
+
+                    if (timer is not null)
                     {
                         timer.Dispose();
                     }
                 }
+
                 disposed = true;
             }
         }
@@ -226,22 +221,6 @@ namespace Mosey.Services
         ~IntervalTimer()
         {
             Dispose(false);
-        }
-    }
-
-    public class IntervalTimerConfig : IIntervalTimerConfig
-    {
-        // System.Text.Json doesn't support TimeSpan [de]serialization
-        // It is planned for .NET Core 5
-        [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonTimeSpanConverter))]
-        public TimeSpan Delay { get; set; }
-        [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonTimeSpanConverter))]
-        public TimeSpan Interval { get; set; }
-        public int Repetitions { get; set; }
-
-        public object Clone()
-        {
-            return MemberwiseClone();
         }
     }
 }

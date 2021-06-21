@@ -20,14 +20,18 @@ namespace Mosey.GUI.ViewModels
         {
             // Verify that the property name matches a real,  
             // public, instance property on this object.
-            if (TypeDescriptor.GetProperties(this)[propertyName] == null)
+            if (TypeDescriptor.GetProperties(this)[propertyName] is null)
             {
-                string msg = "Invalid property name: " + propertyName;
+                var msg = "Invalid property name: " + propertyName;
 
-                if (this.ThrowOnInvalidPropertyName)
+                if (ThrowOnInvalidPropertyName)
+                {
                     throw new Exception(msg);
+                }
                 else
+                {
                     Debug.Fail(msg);
+                }
             }
         }
 
@@ -68,8 +72,8 @@ namespace Mosey.GUI.ViewModels
         {
             VerifyPropertyName(propertyName);
 
-            PropertyChangedEventHandler handler = PropertyChanged;
-            if (handler != null)
+            var handler = PropertyChanged;
+            if (handler is not null)
             {
                 var e = new PropertyChangedEventArgs(propertyName);
                 handler(this, e);
@@ -78,5 +82,4 @@ namespace Mosey.GUI.ViewModels
 
         #endregion // INotifyPropertyChanged Members
     }
-
 }

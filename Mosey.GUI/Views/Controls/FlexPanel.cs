@@ -9,20 +9,30 @@ namespace Mosey.GUI.Views.Controls
     /// </summary>
     public class FlexPanel : Panel
     {
-        public static bool GetFlex(DependencyObject obj) => (bool)obj.GetValue(FlexProperty);
-        public static void SetFlex(DependencyObject obj, bool value) => obj.SetValue(FlexProperty, value);
-        public static readonly DependencyProperty FlexProperty = DependencyProperty.RegisterAttached("Flex", typeof(bool), typeof(FlexPanel), new PropertyMetadata(false));
+        public static readonly DependencyProperty FlexProperty = DependencyProperty.RegisterAttached(
+            "Flex", typeof(bool), typeof(FlexPanel), new PropertyMetadata(false));
+        public static readonly DependencyProperty FlexWeightProperty = DependencyProperty.RegisterAttached(
+            "FlexWeight", typeof(int), typeof(FlexPanel), new PropertyMetadata(1));
 
-        public static int GetFlexWeight(DependencyObject obj) => (int)obj.GetValue(FlexWeightProperty);
-        public static void SetFlexWeight(DependencyObject obj, int value) => obj.SetValue(FlexWeightProperty, value);
-        public static readonly DependencyProperty FlexWeightProperty = DependencyProperty.RegisterAttached("FlexWeight", typeof(int), typeof(FlexPanel), new PropertyMetadata(1));
+        public static bool GetFlex(DependencyObject obj)
+            => (bool)obj.GetValue(FlexProperty);
+
+        public static int GetFlexWeight(DependencyObject obj)
+            => (int)obj.GetValue(FlexWeightProperty);
+
+        public static void SetFlex(DependencyObject obj, bool value)
+            => obj.SetValue(FlexProperty, value);
+
+        public static void SetFlexWeight(DependencyObject obj, int value)
+            => obj.SetValue(FlexWeightProperty, value);
 
         public Orientation Orientation
         {
             get => (Orientation)GetValue(OrientationProperty);
             set => SetValue(OrientationProperty, value);
         }
-        public static readonly DependencyProperty OrientationProperty = DependencyProperty.Register(nameof(Orientation), typeof(Orientation), typeof(FlexPanel), new PropertyMetadata(Orientation.Vertical));
+        public static readonly DependencyProperty OrientationProperty = DependencyProperty.Register(
+            nameof(Orientation), typeof(Orientation), typeof(FlexPanel), new PropertyMetadata(Orientation.Vertical));
 
         protected override Size MeasureOverride(Size availableSize)
         {
@@ -43,8 +53,9 @@ namespace Mosey.GUI.Views.Controls
                 }
             }
 
-            if (double.IsPositiveInfinity(availableSize.Height) || double.IsPositiveInfinity(availableSize.Width)) return desiredSize;
-            else return availableSize;
+            return double.IsPositiveInfinity(availableSize.Height) || double.IsPositiveInfinity(availableSize.Width)
+                ? desiredSize
+                : availableSize;
         }
 
         protected override Size ArrangeOverride(Size finalSize)
@@ -57,8 +68,14 @@ namespace Mosey.GUI.Views.Controls
             {
                 foreach (UIElement child in Children)
                 {
-                    if (GetFlex(child)) flexChildrenWeightParts += GetFlexWeight(child);
-                    else totalLength += child.DesiredSize.Height;
+                    if (GetFlex(child))
+                    {
+                        flexChildrenWeightParts += GetFlexWeight(child);
+                    }
+                    else
+                    {
+                        totalLength += child.DesiredSize.Height;
+                    }
                 }
 
                 var flexSize = Math.Max(0, (finalSize.Height - totalLength) / flexChildrenWeightParts);
@@ -66,8 +83,14 @@ namespace Mosey.GUI.Views.Controls
                 foreach (UIElement child in Children)
                 {
                     var arrangeRect = new Rect();
-                    if (GetFlex(child)) arrangeRect = new Rect(0, currentLength, finalSize.Width, flexSize * GetFlexWeight(child));
-                    else arrangeRect = new Rect(0, currentLength, finalSize.Width, child.DesiredSize.Height);
+                    if (GetFlex(child))
+                    {
+                        arrangeRect = new Rect(0, currentLength, finalSize.Width, flexSize * GetFlexWeight(child));
+                    }
+                    else
+                    {
+                        arrangeRect = new Rect(0, currentLength, finalSize.Width, child.DesiredSize.Height);
+                    }
 
                     child.Arrange(arrangeRect);
                     currentLength += arrangeRect.Height;
@@ -77,8 +100,14 @@ namespace Mosey.GUI.Views.Controls
             {
                 foreach (UIElement child in Children)
                 {
-                    if (GetFlex(child)) flexChildrenWeightParts += GetFlexWeight(child);
-                    else totalLength += child.DesiredSize.Width;
+                    if (GetFlex(child))
+                    {
+                        flexChildrenWeightParts += GetFlexWeight(child);
+                    }
+                    else
+                    {
+                        totalLength += child.DesiredSize.Width;
+                    }
                 }
 
                 var flexSize = Math.Max(0, (finalSize.Width - totalLength) / flexChildrenWeightParts);
@@ -86,8 +115,14 @@ namespace Mosey.GUI.Views.Controls
                 foreach (UIElement child in Children)
                 {
                     var arrangeRect = new Rect();
-                    if (GetFlex(child)) arrangeRect = new Rect(currentLength, 0, flexSize * GetFlexWeight(child), finalSize.Height);
-                    else arrangeRect = new Rect(currentLength, 0, child.DesiredSize.Width, finalSize.Height);
+                    if (GetFlex(child))
+                    {
+                        arrangeRect = new Rect(currentLength, 0, flexSize * GetFlexWeight(child), finalSize.Height);
+                    }
+                    else
+                    {
+                        arrangeRect = new Rect(currentLength, 0, child.DesiredSize.Width, finalSize.Height);
+                    }
 
                     child.Arrange(arrangeRect);
                     currentLength += arrangeRect.Width;

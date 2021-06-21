@@ -1,14 +1,14 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
-using NUnit.Framework;
+using System.Linq;
 using AutoFixture.NUnit3;
-using Moq;
-using FluentAssertions;
 using DNTScanner.Core;
-using Mosey.Models;
-using Mosey.Tests.Extensions;
+using FluentAssertions;
+using Moq;
+using Mosey.Models.Imaging;
 using Mosey.Tests.AutoData;
+using Mosey.Tests.Extensions;
+using NUnit.Framework;
 
 namespace Mosey.Services.Imaging.Tests
 {
@@ -110,6 +110,7 @@ namespace Mosey.Services.Imaging.Tests
                 {
                     device.IsEnabled = false;
                 }
+
                 sut.Devices.All(device => !device.IsEnabled).Should().BeTrue();
 
                 sut.EnableAll();
@@ -130,11 +131,11 @@ namespace Mosey.Services.Imaging.Tests
 
             [Theory, ScanningDeviceAutoData]
             public void DisconnectSingleDeviceIfNotFound(
-                [Frozen] Mock<ISystemDevices> systemDevices,
+                [Frozen] Mock<ISystemImagingDevices<ScannerSettings>> systemDevices,
                 [Frozen] IEnumerable<ScannerSettings> scannerSettings)
             {
                 systemDevices
-                    .Setup(mock => mock.ScannerSettings(It.IsAny<int>()))
+                    .Setup(mock => mock.GetDeviceSettings())
                     .Returns(scannerSettings);
                 var sut = new ScanningDevices(null, systemDevices.Object);
                 var initalDevices = sut.Devices;
@@ -145,8 +146,9 @@ namespace Mosey.Services.Imaging.Tests
                 {
                     scannerProperties.Add(new Dictionary<string, object>() { { "Unique Device ID", deviceID } });
                 }
+
                 systemDevices
-                    .Setup(mock => mock.ScannerProperties(It.IsAny<int>()))
+                    .Setup(mock => mock.GetDeviceProperties())
                     .Returns(scannerProperties);
 
                 sut.RefreshDevices();
@@ -164,12 +166,12 @@ namespace Mosey.Services.Imaging.Tests
 
             [Theory, ScanningDeviceAutoData]
             public void AddNewDevicesToCollection(
-                [Frozen] Mock<ISystemDevices> systemDevices,
+                [Frozen] Mock<ISystemImagingDevices<ScannerSettings>> systemDevices,
                 [Frozen, CollectionSize(4)] IEnumerable<ScannerSettings> scannerSettings,
                 ScannerSettings newScannerSettings)
             {
                 systemDevices
-                    .Setup(mock => mock.ScannerSettings(It.IsAny<int>()))
+                    .Setup(mock => mock.GetDeviceSettings())
                     .Returns(scannerSettings);
                 var sut = new ScanningDevices(null, systemDevices.Object);
                 var initalDevices = sut.Devices;
@@ -181,11 +183,12 @@ namespace Mosey.Services.Imaging.Tests
                 {
                     scannerProperties.Add(new Dictionary<string, object>() { { "Unique Device ID", deviceID } });
                 }
+
                 systemDevices
-                    .Setup(mock => mock.ScannerProperties(It.IsAny<int>()))
+                    .Setup(mock => mock.GetDeviceProperties())
                     .Returns(scannerProperties);
                 systemDevices
-                    .Setup(mock => mock.ScannerSettings(It.IsAny<int>()))
+                    .Setup(mock => mock.GetDeviceSettings())
                     .Returns(scannerSettings);
 
                 sut.RefreshDevices();
@@ -196,39 +199,6 @@ namespace Mosey.Services.Imaging.Tests
                 sut.Devices
                     .Any(d => d.DeviceID == newScannerSettings.Id)
                     .Should().BeTrue();
-            }
-        }
-
-        public class SetDeviceEnabledShould
-        {
-            [Theory, ScanningDeviceAutoData]
-            public void EnableCorrectDevice(ScanningDevices sut)
-            {
-                var deviceId = sut.Devices.First().DeviceID;
-                foreach (var device in sut.Devices)
-                {
-                    device.IsEnabled = false;
-                }
-
-                sut.SetDeviceEnabled(deviceId, true);
-
-                sut.Devices.First().IsEnabled.Should().BeTrue();
-                sut.Devices.Skip(1).All(d => !d.IsEnabled).Should().BeTrue();
-            }
-
-            [Theory, ScanningDeviceAutoData]
-            public void DisableCorrectDevice(ScanningDevices sut)
-            {
-                var deviceId = sut.Devices.First().DeviceID;
-                foreach (var device in sut.Devices)
-                {
-                    device.IsEnabled = true;
-                }
-
-                sut.SetDeviceEnabled(deviceId, true);
-
-                sut.Devices.First().IsEnabled.Should().BeTrue();
-                sut.Devices.Skip(1).All(d => d.IsEnabled).Should().BeTrue();
             }
         }
     }

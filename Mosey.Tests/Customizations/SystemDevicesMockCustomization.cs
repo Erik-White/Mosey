@@ -3,7 +3,7 @@ using System.Linq;
 using AutoFixture;
 using DNTScanner.Core;
 using Moq;
-using Mosey.Models;
+using Mosey.Models.Imaging;
 using Mosey.Services.Imaging;
 
 namespace Mosey.Tests.Customizations
@@ -12,7 +12,7 @@ namespace Mosey.Tests.Customizations
     {
         public void Customize(IFixture fixture)
         {
-            var systemDevices = fixture.Create<Mock<ISystemDevices>>();
+            var systemDevices = fixture.Create<Mock<ISystemImagingDevices<ScannerSettings>>>();
             var settings = fixture.CreateMany<ScannerSettings>();
             var properties = fixture.Create<List<IDictionary<string, object>>>();
 
@@ -22,18 +22,18 @@ namespace Mosey.Tests.Customizations
             }
 
             systemDevices
-                .Setup(x => x.PerformScan(
+                .Setup(x => x.PerformImaging(
                     It.IsAny<ScannerSettings>(),
                     It.IsAny<IImagingDeviceConfig>(),
-                    It.IsAny<ScanningDevice.ImageFormat>()))
+                    It.IsAny<IImagingDevice.ImageFormat>()))
                 .Returns(fixture.CreateMany<byte[]>());
 
             systemDevices
-                .Setup(mock => mock.ScannerSettings(It.IsAny<int>()))
+                .Setup(mock => mock.GetDeviceSettings())
                 .Returns(settings);
 
             systemDevices
-                .Setup(mock => mock.ScannerProperties(It.IsAny<int>()))
+                .Setup(mock => mock.GetDeviceProperties())
                 .Returns(properties);
 
             fixture.Register(() => systemDevices);

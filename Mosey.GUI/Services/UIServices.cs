@@ -12,8 +12,7 @@ namespace Mosey.GUI.Services
 
         public UIServices(
             IDialogManager dialogManager,
-            IFolderBrowserDialog folderBrowserDialog
-            )
+            IFolderBrowserDialog folderBrowserDialog)
         {
             DialogManager = dialogManager;
             FolderBrowserDialog = folderBrowserDialog;

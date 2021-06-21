@@ -21,21 +21,13 @@ namespace Mosey.GUI.Views.Converters
             var matchedVisibility = (Visibility)Enum.Parse(typeof(Visibility), MatchedVisibility, true);
             var defaultVisibility = (Visibility)Enum.Parse(typeof(Visibility), DefaultVisibility, true);
 
-            if (value == null || (string)value != (string)parameter)
-                return defaultVisibility;
-            else
-                return matchedVisibility;
-
+            return value is null || (string)value != (string)parameter
+                ? defaultVisibility
+                : matchedVisibility;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
 
-        public override object ProvideValue(IServiceProvider serviceProvider)
-        {
-            return this;
-        }
+        public override object ProvideValue(IServiceProvider serviceProvider) => this;
     }
 }

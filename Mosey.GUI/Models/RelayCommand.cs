@@ -13,14 +13,8 @@ namespace Mosey.GUI.Models
     /// </summary>
     public class RelayCommand : ICommand
     {
-        #region Fields
-
-        readonly Action<object> _execute;
-        readonly Predicate<object> _canExecute;
-
-        #endregion // Fields
-
-        #region Constructors
+        private readonly Action<object> _execute;
+        private readonly Predicate<object> _canExecute;
 
         /// <summary>
         /// Creates a new command that can always execute.
@@ -38,22 +32,17 @@ namespace Mosey.GUI.Models
         /// <param name="canExecute">The execution status logic.</param>
         public RelayCommand(Action<object> execute, Predicate<object> canExecute)
         {
-            if (execute == null)
+            if (execute is null)
+            {
                 throw new ArgumentNullException(nameof(execute));
+            }
 
             _execute = execute;
             _canExecute = canExecute;
         }
 
-        #endregion // Constructors
-
-        #region ICommand Members
-
         [DebuggerStepThrough]
-        public bool CanExecute(object parameters)
-        {
-            return _canExecute == null ? true : _canExecute(parameters);
-        }
+        public bool CanExecute(object parameters) => _canExecute is null || _canExecute(parameters);
 
         public event EventHandler CanExecuteChanged
         {
@@ -66,11 +55,6 @@ namespace Mosey.GUI.Models
             remove { CommandManager.RequerySuggested -= value; }
         }
 
-        public void Execute(object parameters)
-        {
-            _execute(parameters);
-        }
-
-        #endregion // ICommand Members
+        public void Execute(object parameters) => _execute(parameters);
     }
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Windows.Input;
 using Microsoft.Extensions.Logging;
-using Mosey.Configuration;
+using Mosey.GUI.Configuration;
 using Mosey.GUI.Models;
 using Mosey.GUI.Services;
 
@@ -21,10 +21,7 @@ namespace Mosey.GUI.ViewModels
         #region Properties
         public string ImageSavePath
         {
-            get
-            {
-                return _userSettings.ImageFile.Directory ?? _appSettings.Value.ImageFile.Directory;
-            }
+            get => _userSettings.ImageFile.Directory ?? _appSettings.Value.ImageFile.Directory;
             set
             {
                 _userSettings.ImageFile.Directory = value;
@@ -37,10 +34,7 @@ namespace Mosey.GUI.ViewModels
 
         public int DefaultResolution
         {
-            get
-            {
-                return _userSettings.Image.Resolution;
-            }
+            get => _userSettings.Image.Resolution;
             set
             {
                 _userSettings.Image.Resolution = value;
@@ -51,14 +45,11 @@ namespace Mosey.GUI.ViewModels
             }
         }
 
-        public IEnumerable<int> StandardResolutions { get { return _userSettings.Device.StandardResolutions; } }
+        public IEnumerable<int> StandardResolutions => _userSettings.Device.StandardResolutions;
 
         public bool ScannersEnableOnConnect
         {
-            get
-            {
-                return _userSettings.Device.EnableWhenConnected;
-            }
+            get => _userSettings.Device.EnableWhenConnected;
             set
             {
                 _userSettings.Device.EnableWhenConnected = value;
@@ -71,10 +62,7 @@ namespace Mosey.GUI.ViewModels
 
         public bool ScannersEnableWhenScanning
         {
-            get
-            {
-                return _userSettings.Device.EnableWhenScanning;
-            }
+            get => _userSettings.Device.EnableWhenScanning;
             set
             {
                 _userSettings.Device.EnableWhenScanning = value;
@@ -87,10 +75,7 @@ namespace Mosey.GUI.ViewModels
 
         public bool ScanHighestResolution
         {
-            get
-            {
-                return _userSettings.Device.UseHighestResolution;
-            }
+            get => _userSettings.Device.UseHighestResolution;
             set
             {
                 _userSettings.Device.UseHighestResolution = value;
@@ -103,10 +88,7 @@ namespace Mosey.GUI.ViewModels
 
         public int ScanInterval
         {
-            get
-            {
-                return (int)_userSettings.ScanTimer.Interval.TotalMinutes;
-            }
+            get => (int)_userSettings.ScanTimer.Interval.TotalMinutes;
             set
             {
                 _userSettings.ScanTimer.Interval = TimeSpan.FromMinutes(value);
@@ -119,10 +101,7 @@ namespace Mosey.GUI.ViewModels
 
         public int ScanRepetitions
         {
-            get
-            {
-                return _userSettings.ScanTimer.Repetitions;
-            }
+            get => _userSettings.ScanTimer.Repetitions;
             set
             {
                 _userSettings.ScanTimer.Repetitions = value;
@@ -135,10 +114,7 @@ namespace Mosey.GUI.ViewModels
 
         public bool ScanningDelay
         {
-            get
-            {
-                return _userSettings.ScanTimer.Delay != TimeSpan.Zero;
-            }
+            get => _userSettings.ScanTimer.Delay != TimeSpan.Zero;
             set
             {
                 if (value)
@@ -157,13 +133,7 @@ namespace Mosey.GUI.ViewModels
             }
         }
 
-        public string Version
-        {
-            get
-            {
-                return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            }
-        }
+        public string Version => System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
         #endregion Properties
 
         public SettingsViewModel(
@@ -195,8 +165,10 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_SelectFolderCommand == null)
+                if (_SelectFolderCommand is null)
+                {
                     _SelectFolderCommand = new RelayCommand(o => ImageDirectoryDialog());
+                }
 
                 return _SelectFolderCommand;
             }
@@ -207,8 +179,10 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                if (_ResetOptionsCommand == null)
+                if (_ResetOptionsCommand is null)
+                {
                     _ResetOptionsCommand = new RelayCommand(o => ResetUserOptions());
+                }
 
                 return _ResetOptionsCommand;
             }
@@ -249,16 +223,22 @@ namespace Mosey.GUI.ViewModels
         private void ImageDirectoryDialog()
         {
             // Go up one level so users can see the initial directory instead of starting inside it
-            string initialDirectory = _fileSystem.Directory.GetParent(ImageSavePath).FullName;
-            if (string.IsNullOrWhiteSpace(initialDirectory)) initialDirectory = ImageSavePath;
+            var initialDirectory = _fileSystem.Directory.GetParent(ImageSavePath).FullName;
+            if (string.IsNullOrWhiteSpace(initialDirectory))
+            {
+                initialDirectory = ImageSavePath;
+            }
 
-            string selectedDirectory = _dialog.FolderBrowserDialog(
+            var selectedDirectory = _dialog.FolderBrowserDialog(
                 initialDirectory,
                 "Choose the default image file save location"
                 );
 
             // Only update the property if a path was actually returned
-            if (!string.IsNullOrWhiteSpace(selectedDirectory)) ImageSavePath = selectedDirectory;
+            if (!string.IsNullOrWhiteSpace(selectedDirectory))
+            {
+                ImageSavePath = selectedDirectory;
+            }
         }
     }
 }

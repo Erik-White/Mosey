@@ -77,9 +77,7 @@ namespace Mosey.GUI.Services.Dialog
         /// <param name="value"></param>
         /// <returns>An equivalent <see cref="DialogResult"/> instance</returns>
         internal static DialogResult ToDialogResult(this MessageDialogResult value)
-        {
-            return (DialogResult)value;
-        }
+            => (DialogResult)value;
 
         /// <summary>
         /// Covert <see cref="DialogResult"/> to <see cref="MessageDialogResult"/>
@@ -87,9 +85,7 @@ namespace Mosey.GUI.Services.Dialog
         /// <param name="value"></param>
         /// <returns>An equivalent <see cref="MessageDialogResult"/> instance</returns>
         internal static MessageDialogResult ToMetroDialogResult(this DialogResult value)
-        {
-            return (MessageDialogResult)value;
-        }
+            => (MessageDialogResult)value;
 
         /// <summary>
         /// Covert nullable <see cref="MessageDialogResult"/> to nullable <see cref="DialogResult"/>
@@ -97,9 +93,7 @@ namespace Mosey.GUI.Services.Dialog
         /// <param name="value"></param>
         /// <returns>An equivalent <see cref="DialogResult"/> instance</returns>
         internal static DialogResult? ToDialogResult(this MessageDialogResult? value)
-        {
-            return (DialogResult?)value;
-        }
+            => (DialogResult?)value;
 
         /// <summary>
         /// Convert nullable <see cref="DialogResult"/> to nullable <see cref="MessageDialogResult"/>
@@ -107,9 +101,7 @@ namespace Mosey.GUI.Services.Dialog
         /// <param name="value"></param>
         /// <returns>An equivalent <see cref="MessageDialogResult"/> instance</returns>
         internal static MessageDialogResult? ToMetroDialogResult(this DialogResult? value)
-        {
-            return (MessageDialogResult?)value;
-        }
+            => (MessageDialogResult?)value;
 
         /// <summary>
         /// Convert <see cref="MessageDialogStyle"/> to <see cref="DialogStyle"/>
@@ -117,9 +109,7 @@ namespace Mosey.GUI.Services.Dialog
         /// <param name="value"></param>
         /// <returns>An equivalent <see cref="DialogStyle"/> instance</returns>
         internal static DialogStyle ToMetroDialogStyle(this MessageDialogStyle value)
-        {
-            return (DialogStyle)value;
-        }
+            => (DialogStyle)value;
 
         /// <summary>
         /// Convert <see cref="DialogStyle"/> to <see cref="MessageDialogStyle"/>
@@ -127,8 +117,6 @@ namespace Mosey.GUI.Services.Dialog
         /// <param name="value"></param>
         /// <returns>An equivalent <see cref="MessageDialogStyle"/> instance</returns>
         internal static MessageDialogStyle ToMetroDialogStyle(this DialogStyle value)
-        {
-            return (MessageDialogStyle)value;
-        }
+            => (MessageDialogStyle)value;
     }
 }

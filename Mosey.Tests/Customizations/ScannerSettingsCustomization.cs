@@ -2,14 +2,14 @@
 using System.Linq;
 using AutoFixture;
 using DNTScanner.Core;
-using Mosey.Services.Imaging;
+using Mosey.Models.Imaging;
 using Mosey.Services.Imaging.Extensions;
 
 namespace Mosey.Tests.Customizations
 {
     public class ScannerSettingsCustomization : ICustomization
     {
-        public static ScanningDevice.ImageFormat SupportedImageFormat { get; set; } = ScanningDevice.ImageFormat.Jpeg;
+        public static IImagingDevice.ImageFormat SupportedImageFormat { get; set; } = IImagingDevice.ImageFormat.Jpeg;
 
         public void Customize(IFixture fixture)
         {
@@ -29,7 +29,7 @@ namespace Mosey.Tests.Customizations
         /// Creates a new instance manually to avoid recursion problems
         /// </summary>
         internal static ScannerSettings GetInstance(IFixture fixture)
-            => new ScannerSettings
+            => new()
             {
                 Id = fixture.Create<string>(),
                 Name = fixture.Create<string>(),

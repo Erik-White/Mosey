@@ -7,10 +7,7 @@ namespace Mosey.Tests.Customizations
 {
     public class ImageBytesCustomization : ICustomization
     {
-        public void Customize(IFixture fixture)
-        {
-            fixture.Register(() => GetBitmapData());
-        }
+        public void Customize(IFixture fixture) => fixture.Register(() => GetBitmapData());
 
         internal static byte[] GetBitmapData(int width = 10, int height = 10)
         {
@@ -25,6 +22,7 @@ namespace Mosey.Tests.Customizations
                 image.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Bmp);
                 bitmapData = memoryStream.ToArray();
             }
+
             return bitmapData;
         }
     }

@@ -13,8 +13,6 @@ namespace Mosey.GUI.Services.Dialog
         /// </summary>
         /// <param name="settings">The settings for the message dialog.</param>
         public DialogInstance(IDialogSettings settings)
-        {
-            DialogSettings = settings;
-        }
+            => DialogSettings = settings;
     }
 }

@@ -15,7 +15,7 @@ namespace Mosey.GUI.Views
             Closing += Window_Closing;
         }
 
-        void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             if (DataContext is IClosing context)
             {

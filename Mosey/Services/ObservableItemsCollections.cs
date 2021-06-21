@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
-namespace Mosey.Models
+namespace Mosey.Services
 {
     public class ObservableItemsCollection<T> : ObservableCollection<T> where T : INotifyPropertyChanged
     {
@@ -36,7 +36,7 @@ namespace Mosey.Models
         {
             foreach (INotifyPropertyChanged item in items)
             {
-                if (item != null)
+                if (item is not null)
                 {
                     item.PropertyChanged += new PropertyChangedEventHandler(Item_PropertyChanged);
                 }
@@ -47,17 +47,15 @@ namespace Mosey.Models
         {
             foreach (INotifyPropertyChanged item in items)
             {
-                if (item != null)
+                if (item is not null)
                 {
                     item.PropertyChanged -= new PropertyChangedEventHandler(Item_PropertyChanged);
                 }
             }
         }
 
-        private void Item_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
+        private void Item_PropertyChanged(object sender, PropertyChangedEventArgs e) =>
             // Launch an event Reset with name of property changed
             base.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-        }
     }
 }

@@ -2,7 +2,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace Mosey.Models
+namespace Mosey.Services
 {
     /// <summary>
     /// Convenience methods for raising <see cref="PropertyChanged"/> events when property values are set.
@@ -41,7 +41,11 @@ namespace Mosey.Models
         ///</example>
         protected bool SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
         {
-            if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+            if (EqualityComparer<T>.Default.Equals(field, value))
+            {
+                return false;
+            }
+
             field = value;
             OnPropertyChanged(propertyName);
             return true;

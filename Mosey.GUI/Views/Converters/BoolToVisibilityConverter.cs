@@ -23,22 +23,14 @@ namespace Mosey.GUI.Views.Converters
             FalseValue = Visibility.Collapsed;
         }
 
-        public object Convert(object value, Type targetType,
-            object parameter, CultureInfo culture)
-        {
-            if (!(value is bool))
-                return null;
-            return (bool)value ? TrueValue : FalseValue;
-        }
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+            => value is not bool booleanValue
+                ? null
+                : booleanValue ? TrueValue : FalseValue;
 
-        public object ConvertBack(object value, Type targetType,
-            object parameter, CultureInfo culture)
-        {
-            if (Equals(value, TrueValue))
-                return true;
-            if (Equals(value, FalseValue))
-                return false;
-            return null;
-        }
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            => Equals(value, TrueValue)
+                ? true
+                : Equals(value, FalseValue) ? false : null;
     }
 }

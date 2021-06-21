@@ -15,7 +15,8 @@ namespace Mosey.Tests.Extensions
         /// <param name="getters"></param>
         public static void AssertAllPropertiesAreNotDefault<T>(this T objectToInspect, params Expression<Func<T, object>>[] getters)
         {
-            var defaultProperties = getters.Where(f => f.Compile()(objectToInspect).Equals(default(T)));
+            var defaultProperties = getters.Where(f
+                => f.Compile()(objectToInspect).Equals(default(T)));
 
             if (defaultProperties.Any())
             {
@@ -33,7 +34,7 @@ namespace Mosey.Tests.Extensions
         public static string GetName<T>(Expression<Func<T, object>> exp)
         {
             // Return type is an object, so type cast expression will be added to value types
-            if (!(exp.Body is MemberExpression body))
+            if (exp.Body is not MemberExpression body)
             {
                 var ubody = (UnaryExpression)exp.Body;
                 body = ubody.Operand as MemberExpression;

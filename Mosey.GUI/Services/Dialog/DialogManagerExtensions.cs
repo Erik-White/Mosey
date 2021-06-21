@@ -11,8 +11,16 @@ namespace Mosey.GUI.Services.Dialog
     {
         /// <inheritdoc cref="DialogManager.ShowMessageAsync(object, string, string, DialogStyle, IDialogSettings)"/>
         /// <param name="timeout">The time, in millseconds, until the dialog is automatically closed</param>
-        /// <returns>The <see cref="DialogResult"/> selected by the user, or <see cref="DialogResult.Canceled"/> if the dialog is closed by <see cref="CancellationToken"/></returns>
-        public static async Task<DialogResult> ShowMessageWithTimeoutAsync(this IDialogManager value, object context, string title, string message, DialogStyle style = DialogStyle.Affirmative, IDialogSettings settings = null, int timeout = 5000)
+        /// <returns>The <see cref="DialogResult"/> selected by the user, or <see cref="DialogResult.Canceled"/>
+        /// if the dialog is closed by <see cref="CancellationToken"/></returns>
+        public static async Task<DialogResult> ShowMessageWithTimeoutAsync(
+            this IDialogManager value,
+            object context,
+            string title,
+            string message,
+            DialogStyle style = DialogStyle.Affirmative,
+            IDialogSettings settings = null,
+            int timeout = 5000)
         {
             using (var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(settings.CancellationToken))
             {

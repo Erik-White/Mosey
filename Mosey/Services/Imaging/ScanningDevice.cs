@@ -6,7 +6,7 @@ using System.IO.Abstractions;
 using System.Linq;
 using System.Runtime.InteropServices;
 using DNTScanner.Core;
-using Mosey.Models;
+using Mosey.Models.Imaging;
 using Mosey.Services.Imaging.Extensions;
 
 namespace Mosey.Services.Imaging
@@ -16,109 +16,91 @@ namespace Mosey.Services.Imaging
     /// </summary>
     public class ScanningDevice : PropertyChangedBase, IImagingDevice
     {
-        public string Name { get { return _scannerSettings.Name; } }
-        public int ID { get { return GetSimpleID(_scannerSettings.Id); } }
-        public string DeviceID { get { return _scannerSettings.Id; } }
-        public IList<KeyValuePair<string, object>> DeviceSettings { get { return _scannerSettings.ScannerDeviceSettings.ToList(); } }
-
-        public IList<byte[]> Images { get; protected internal set; } = new List<byte[]>();
-        public IImagingDeviceConfig ImageSettings { get; set; }
-
-        /// <inheritdoc cref="ScannerSettings.IsAutomaticDocumentFeeder"/>
-        public bool IsAutomaticDocumentFeeder { get { return _scannerSettings.IsAutomaticDocumentFeeder; } }
-
-        public bool IsConnected
-        {
-            get { return _isConnected; }
-            protected internal set { SetField(ref _isConnected, value); }
-        }
-
-        /// <inheritdoc cref="ScannerSettings.IsDuplex"/>
-        public bool IsDuplex { get { return _scannerSettings.IsDuplex; } }
-
-        public bool IsEnabled
-        {
-            get { return _isEnabled; }
-            set { SetField(ref _isEnabled, value); }
-        }
-
-        /// <inheritdoc cref="ScannerSettings.IsFlatbed"/>
-        public bool IsFlatbed { get { return _scannerSettings.IsFlatbed; } }
-
-        public bool IsImaging
-        {
-            get { return _isImaging; }
-            private set { SetField(ref _isImaging, value); }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public int ScanRetries
-        {
-            get { return _scanRetries; }
-            set { SetField(ref _scanRetries, value); }
-        }
-
-        /// <inheritdoc cref="ScannerSettings.SupportedResolutions"/>
-        public IList<int> SupportedResolutions { get { return _scannerSettings.SupportedResolutions; } }
-
-        /// <summary>
-        /// The image format used for encoding images captured by the <see cref="ScanningDevice"/>.
-        /// </summary>
-        public enum ImageFormat
-        {
-            Bmp,
-            Png,
-            Gif,
-            Jpeg,
-            Tiff
-        }
-
         private bool _isConnected = true;
         private bool _isEnabled;
         private bool _isImaging;
         private int _scanRetries = 5;
+
         private readonly IFileSystem _fileSystem;
         private readonly ScannerSettings _scannerSettings;
-        private readonly ISystemDevices _systemDevices;
+        private readonly ISystemImagingDevices<ScannerSettings> _systemDevices;
 
-        /// <summary>
-        /// Initialize a new instance using a <see cref="ScannerSettings"/> instance that represents a physical scanner.
-        /// </summary>
-        /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
-        public ScanningDevice(ScannerSettings settings) : this(settings, null, null, null) { }
+        public string Name => _scannerSettings.Name;
+
+        public int ID => GetSimpleID(_scannerSettings.Id);
+
+        public string DeviceID => _scannerSettings.Id;
+
+        public IList<KeyValuePair<string, object>> DeviceSettings
+            => _scannerSettings.ScannerDeviceSettings.ToList();
+
+        public IList<byte[]> Images { get; protected internal set; } = new List<byte[]>();
+
+        public IImagingDeviceConfig ImageSettings { get; set; }
+
+        /// <inheritdoc cref="ScannerSettings.IsAutomaticDocumentFeeder"/>
+        public bool IsAutomaticDocumentFeeder => _scannerSettings.IsAutomaticDocumentFeeder;
+
+        public bool IsConnected
+        {
+            get => _isConnected;
+            protected internal set => SetField(ref _isConnected, value);
+        }
+
+        /// <inheritdoc cref="ScannerSettings.IsDuplex"/>
+        public bool IsDuplex => _scannerSettings.IsDuplex;
+
+        public bool IsEnabled
+        {
+            get => _isEnabled;
+            set => SetField(ref _isEnabled, value);
+        }
+
+        /// <inheritdoc cref="ScannerSettings.IsFlatbed"/>
+        public bool IsFlatbed => _scannerSettings.IsFlatbed;
+
+        public bool IsImaging
+        {
+            get => _isImaging;
+            private set => SetField(ref _isImaging, value);
+        }
+
+        public int ScanRetries
+        {
+            get => _scanRetries;
+            set => SetField(ref _scanRetries, value);
+        }
+
+        /// <inheritdoc cref="ScannerSettings.SupportedResolutions"/>
+        public IList<int> SupportedResolutions => _scannerSettings.SupportedResolutions;
 
         /// <summary>
         /// Initialize a new instance using a <see cref="ScannerSettings"/> instance that represents a physical scanner.
         /// </summary>
         /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
         /// <param name="config">Device settings used when capturing an image</param>
-        public ScanningDevice(ScannerSettings settings, IImagingDeviceConfig config) : this(settings, config, null, null) { }
+        public ScanningDevice(ScannerSettings settings, IImagingDeviceConfig config)
+            : this(settings, config, null, null) { }
 
         /// <summary>
         /// Initialize a new instance using a <see cref="ScannerSettings"/> instance that represents a physical scanner.
         /// </summary>
         /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
         /// <param name="config">Device settings used when capturing an image</param>
-        /// <param name="systemDevices">An <see cref="ISystemDevices"/> instance that provide access to the WIA driver devices</param>
-        public ScanningDevice(ScannerSettings settings, IImagingDeviceConfig config, ISystemDevices systemDevices, IFileSystem fileSystem)
+        /// <param name="systemDevices">An <see cref="ISystemImagingDevices"/> instance that provide access to the WIA driver devices</param>
+        public ScanningDevice(ScannerSettings settings, IImagingDeviceConfig config, ISystemImagingDevices<ScannerSettings> systemDevices, IFileSystem fileSystem)
         {
             _scannerSettings = settings;
             ImageSettings = config;
-            _systemDevices = systemDevices ?? new SystemDevices();
+            _systemDevices = systemDevices ?? new SystemScanningDevices();
             _fileSystem = fileSystem ?? new FileSystem();
         }
 
         public void ClearImages()
-        {
-            Images = new List<byte[]>();
-        }
+            => Images = new List<byte[]>();
 
         public void GetImage()
-        {
-            GetImage(ImageFormat.Bmp);
-        }
+            => GetImage(IImagingDevice.ImageFormat.Bmp);
 
         /// <summary>
         /// Retrieve an image from the physical imaging device.
@@ -130,12 +112,13 @@ namespace Mosey.Services.Imaging
         /// <remarks>
         /// Images are converted to <see cref="ImageFormat.Png"/>, if possible, before being stored as byte arrays.
         /// </remarks>
-        public void GetImage(ImageFormat format)
+        public void GetImage(IImagingDevice.ImageFormat format)
         {
             if (!IsConnected)
             {
                 throw new COMException("The scanner is not connected.");
             }
+
             if (!_scannerSettings.SupportedTransferFormats.ContainsKey(format.ToWIAImageFormat().Value))
             {
                 throw new ArgumentException($"The image format {format} is not supported by this device.");
@@ -154,7 +137,7 @@ namespace Mosey.Services.Imaging
             IsImaging = true;
             try
             {
-                var images = _systemDevices.PerformScan(_scannerSettings, deviceConfig, format);
+                var images = _systemDevices.PerformImaging(_scannerSettings, deviceConfig, format);
 
                 // Remove any existing images
                 ClearImages();
@@ -166,7 +149,7 @@ namespace Mosey.Services.Imaging
                     {
                         // Convert image to PNG format before storing byte array
                         // Greatly reduces memory footprint compared to raw BMP
-                        Images.Add(image.AsFormat(ImageFormat.Png.ToDrawingImageFormat()));
+                        Images.Add(image.AsFormat(IImagingDevice.ImageFormat.Png.ToDrawingImageFormat()));
                     }
                     catch (ArgumentException)
                     {
@@ -175,7 +158,7 @@ namespace Mosey.Services.Imaging
                     }
                 }
             }
-            catch (Exception ex) when (ex is COMException || ex is InvalidOperationException)
+            catch (Exception ex) when (ex is COMException or InvalidOperationException)
             {
                 // Scanner has been disconnected or similar
                 IsConnected = false;
@@ -193,10 +176,10 @@ namespace Mosey.Services.Imaging
         /// </summary>
         public void SaveImage()
         {
-            string directory = _fileSystem.Path.Combine(
+            var directory = _fileSystem.Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
                 System.Reflection.Assembly.GetExecutingAssembly().GetName().Name);
-            SaveImage("image", directory, ImageFormat.Png);
+            SaveImage("image", directory, IImagingDevice.ImageFormat.Png);
         }
 
         /// <summary>
@@ -209,7 +192,7 @@ namespace Mosey.Services.Imaging
         public IEnumerable<string> SaveImage(string fileName, string directory, string fileFormat = "png")
         {
             // Parse the file extension and ensure it is valid
-            var imageFormat = new ImageFormat().FromString(fileFormat);
+            var imageFormat = new IImagingDevice.ImageFormat().FromString(fileFormat);
 
             return SaveImage(fileName, directory, imageFormat);
         }
@@ -224,12 +207,13 @@ namespace Mosey.Services.Imaging
         /// <returns>A collection of file path <see cref="string"/>s for the newly created images</returns>
         /// <exception cref="ArgumentException">If <paramref name="directory"/> is <see langword="null"/> or whitespace</exception>
         /// <exception cref="InvalidOperationException">If the <see cref="Images"/> property returns no images to save</exception>
-        public IEnumerable<string> SaveImage(string fileName, string directory, ImageFormat imageFormat = ImageFormat.Png)
+        public IEnumerable<string> SaveImage(string fileName, string directory, IImagingDevice.ImageFormat imageFormat = IImagingDevice.ImageFormat.Png)
         {
-            if (Images == null || Images.Count == 0)
+            if (Images is null || Images.Count == 0)
             {
                 throw new InvalidOperationException($"No images available. Please call the {nameof(GetImage)} method first.");
             }
+
             if (string.IsNullOrWhiteSpace(directory) || string.IsNullOrWhiteSpace(directory))
             {
                 throw new ArgumentException("A valid filename and directory must be supplied");
@@ -254,19 +238,13 @@ namespace Mosey.Services.Imaging
         }
 
         public bool Equals(IImagingDevice device)
-        {
-            return device is not null && DeviceID == device.DeviceID;
-        }
+            => device is not null && DeviceID == device.DeviceID;
 
         public override bool Equals(object obj)
-        {
-            return Equals(obj as ScanningDevice);
-        }
+            => Equals(obj as ScanningDevice);
 
         public override int GetHashCode()
-        {
-            return DeviceID.GetHashCode();
-        }
+            => DeviceID.GetHashCode();
 
         /// <summary>
         /// Store image byte arrays to disk.
@@ -279,20 +257,22 @@ namespace Mosey.Services.Imaging
         /// <param name="format">The <see cref="ImageFormat"/> used to store the images</param>
         /// <param name="encoderParams">Specify image encoding when writing the images</param>
         /// <returns>A collection of file path <see cref="string"/>s for the newly created images</returns>
-        protected internal IEnumerable<string> SaveImagesToDisk(IEnumerable<byte[]> images, string filePath, ImageFormat format = ImageFormat.Png, EncoderParameters encoderParams = null)
+        protected internal IEnumerable<string> SaveImagesToDisk(IEnumerable<byte[]> images, string filePath, IImagingDevice.ImageFormat format = IImagingDevice.ImageFormat.Png, EncoderParameters encoderParams = null)
         {
-            int count = 1;
-            string fileName = Path.GetFileName(filePath);
+            var count = 1;
+            var fileName = Path.GetFileName(filePath);
 
             // Write all images to disk
             foreach (var imageBytes in Images)
             {
                 // Append count to filename in case of multiple images
-                string savePath = filePath;
+                var savePath = filePath;
                 if (images.Count() > 1)
+                {
                     savePath = savePath.Replace(
                         fileName,
                         $"{Path.GetFileNameWithoutExtension(fileName)}_{count}{Path.GetExtension(filePath)}");
+                }
 
                 SaveImageToDisk(imageBytes, savePath, format, encoderParams);
 
@@ -309,7 +289,7 @@ namespace Mosey.Services.Imaging
         /// <param name="filePath">The full file path used to store the image</param>
         /// <param name="format">The <see cref="ImageFormat"/> used to store the image</param>
         /// <param name="encoderParams">Specify image encoding when writing the image</param>
-        protected internal virtual void SaveImageToDisk(byte[] image, string filePath, ImageFormat format = ImageFormat.Png, EncoderParameters encoderParams = null)
+        protected internal virtual void SaveImageToDisk(byte[] image, string filePath, IImagingDevice.ImageFormat format = IImagingDevice.ImageFormat.Png, EncoderParameters encoderParams = null)
         {
             using (var fileStream = _fileSystem.File.Create(filePath))
             {
@@ -328,9 +308,9 @@ namespace Mosey.Services.Imaging
         private static int GetSimpleID(string deviceID)
         {
             // Get the last two characters of the device instance path
-            string shortID = deviceID.Substring(Math.Max(0, deviceID.Length - 2));
+            var shortID = deviceID.Substring(Math.Max(0, deviceID.Length - 2));
 
-            if (int.TryParse(shortID, out int intID))
+            if (int.TryParse(shortID, out var intID))
             {
                 return intID;
             }
