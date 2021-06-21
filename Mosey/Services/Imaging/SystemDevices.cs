@@ -12,7 +12,7 @@ namespace Mosey.Services.Imaging
     /// <summary>
     /// Provides access to the WIA driver devices via DNTScanner.Core
     /// </summary>
-    internal sealed class SystemDevices : ISystemDevices
+    internal sealed class SystemDevices : ISystemImagingDevices<ScannerSettings>
     {
         private static readonly SemaphoreSlim _semaphore = new(1, 1);
 
@@ -23,7 +23,7 @@ namespace Mosey.Services.Imaging
         /// <inheritdoc/>
         /// <exception cref="COMException">If an error occurs within the specified number of <see cref="ConnectRetries"/></exception>
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <see cref="ConnectRetries"/></exception>
-        public IEnumerable<byte[]> PerformScan(ScannerSettings settings, IImagingDeviceConfig config, ScanningDevice.ImageFormat format)
+        public IEnumerable<byte[]> PerformImaging(ScannerSettings settings, IImagingDeviceConfig config, IImagingDevice.ImageFormat format)
         {
             IEnumerable<byte[]> images = new List<byte[]>();
 
@@ -44,7 +44,7 @@ namespace Mosey.Services.Imaging
         /// <inheritdoc/>
         /// <exception cref="COMException">If an error occurs within the specified number of <see cref="ConnectRetries"/></exception>
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <see cref="ConnectRetries"/></exception>
-        public IList<IDictionary<string, object>> GetScannerProperties()
+        public IList<IDictionary<string, object>> GetDeviceProperties()
         {
             return WIARetry(
                     DNTScanner.Core.SystemDevices.GetScannerDeviceProperties,
@@ -56,7 +56,7 @@ namespace Mosey.Services.Imaging
         /// <inheritdoc/>
         /// <exception cref="COMException">If an error occurs within the specified number of <see cref="ConnectRetries"/></exception>
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <see cref="ConnectRetries"/></exception>
-        public IEnumerable<ScannerSettings> GetScannerSettings()
+        public IEnumerable<ScannerSettings> GetDeviceSettings()
         {
             return WIARetry(
                 DNTScanner.Core.SystemDevices.GetScannerDevices,

@@ -131,11 +131,11 @@ namespace Mosey.Services.Imaging.Tests
 
             [Theory, ScanningDeviceAutoData]
             public void DisconnectSingleDeviceIfNotFound(
-                [Frozen] Mock<ISystemDevices> systemDevices,
+                [Frozen] Mock<ISystemImagingDevices<ScannerSettings>> systemDevices,
                 [Frozen] IEnumerable<ScannerSettings> scannerSettings)
             {
                 systemDevices
-                    .Setup(mock => mock.GetScannerSettings())
+                    .Setup(mock => mock.GetDeviceSettings())
                     .Returns(scannerSettings);
                 var sut = new ScanningDevices(null, systemDevices.Object);
                 var initalDevices = sut.Devices;
@@ -148,7 +148,7 @@ namespace Mosey.Services.Imaging.Tests
                 }
 
                 systemDevices
-                    .Setup(mock => mock.GetScannerProperties())
+                    .Setup(mock => mock.GetDeviceProperties())
                     .Returns(scannerProperties);
 
                 sut.RefreshDevices();
@@ -166,12 +166,12 @@ namespace Mosey.Services.Imaging.Tests
 
             [Theory, ScanningDeviceAutoData]
             public void AddNewDevicesToCollection(
-                [Frozen] Mock<ISystemDevices> systemDevices,
+                [Frozen] Mock<ISystemImagingDevices<ScannerSettings>> systemDevices,
                 [Frozen, CollectionSize(4)] IEnumerable<ScannerSettings> scannerSettings,
                 ScannerSettings newScannerSettings)
             {
                 systemDevices
-                    .Setup(mock => mock.GetScannerSettings())
+                    .Setup(mock => mock.GetDeviceSettings())
                     .Returns(scannerSettings);
                 var sut = new ScanningDevices(null, systemDevices.Object);
                 var initalDevices = sut.Devices;
@@ -185,10 +185,10 @@ namespace Mosey.Services.Imaging.Tests
                 }
 
                 systemDevices
-                    .Setup(mock => mock.GetScannerProperties())
+                    .Setup(mock => mock.GetDeviceProperties())
                     .Returns(scannerProperties);
                 systemDevices
-                    .Setup(mock => mock.GetScannerSettings())
+                    .Setup(mock => mock.GetDeviceSettings())
                     .Returns(scannerSettings);
 
                 sut.RefreshDevices();

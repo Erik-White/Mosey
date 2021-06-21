@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using AutoFixture.NUnit3;
 using DNTScanner.Core;
 using FluentAssertions;
+using Mosey.Models.Imaging;
 using Mosey.Tests.AutoData;
 using Mosey.Tests.Customizations;
 using Mosey.Tests.Extensions;
@@ -72,7 +73,7 @@ namespace Mosey.Services.Imaging.Tests
             [Theory, ScanningDeviceAutoData]
             public void ThrowIfImageFormatNotSupported([Greedy] ScanningDevice sut)
             {
-                sut.Invoking(x => x.GetImage(ScanningDevice.ImageFormat.Gif))
+                sut.Invoking(x => x.GetImage(IImagingDevice.ImageFormat.Gif))
                     .Should().Throw<ArgumentException>();
                 sut.Images.Should().BeEmpty();
             }
@@ -168,7 +169,7 @@ namespace Mosey.Services.Imaging.Tests
             [Theory, ScanningDeviceAutoData]
             public void WriteImageDataToDisk([CollectionSize(2)] IList<byte[]> images, [Frozen] IFileSystem fileSystem, [Greedy] ScanningDevice sut)
             {
-                MockFileSystem fs = fileSystem as MockFileSystem;
+                var fs = fileSystem as MockFileSystem;
                 sut.Images = images;
 
                 var result = sut.SaveImage(filename, directory, ScannerSettingsCustomization.SupportedImageFormat);

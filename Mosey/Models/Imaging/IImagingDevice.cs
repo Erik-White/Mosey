@@ -10,6 +10,18 @@ namespace Mosey.Models.Imaging
     public interface IImagingDevice : IEquatable<IImagingDevice>, INotifyPropertyChanged, IDevice
     {
         /// <summary>
+        /// The image format used for encoding images captured by the <see cref="IImagingDevice"/>.
+        /// </summary>
+        public enum ImageFormat
+        {
+            Bmp,
+            Png,
+            Gif,
+            Jpeg,
+            Tiff
+        }
+
+        /// <summary>
         /// A collection of properties detailing the device's abilities.
         /// </summary>
         IList<KeyValuePair<string, object>> DeviceSettings { get; }

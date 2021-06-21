@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using DNTScanner.Core;
 using Mosey.Models;
 using Mosey.Models.Imaging;
 
@@ -14,7 +15,7 @@ namespace Mosey.Services.Imaging
     public class ScanningDevices : IImagingDevices<IImagingDevice>
     {
         private readonly ICollection<IImagingDevice> _devices = new ObservableItemsCollection<IImagingDevice>();
-        private readonly ISystemDevices _systemDevices;
+        private readonly ISystemImagingDevices<ScannerSettings> _systemDevices;
 
         /// <summary>
         /// The number of time to attempt reconnection to the WIA driver.
@@ -51,8 +52,8 @@ namespace Mosey.Services.Imaging
         /// Initialize the collection <see cref="ScanningDevice"/>s with the specified <paramref name="deviceConfig"/>.
         /// </summary>
         /// <param name="deviceConfig">Used to initialize the collection's <see cref="ScanningDevice"/>s</param>
-        /// <param name="systemDevices">An <see cref="ISystemDevices"/> instance that provide access to the WIA driver devices</param>
-        public ScanningDevices(IImagingDeviceConfig deviceConfig, ISystemDevices systemDevices)
+        /// <param name="systemDevices">An <see cref="ISystemImagingDevices"/> instance that provide access to the WIA driver devices</param>
+        public ScanningDevices(IImagingDeviceConfig deviceConfig, ISystemImagingDevices<ScannerSettings> systemDevices)
         {
             _systemDevices = systemDevices ?? new SystemDevices();
             GetDevices(deviceConfig);
@@ -100,7 +101,7 @@ namespace Mosey.Services.Imaging
             ScanningDevice device = null;
 
             // Attempt to connect a device matching the deviceID
-            var settings = _systemDevices.GetScannerSettings().FirstOrDefault(x => x.Id == deviceID);
+            var settings = _systemDevices.GetDeviceSettings().FirstOrDefault(x => x.Id == deviceID);
 
             if (settings is not null)
             {
@@ -129,7 +130,7 @@ namespace Mosey.Services.Imaging
 
             // Check the static properties for changed IDs and only retrieve ScannerSetting instances if necessary.
             // This saves connecting the devices via the WIA driver and is much faster
-            var deviceProperties = _systemDevices.GetScannerProperties();
+            var deviceProperties = _systemDevices.GetDeviceProperties();
             if (deviceProperties is null || !deviceProperties.Any())
             {
                 // No devices detected, any current devices have been disconnected
@@ -190,7 +191,7 @@ namespace Mosey.Services.Imaging
         /// <param name="connectRetries">The number of retry attempts allowed if connecting to the WIA driver was unsuccessful</param>
         private IEnumerable<IImagingDevice> ScannerDevices(IImagingDeviceConfig deviceConfig, int connectRetries = 1)
         {
-            foreach (var settings in _systemDevices.GetScannerSettings())
+            foreach (var settings in _systemDevices.GetDeviceSettings())
             {
                 yield return new ScanningDevice(settings, deviceConfig);
             }
