@@ -99,7 +99,8 @@ namespace Mosey.GUI.ViewModels
             var dialogResult = await _dialogManager.ShowMessageWithTimeoutAsync(
                 _context,
                 "Disk space low",
-                $"The images generated from scanning will require approximately {StringFormat.ByteSize(requiredSpace)} of disk space. Only {StringFormat.ByteSize(availableSpace)} is available, are you sure you want to continue?",
+                $"The images generated from scanning will require approximately {StringFormat.ByteSize(requiredSpace)} of disk space." +
+                $"Only {StringFormat.ByteSize(availableSpace)} is available, are you sure you want to continue?",
                 DialogStyle.AffirmativeAndNegative,
                 dialogSettings,
                 timeout

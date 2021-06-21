@@ -39,9 +39,11 @@ namespace Mosey.GUI.Services.Dialog
             set => _selectedPath = value;
         }
 
-        public FolderBrowserDialog() => RootDirectory = Environment.SpecialFolder.MyComputer;
+        public FolderBrowserDialog()
+            => RootDirectory = Environment.SpecialFolder.MyComputer;
 
-        public FolderBrowserDialog(Environment.SpecialFolder rootDirectory) => RootDirectory = rootDirectory;
+        public FolderBrowserDialog(Environment.SpecialFolder rootDirectory)
+            => RootDirectory = rootDirectory;
 
         /// <summary>
         /// Display the dialog window
@@ -65,11 +67,12 @@ namespace Mosey.GUI.Services.Dialog
         /// Initialise a new instance of a <c>CommonOpenFileDialog</c>
         /// </summary>
         /// <param name="rootDirectory">The top directory available to the dialog</param>
-        /// <param name="initialDirectory">The directory location to display when opening the dialog. Must be a child of <paramref name="rootDirectory"/>rootDirectory</param>
+        /// <param name="initialDirectory">The directory location to display when opening the dialog.
+        /// Must be a child of <paramref name="rootDirectory"/>rootDirectory</param>
         /// <returns>A new instance of a <c>CommonOpenFileDialog</c></returns>
         private CommonOpenFileDialog CreateDialog(Environment.SpecialFolder rootDirectory, string initialDirectory)
         {
-            CommonOpenFileDialog dialog = new CommonOpenFileDialog
+            var dialog = new CommonOpenFileDialog
             {
                 IsFolderPicker = true,
                 EnsureFileExists = true,

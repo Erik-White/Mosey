@@ -30,13 +30,6 @@ namespace Mosey.Models
         void DisableAll();
 
         /// <summary>
-        /// Set the <see cref="IDevice.IsEnabled"/> property of a device in the collection.
-        /// </summary>
-        /// <param name="deviceID">The unique device identifier</param>
-        /// <param name="enabled">Sets the <see cref="IDevice.IsEnabled"/> property</param>
-        void SetDeviceEnabled(string deviceID, bool enabled);
-
-        /// <summary>
         /// Update the status of exisiting <see cref="IDevice"/>s in the <see cref="Devices"/> collection.
         /// Any new <see cref="IDevice"/>s will be added to the collection.
         /// </summary>

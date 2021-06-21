@@ -59,7 +59,8 @@ namespace Mosey.GUI.ViewModels
             }
         }
 
-        public List<string> ImageFormatSupported => _imageFileConfig.SupportedFormats;
+        public List<string> ImageFormatSupported
+            => _imageFileConfig.SupportedFormats;
 
         private string _imageSavePath;
         /// <summary>
@@ -114,12 +115,7 @@ namespace Mosey.GUI.ViewModels
             }
             set
             {
-                if (value < 1)
-                {
-                    value = 1;
-                }
-
-                _scanDelay = TimeSpan.FromMinutes(value);
+                _scanDelay = TimeSpan.FromMinutes(value < 1 ? 1 : value);
                 RaisePropertyChanged(nameof(ScanDelay));
             }
         }
@@ -136,12 +132,7 @@ namespace Mosey.GUI.ViewModels
             }
             set
             {
-                if (value < 1)
-                {
-                    value = 1;
-                }
-
-                _scanInterval = TimeSpan.FromMinutes(value);
+                _scanInterval = TimeSpan.FromMinutes(value < 1 ? 1 : value);
                 RaisePropertyChanged(nameof(ScanInterval));
             }
         }
@@ -152,18 +143,15 @@ namespace Mosey.GUI.ViewModels
             get
             {
                 // Use the default setting if no value is set
-                _scanRepetitions = _scanRepetitions > 0 ? _scanRepetitions : _scanTimerConfig.Repetitions;
+                _scanRepetitions = _scanRepetitions > 0
+                    ? _scanRepetitions
+                    : _scanTimerConfig.Repetitions;
 
                 return _scanRepetitions;
             }
             set
             {
-                if (value < 1)
-                {
-                    value = 1;
-                }
-
-                _scanRepetitions = value;
+                _scanRepetitions = value < 1 ? 1 : value;
                 RaisePropertyChanged(nameof(ScanRepetitions));
             }
         }

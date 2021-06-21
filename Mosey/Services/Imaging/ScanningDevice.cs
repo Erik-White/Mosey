@@ -90,13 +90,6 @@ namespace Mosey.Services.Imaging
         /// Initialize a new instance using a <see cref="ScannerSettings"/> instance that represents a physical scanner.
         /// </summary>
         /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
-        public ScanningDevice(ScannerSettings settings)
-            : this(settings, null, null, null) { }
-
-        /// <summary>
-        /// Initialize a new instance using a <see cref="ScannerSettings"/> instance that represents a physical scanner.
-        /// </summary>
-        /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
         /// <param name="config">Device settings used when capturing an image</param>
         public ScanningDevice(ScannerSettings settings, IImagingDeviceConfig config)
             : this(settings, config, null, null) { }
