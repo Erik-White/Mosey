@@ -8,6 +8,8 @@ namespace Mosey.Services.Imaging.Extensions
     /// </summary>
     public static class ImageByteExtensions
     {
+        private static readonly ImageConverter _imageConverter = new();
+
         /// <summary>
         /// Convert an image <see cref="byte"/> array to a specified format and encoding.
         /// </summary>
@@ -23,10 +25,7 @@ namespace Mosey.Services.Imaging.Extensions
         /// <param name="value">An image as a <see cref="byte"/> array</param>
         /// <returns>An <see cref="Image"/> instance</returns>
         public static Image ToImage(this byte[] value)
-        {
-            var ms = new System.IO.MemoryStream(value);
-            return Image.FromStream(ms);
-        }
+            => (Image)_imageConverter.ConvertFrom(value);
 
         /// <summary>
         /// Create an <see cref="Image"/> instance from an image <see cref="byte"/> array.
