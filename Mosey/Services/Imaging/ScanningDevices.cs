@@ -19,7 +19,17 @@ namespace Mosey.Services.Imaging
         /// <summary>
         /// The number of time to attempt reconnection to the WIA driver.
         /// </summary>
-        public int ConnectRetries { get; set; } = 5;
+        public int ConnectRetries
+        {
+            get => _systemDevices is SystemDevices systemDevices ? systemDevices.ConnectRetries : 0;
+            set
+            {
+                if (_systemDevices is SystemDevices systemDevices)
+                {
+                    systemDevices.ConnectRetries = value;
+                }
+            }
+        }
 
         /// <summary>
         /// A collection of <see cref="ScanningDevice"/>s, representing physical scanners.
@@ -90,7 +100,7 @@ namespace Mosey.Services.Imaging
             ScanningDevice device = null;
 
             // Attempt to connect a device matching the deviceID
-            var settings = _systemDevices.ScannerSettings(ConnectRetries).FirstOrDefault(x => x.Id == deviceID);
+            var settings = _systemDevices.GetScannerSettings().FirstOrDefault(x => x.Id == deviceID);
 
             if (settings is not null)
             {
@@ -119,7 +129,7 @@ namespace Mosey.Services.Imaging
 
             // Check the static properties for changed IDs and only retrieve ScannerSetting instances if necessary.
             // This saves connecting the devices via the WIA driver and is much faster
-            var deviceProperties = _systemDevices.ScannerProperties(connectRetries: ConnectRetries);
+            var deviceProperties = _systemDevices.GetScannerProperties();
             if (deviceProperties is null || !deviceProperties.Any())
             {
                 // No devices detected, any current devices have been disconnected
@@ -172,9 +182,6 @@ namespace Mosey.Services.Imaging
             }
         }
 
-        public void SetDeviceEnabled(string deviceID, bool enabled)
-            => _devices.First(x => x.DeviceID == deviceID).IsEnabled = enabled;
-
         /// <summary>
         /// A collection of <see cref="IImagingDevice"/> instances representing physical devices connected to the system.
         /// </summary>
@@ -183,7 +190,7 @@ namespace Mosey.Services.Imaging
         /// <param name="connectRetries">The number of retry attempts allowed if connecting to the WIA driver was unsuccessful</param>
         private IEnumerable<IImagingDevice> ScannerDevices(IImagingDeviceConfig deviceConfig, int connectRetries = 1)
         {
-            foreach (var settings in _systemDevices.ScannerSettings(connectRetries))
+            foreach (var settings in _systemDevices.GetScannerSettings())
             {
                 yield return new ScanningDevice(settings, deviceConfig);
             }

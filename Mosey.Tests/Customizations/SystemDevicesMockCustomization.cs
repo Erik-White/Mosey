@@ -29,11 +29,11 @@ namespace Mosey.Tests.Customizations
                 .Returns(fixture.CreateMany<byte[]>());
 
             systemDevices
-                .Setup(mock => mock.ScannerSettings(It.IsAny<int>()))
+                .Setup(mock => mock.GetScannerSettings())
                 .Returns(settings);
 
             systemDevices
-                .Setup(mock => mock.ScannerProperties(It.IsAny<int>()))
+                .Setup(mock => mock.GetScannerProperties())
                 .Returns(properties);
 
             fixture.Register(() => systemDevices);
