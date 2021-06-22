@@ -100,12 +100,12 @@
                                     <Style.Setters>
                                         <Setter Property="Margin" Value="0" />
                                         <Setter Property="Views:Margin.Bottom" Value="0" />
-                                        <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.AccentSelectedColor}" />
+                                        <Setter Property="Foreground" Value="{StaticResource FontColor.Light}" />
                                         <Setter Property="TextWrapping" Value="Wrap" />
                                     </Style.Setters>
                                 </Style>
                                 <Style TargetType="Label" BasedOn="{StaticResource IconNormal}">
-                                    <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.AccentSelectedColor}" />
+                                    <Setter Property="Foreground" Value="{StaticResource FontColor.Light}" />
                                 </Style>
                             </Style.Resources>
                             <Style.Triggers>
@@ -196,11 +196,11 @@
                     </Button>
                     <TextBox Text="{Binding Path=ImageSavePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Padding="5" Cursor="IBeam" FontSize="{StaticResource FontSize.Small}" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3" />
                     <!--#region Start/stop scan button -->
-                    <ToggleButton Command="{Binding Path=StartStopScanCommand, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ToggleButtonMain}" Grid.Column="4" Grid.RowSpan="2">
+                    <ToggleButton Command="{Binding Path=StartStopScanCommand, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ToggleButtonMain}" Foreground="{StaticResource FontColor.Light}" Grid.Column="4" Grid.RowSpan="2">
                         <!--
                         A DockPanel is used instead of a stackpanel otherwise child elements
                         have infinite width and will not wrap their contents
-                    -->
+                        -->
                         <DockPanel>
                             <Label Visibility="{Binding Path=IsScanRunning, Converter={StaticResource BoolToInvertedVisibilityConverter}}">
                                 <IconPacks:Material Kind="PlayCircle" Height="40" Width="40" />
@@ -215,9 +215,9 @@
                     <!--#endregion Start/stop scan button -->
                     <!-- Advanced options -->
                     <!--
-                <Label Content="Image format" Grid.Column="1" Grid.Row="2" Margin="{StaticResource Margin.Horizontal.Default}" />
-                <Controls:DropDownList  IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Margin="{StaticResource Margin.Horizontal.Default}" Padding="5" Grid.Column="1" Grid.Row="3" />
-                -->
+                    <Label Content="Image format" Grid.Column="1" Grid.Row="2" Margin="{StaticResource Margin.Horizontal.Default}" />
+                    <Controls:DropDownList  IsEnabled="{Binding IsScanRunning, Converter={Converters:BoolToInvertedBoolConverter}}" Margin="{StaticResource Margin.Horizontal.Default}" Padding="5" Grid.Column="1" Grid.Row="3" />
+                    -->
                 </Grid>
                 <!--#endregion Sequence controls -->
                 <!--#region Progress information -->
@@ -324,7 +324,7 @@
                                                 <IconPacks:Material Kind="AlertRhombusOutline" Height="20" Width="20" />
                                             </Label>
                                             <TextBlock Text="Disconnected" Visibility="{Binding IsConnected, Converter={StaticResource BoolToInvertedVisibilityConverter}}" />
-                                            <Controls:ToggleSwitchButton ToolTip="Enable or disable scanning on this device" IsChecked="{Binding Path=IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsImaging, Converter={Converters:BoolToInvertedBoolConverter}}" Cursor="Hand" />
+                                            <Controls:ToggleSwitch ToolTip="Enable or disable scanning on this device" IsOn="{Binding Path=IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsImaging, Converter={Converters:BoolToInvertedBoolConverter}}" Cursor="Hand" />
                                             <TextBlock Text="Scanning enabled" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVisibilityConverter}}" />
                                             <TextBlock Text="Scanning disabled" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToInvertedVisibilityConverter}}" />
                                         </StackPanel>
