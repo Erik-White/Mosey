@@ -154,7 +154,6 @@
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="FontSize" Value="{StaticResource FontSize.Default}" />
         <Setter Property="FontFamily" Value="Segoe UI, Lucida Sans Unicode, Verdana" />
-        <Setter Property="HeaderFontFamily" Value="Segoe UI, Lucida Sans Unicode, Verdana" />
     </Style>
 
     <!-- Grid styles-->

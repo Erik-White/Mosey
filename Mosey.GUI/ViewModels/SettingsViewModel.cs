@@ -133,7 +133,7 @@ namespace Mosey.GUI.ViewModels
             }
         }
 
-        public string Version => System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+        public static string Version => System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
         #endregion Properties
 
         public SettingsViewModel(

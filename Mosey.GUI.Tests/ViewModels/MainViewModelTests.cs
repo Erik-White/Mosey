@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AutoFixture.NUnit3;
 using FluentAssertions;
 using Mosey.Models.Imaging;
+using Mosey.Services.Imaging;
 using Mosey.Tests.AutoData;
 using Mosey.Tests.Extensions;
 using NSubstitute;
@@ -61,12 +62,12 @@ namespace Mosey.GUI.ViewModels.Tests
             public async Task RepeatRefreshDevices([Frozen] IImagingDevices<IImagingDevice> imagingDevices, MainViewModel sut)
             {
                 using var cts = new CancellationTokenSource();
-                cts.CancelAfter(2000);
+                cts.CancelAfter(1000);
 
                 await sut.RefreshDevicesAsync(0, cts.Token);
 
-                imagingDevices
-                    .ReceivedWithAnyArgs().RefreshDevices(null, true);
+                //imagingDevices
+                //    .ReceivedWithAnyArgs().RefreshDevices(null, true);
                 imagingDevices
                     .ReceivedCalls().Where(x => x.GetMethodInfo().Name == nameof(imagingDevices.RefreshDevices))
                     .Count().Should().BeGreaterThan(1);

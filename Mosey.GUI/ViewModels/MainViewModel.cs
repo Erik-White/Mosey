@@ -43,8 +43,8 @@ namespace Mosey.GUI.ViewModels
 
         // Threading
         private readonly object _scanningDevicesLock = new();
-        private static readonly StaTaskScheduler _staQueue = new(numberOfThreads: 1);
-        private static readonly SemaphoreSlim _semaphore = new(1, 1);
+        private static readonly StaTaskScheduler _staQueue = new(concurrencyLevel: 1);
+        private static readonly SemaphoreSlim _staSemaphore = new(1, 1);
         private CancellationTokenSource _cancelScanTokenSource = new();
         private bool _disposed;
 
@@ -523,7 +523,7 @@ namespace Mosey.GUI.ViewModels
         {
             _log.LogDebug($"{nameof(ScanTimer_Complete)} event.");
             // Wait for scanning to complete
-            await _semaphore.WaitAsync();
+            await _staSemaphore.WaitAsync();
 
             // Ensure all other scanning related operations are stopped
             _cancelScanTokenSource.Cancel();
@@ -538,7 +538,7 @@ namespace Mosey.GUI.ViewModels
             RaisePropertyChanged(nameof(StartStopScanCommand));
 
             _log.LogInformation("Scanning complete.");
-            _semaphore.Release();
+            _staSemaphore.Release();
         }
 
         /// <summary>
@@ -583,7 +583,7 @@ namespace Mosey.GUI.ViewModels
                 }
 
                 // Wait until all other staQueue operations are complete
-                await _semaphore.WaitAsync();
+                await _staSemaphore.WaitAsync(CancellationToken.None);
 
                 try
                 {
@@ -601,7 +601,7 @@ namespace Mosey.GUI.ViewModels
                 catch (Exception ex)
                 {
                     _log.LogWarning(ex, "Error while attempting to refresh devices.");
-                    await _dialog.ExceptionDialog(ex);
+                    await _dialog.ExceptionDialog(ex, 5000, CancellationToken.None);
                 }
                 finally
                 {
@@ -609,7 +609,7 @@ namespace Mosey.GUI.ViewModels
                     RaisePropertyChanged(nameof(StartScanCommand));
                     RaisePropertyChanged(nameof(StartStopScanCommand));
                     _log.LogTrace($"Device refresh completed in {nameof(RefreshDevicesAsync)}");
-                    _semaphore.Release();
+                    _staSemaphore.Release();
                 }
             }
         }
@@ -652,9 +652,9 @@ namespace Mosey.GUI.ViewModels
                         _log.LogDebug("Attempting to retrieve image on {ScannerName} (#{DeviceID})", scanner.Name, scannerIDStr);
                         scanner.GetImage();
 
-                        if (scanner.Images.Count() > 0)
+                        if (scanner.Images.Count > 0)
                         {
-                            _log.LogDebug("{ImageCount} images retrieved from scanner #{DeviceID}", scanner.Images.Count(), scanner.ID);
+                            _log.LogDebug("{ImageCount} images retrieved from scanner #{DeviceID}", scanner.Images.Count, scanner.ID);
                             var fileName = string.Join("_", _imageFileConfig.Prefix, saveDateTime);
                             var directory = _fileSystem.Path.Combine(saveDirectory, string.Join(string.Empty, "Scanner", scannerIDStr));
                             _fileSystem.Directory.CreateDirectory(directory);
@@ -698,13 +698,13 @@ namespace Mosey.GUI.ViewModels
             var results = new List<string>();
 
             // Ensure device refresh or other operations are complete
-            await _semaphore.WaitAsync();
+            await _staSemaphore.WaitAsync(CancellationToken.None);
 
             try
             {
                 // The apartment state MUST be single threaded for COM interop
                 // Runtime callable wrappers must be disposed manually to prevent problems with early disposal of COM servers
-                using (var staQueue = new StaTaskScheduler(numberOfThreads: 1, disableComObjectEagerCleanup: true))
+                using (var staQueue = new StaTaskScheduler(concurrencyLevel: 1, disableComObjectEagerCleanup: true))
             {
                 await Task.Factory.StartNew(() =>
                 {
@@ -729,7 +729,7 @@ namespace Mosey.GUI.ViewModels
             }
             finally
             {
-                _semaphore.Release();
+                _staSemaphore.Release();
             }
 
             _log.LogDebug($"Scan completed with {nameof(ScanAsync)} method.");
@@ -774,7 +774,7 @@ namespace Mosey.GUI.ViewModels
                     // Wait for current scan operation to complete, then exit
                     _log.LogDebug($"Waiting for scanning operations to complete before shutting down from {nameof(OnClosingAsync)}.");
                     IsWaiting = true;
-                    await _semaphore?.WaitAsync();
+                    await _staSemaphore?.WaitAsync();
                     _log.LogInformation("User closing application before all scans completed. {ScanRepetitionsCount} of {ScanRepetitions} repetitions completed.", ScanRepetitionsCount, ScanRepetitions);
                     _log.LogDebug($"Application shutdown requested from {nameof(OnClosingAsync)}.");
                     System.Windows.Application.Current.Shutdown();

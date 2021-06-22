@@ -19,10 +19,10 @@ jobs:
     - name: Clone repo
       uses: actions/checkout@master
 
-    - name: Setup .NET Core
+    - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.200
+        dotnet-version: '5.0.x'
 
     - name: Build release
       run: dotnet publish --configuration Release --output ${{ env.RELEASE_PATH }}/${{ matrix.targetplatform }} --runtime win-${{ matrix.targetplatform }} -p:PublishReadyToRun=true -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true
