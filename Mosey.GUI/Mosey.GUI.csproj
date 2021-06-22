@@ -32,7 +32,7 @@
   <ItemGroup>
     <PackageReference Include="AsyncAwaitBestPractices.MVVM" Version="5.1.0" />
     <PackageReference Include="MahApps.Metro" Version="2.4.6" />
-    <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="4.0.0" />
+    <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="4.8.0" />
     <PackageReference Include="Microsoft-WindowsAPICodePack-Shell" Version="1.1.4" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
