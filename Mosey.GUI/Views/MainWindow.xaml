@@ -324,9 +324,7 @@
                                                 <IconPacks:Material Kind="AlertRhombusOutline" Height="20" Width="20" />
                                             </Label>
                                             <TextBlock Text="Disconnected" Visibility="{Binding IsConnected, Converter={StaticResource BoolToInvertedVisibilityConverter}}" />
-                                            <Controls:ToggleSwitch ToolTip="Enable or disable scanning on this device" IsOn="{Binding Path=IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsImaging, Converter={Converters:BoolToInvertedBoolConverter}}" Cursor="Hand" />
-                                            <TextBlock Text="Scanning enabled" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVisibilityConverter}}" />
-                                            <TextBlock Text="Scanning disabled" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToInvertedVisibilityConverter}}" />
+                                            <Controls:ToggleSwitch ToolTip="Enable or disable scanning on this device" IsOn="{Binding Path=IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsImaging, Converter={Converters:BoolToInvertedBoolConverter}}" OnContent="Scanning enabled" OffContent="Scanning disabled" Cursor="Hand" Foreground="{StaticResource FontColor.Default}" />
                                         </StackPanel>
                                         <Label Visibility="{Binding IsImaging, Converter={StaticResource BoolToVisibilityConverter}}" Style="{StaticResource IconNormal}" Grid.Column="1" Grid.RowSpan="2">
                                             <IconPacks:Material Kind="CameraControl" Spin="True" SpinDuration="2.5" Height="40" Width="40" />
