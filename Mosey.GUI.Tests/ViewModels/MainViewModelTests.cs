@@ -75,9 +75,9 @@ namespace Mosey.GUI.ViewModels.Tests
             public async Task CancelTask([Frozen] IImagingDevices<IImagingDevice> imagingDevices, MainViewModel sut)
             {
                 using var cts = new CancellationTokenSource();
-                cts.CancelAfter(1);
+                cts.Cancel();
 
-                await sut.RefreshDevicesAsync(0, cts.Token);
+                await sut.RefreshDevicesAsync(1, cts.Token);
 
                 imagingDevices
                     .DidNotReceiveWithAnyArgs().RefreshDevices(null, true);
