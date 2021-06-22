@@ -66,8 +66,6 @@ namespace Mosey.GUI.ViewModels.Tests
 
                 await sut.RefreshDevicesAsync(0, cts.Token);
 
-                //imagingDevices
-                //    .ReceivedWithAnyArgs().RefreshDevices(null, true);
                 imagingDevices
                     .ReceivedCalls().Where(x => x.GetMethodInfo().Name == nameof(imagingDevices.RefreshDevices))
                     .Count().Should().BeGreaterThan(1);
@@ -77,7 +75,7 @@ namespace Mosey.GUI.ViewModels.Tests
             public async Task CancelTask([Frozen] IImagingDevices<IImagingDevice> imagingDevices, MainViewModel sut)
             {
                 using var cts = new CancellationTokenSource();
-                cts.CancelAfter(0);
+                cts.CancelAfter(1);
 
                 await sut.RefreshDevicesAsync(0, cts.Token);
 
