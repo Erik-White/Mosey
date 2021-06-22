@@ -24,15 +24,6 @@ namespace Mosey.Services.Imaging.Tests
                 sut.Devices.Count().Should().Be(3);
                 sut.Devices.All(device => device.IsEnabled == true).Should().BeTrue();
             }
-
-            [Theory, ScanningDeviceAutoData]
-            public void InitializeCollectionGreedy([Greedy] ScanningDevices sut)
-            {
-                sut.AssertAllPropertiesAreNotDefault();
-                sut.IsEmpty.Should().BeFalse();
-                sut.Devices.Count().Should().Be(3);
-                sut.Devices.All(device => device.IsEnabled == true).Should().BeTrue();
-            }
         }
 
         public class AddDeviceShould

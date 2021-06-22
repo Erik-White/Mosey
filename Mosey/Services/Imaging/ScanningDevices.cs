@@ -44,11 +44,6 @@ namespace Mosey.Services.Imaging
             => _devices.Any(x => x.IsImaging is true);
 
         /// <summary>
-        /// Initialize an empty collection.
-        /// </summary>
-        public ScanningDevices() : this(null, null) { }
-
-        /// <summary>
         /// Initialize the collection <see cref="ScanningDevice"/>s with the specified <paramref name="deviceConfig"/>.
         /// </summary>
         /// <param name="deviceConfig">Used to initialize the collection's <see cref="ScanningDevice"/>s</param>
