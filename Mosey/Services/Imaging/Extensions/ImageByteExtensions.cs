@@ -17,7 +17,8 @@ namespace Mosey.Services.Imaging.Extensions
         /// <param name="format">The format for the image</param>
         /// <param name="encoderParameters">A collection of <see cref="EncoderParameter"/>s to set image quality, colour depth etc</param>
         /// <returns>An image <see cref="byte"/> array in the specified format and encoding</returns>
-        public static byte[] AsFormat(this byte[] value, ImageFormat format, EncoderParameters encoderParameters = null) => value.ToImage().ToBytes(format, encoderParameters);
+        public static byte[] AsFormat(this byte[] value, ImageFormat format, EncoderParameters encoderParameters = null)
+            => value.ToImage().ToBytes(format, encoderParameters);
 
         /// <summary>
         /// Create an <see cref="Image"/> instance from an image <see cref="byte"/> array.
@@ -25,7 +26,7 @@ namespace Mosey.Services.Imaging.Extensions
         /// <param name="value">An image as a <see cref="byte"/> array</param>
         /// <returns>An <see cref="Image"/> instance</returns>
         public static Image ToImage(this byte[] value)
-            => (Image)_imageConverter.ConvertFrom(value);
+            => BytesToImage(value);
 
         /// <summary>
         /// Create an <see cref="Image"/> instance from an image <see cref="byte"/> array.
@@ -33,7 +34,8 @@ namespace Mosey.Services.Imaging.Extensions
         /// <param name="value">An image as a <see cref="byte"/> array</param>
         /// <param name="format">The image format</param>
         /// <returns>An <see cref="Image"/> instance in the specified format</returns>
-        public static Image ToImage(this byte[] value, ImageFormat format) => value.ToImage(format);
+        public static Image ToImage(this byte[] value, ImageFormat format)
+            => BytesToImage(value, format, null);
 
         /// <summary>
         /// Create an <see cref="Image"/> instance from an image <see cref="byte"/> array.
@@ -42,9 +44,15 @@ namespace Mosey.Services.Imaging.Extensions
         /// <param name="format">The format for the image</param>
         /// <param name="encoderParameters">A collection of <see cref="EncoderParameter"/>s to set image quality, colour depth etc</param>
         /// <returns>An <see cref="Image"/> instance in the specified format and encoding</returns>
-        public static Image ToImage(this byte[] value, ImageFormat format, EncoderParameters encoderParameters = null)
+        public static Image ToImage(this byte[] value, ImageFormat format, EncoderParameters encoderParameters)
+            => BytesToImage(value, format, encoderParameters);
+
+        private static Image BytesToImage(byte[] imageContent)
+            => (Image)_imageConverter.ConvertFrom(imageContent);
+
+        private static Image BytesToImage(byte[] imageContent, ImageFormat format, EncoderParameters encoderParameters)
         {
-            using (var ms = value.ToImage().ToMemoryStream(format, encoderParameters))
+            using (var ms = BytesToImage(imageContent).ToMemoryStream(format, encoderParameters))
             {
                 return Image.FromStream(ms);
             }
