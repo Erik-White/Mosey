@@ -92,7 +92,7 @@ namespace Mosey.Services.Imaging
         {
             _scannerSettings = settings;
             ImageSettings = config;
-            _systemDevices = systemDevices ?? new SystemScanningDevices();
+            _systemDevices = systemDevices ?? new DntScannerDevices();
             _fileSystem = fileSystem ?? new FileSystem();
         }
 

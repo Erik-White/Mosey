@@ -35,7 +35,7 @@ namespace Mosey.Services.Imaging
         /// <param name="systemDevices">An <see cref="ISystemImagingDevices"/> instance that provide access to the WIA driver devices</param>
         public ScanningDevices(IImagingDeviceConfig deviceConfig, ISystemImagingDevices<ScannerSettings> systemDevices = null)
         {
-            _systemDevices = systemDevices ?? new SystemScanningDevices();
+            _systemDevices = systemDevices ?? new DntScannerDevices();
             GetDevices(deviceConfig);
         }
 
