@@ -55,32 +55,32 @@ namespace Mosey.GUI.ViewModels.Tests
             }
         }
 
-        public class RefreshDevicesAsyncShould
+        public class BeginRefreshDevicesAsyncShould
         {
             [Theory, MainViewModelAutoData]
-            public async Task RepeatRefreshDevices([Frozen] IImagingDevices<IImagingDevice> imagingDevices, MainViewModel sut)
+            public async Task RepeatRefreshDevices([Frozen] IImagingHost scanningHost, MainViewModel sut)
             {
                 using var cts = new CancellationTokenSource();
                 cts.CancelAfter(1000);
 
-                await sut.RefreshDevicesAsync(0, cts.Token);
+                await sut.BeginRefreshDevicesAsync(TimeSpan.Zero, cts.Token);
 
-                imagingDevices
+                scanningHost
                     .ReceivedCalls()
-                    .Count(x => x.GetMethodInfo().Name == nameof(imagingDevices.RefreshDevices))
+                    .Count(x => x.GetMethodInfo().Name == nameof(scanningHost.RefreshDevicesAsync))
                     .Should().BeGreaterThan(1);
             }
 
             [Theory, MainViewModelAutoData]
-            public async Task CancelTask([Frozen] IImagingDevices<IImagingDevice> imagingDevices, MainViewModel sut)
+            public async Task CancelTask([Frozen] IImagingHost scanningHost, MainViewModel sut)
             {
                 using var cts = new CancellationTokenSource();
                 cts.Cancel();
 
-                await sut.RefreshDevicesAsync(1, cts.Token);
+                await sut.BeginRefreshDevicesAsync(TimeSpan.FromSeconds(1), cts.Token);
 
-                imagingDevices
-                    .DidNotReceiveWithAnyArgs().RefreshDevices(null, true);
+                await scanningHost
+                    .DidNotReceiveWithAnyArgs().RefreshDevicesAsync(default, default);
             }
 
             [Theory, MainViewModelAutoData]
@@ -91,7 +91,7 @@ namespace Mosey.GUI.ViewModels.Tests
 
                 using (var monitoredSubject = sut.Monitor())
                 {
-                    await sut.RefreshDevicesAsync(0, cts.Token);
+                    await sut.BeginRefreshDevicesAsync(TimeSpan.Zero, cts.Token);
 
                     monitoredSubject.Should().RaisePropertyChangeFor(x => x.ScanningDevices);
                     monitoredSubject.Should().RaisePropertyChangeFor(x => x.StartScanCommand);
