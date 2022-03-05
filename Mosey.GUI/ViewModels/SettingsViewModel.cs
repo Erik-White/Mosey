@@ -37,8 +37,8 @@ namespace Mosey.GUI.ViewModels
             get => _userSettings.Image.Resolution;
             set
             {
-                _userSettings.Image.Resolution = value;
-                _appSettings.Update(c => c.Image.Resolution = value);
+                _userSettings.Image = _userSettings.Image with { Resolution = value };
+                _appSettings.Update(c => c.Image = c.Image with { Resolution = value });
                 RaisePropertyChanged(nameof(DefaultResolution));
 
                 _log.LogInformation($"{nameof(DefaultResolution)} changed to {value}");

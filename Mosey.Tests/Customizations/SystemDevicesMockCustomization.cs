@@ -23,7 +23,7 @@ namespace Mosey.Tests.Customizations
             systemDevices
                 .Setup(x => x.PerformImaging(
                     It.IsAny<ScannerSettings>(),
-                    It.IsAny<IImagingDeviceConfig>(),
+                    It.IsAny<ImagingDeviceConfig>(),
                     It.IsAny<IImagingDevice.ImageFormat>()))
                 .Returns(fixture.CreateMany<byte[]>());
 

@@ -17,15 +17,15 @@ namespace Mosey.Services.Imaging
 
         private readonly IFileSystem _fileSystem;
 
-        private IImagingDeviceConfig _deviceConfig;
+        private ImagingDeviceConfig _deviceConfig;
         private ImageFileConfig _imageFileConfig;
 
         /// <inheritdoc cref="IImagingDevices{T}"/>
         public IImagingDevices<IImagingDevice> ImagingDevices { get; private set; }
 
-        public DntScanningHost(IImagingDevices<IImagingDevice> imagingDevices, IImagingDeviceConfig deviceConfig, ImageFileConfig imageFileConfig = null, IFileSystem fileSystem = null)
+        public DntScanningHost(IImagingDevices<IImagingDevice> imagingDevices, ImagingDeviceConfig deviceConfig = null, ImageFileConfig imageFileConfig = null, IFileSystem fileSystem = null)
         {
-            _deviceConfig = deviceConfig;
+            _deviceConfig = deviceConfig ?? new ImagingDeviceConfig();
             _imageFileConfig = imageFileConfig ?? new ImageFileConfig();
             _fileSystem = fileSystem ?? new FileSystem();
 
@@ -55,7 +55,7 @@ namespace Mosey.Services.Imaging
                         if (useHighestResolution)
                         {
                             // Override the config and just use the highest available resolution
-                            scanner.ImageSettings.Resolution = scanner.SupportedResolutions.Max();
+                            scanner.ImageSettings = scanner.ImageSettings with { Resolution = scanner.SupportedResolutions.Max() };
                         }
 
                         // Run the scanner and retrieve the image(s) to memory
@@ -150,7 +150,7 @@ namespace Mosey.Services.Imaging
                 _staQueue);
         }
 
-        public void UpdateConfig(IImagingDeviceConfig deviceConfig, ImageFileConfig imageFileConfig)
+        public void UpdateConfig(ImagingDeviceConfig deviceConfig, ImageFileConfig imageFileConfig)
         {
             _deviceConfig = deviceConfig;
             _imageFileConfig = imageFileConfig;

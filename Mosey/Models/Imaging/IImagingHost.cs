@@ -36,7 +36,7 @@ namespace Mosey.Models.Imaging
         /// Update the configuration that will be used for imaging
         /// </summary>
         /// <exception cref="OperationCanceledException">If the update was cancelled before completion</exception>
-        void UpdateConfig(IImagingDeviceConfig deviceConfig, ImageFileConfig imageFileConfig);
+        void UpdateConfig(ImagingDeviceConfig deviceConfig, ImageFileConfig imageFileConfig);
 
         /// <summary>
         /// Returns when any ongoing imaging or refresh has completed

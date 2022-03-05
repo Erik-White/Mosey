@@ -36,7 +36,7 @@ namespace Mosey.Services.Imaging
 
         public IList<byte[]> Images { get; internal set; } = new List<byte[]>();
 
-        public IImagingDeviceConfig ImageSettings { get; set; }
+        public ImagingDeviceConfig ImageSettings { get; set; }
 
         /// <inheritdoc cref="ScannerSettings.IsAutomaticDocumentFeeder"/>
         public bool IsAutomaticDocumentFeeder => _scannerSettings.IsAutomaticDocumentFeeder;
@@ -79,7 +79,7 @@ namespace Mosey.Services.Imaging
         /// </summary>
         /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
         /// <param name="config">Device settings used when capturing an image</param>
-        public ScanningDevice(ScannerSettings settings, IImagingDeviceConfig config)
+        public ScanningDevice(ScannerSettings settings, ImagingDeviceConfig config)
             : this(settings, config, null, null) { }
 
         /// <summary>
@@ -88,7 +88,7 @@ namespace Mosey.Services.Imaging
         /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
         /// <param name="config">Device settings used when capturing an image</param>
         /// <param name="systemDevices">An <see cref="ISystemImagingDevices"/> instance that provide access to the WIA driver devices</param>
-        public ScanningDevice(ScannerSettings settings, IImagingDeviceConfig config, ISystemImagingDevices<ScannerSettings> systemDevices, IFileSystem fileSystem)
+        public ScanningDevice(ScannerSettings settings, ImagingDeviceConfig config, ISystemImagingDevices<ScannerSettings> systemDevices, IFileSystem fileSystem)
         {
             _scannerSettings = settings;
             ImageSettings = config;
@@ -126,7 +126,7 @@ namespace Mosey.Services.Imaging
 
             // Default settings if none provided
             var deviceConfig = ImageSettings;
-            deviceConfig ??= new ScanningDeviceSettings
+            deviceConfig ??= new ImagingDeviceConfig
             {
                 Brightness = 1,
                 Contrast = 1,

@@ -34,7 +34,7 @@ namespace Mosey.Models.Imaging
         /// <summary>
         /// Set the device settings used when imaging.
         /// </summary>
-        IImagingDeviceConfig ImageSettings { get; set; }
+        ImagingDeviceConfig ImageSettings { get; set; }
 
         /// <summary>
         /// <see langword="true"/> when imaging is in progress.

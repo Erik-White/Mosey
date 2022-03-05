@@ -45,7 +45,7 @@ namespace Mosey.Services.Imaging.Tests
 
             [Theory, ScanningDeviceAutoData]
             public void ThrowIfDeviceInstanceExists(
-                [Frozen] IImagingDeviceConfig deviceConfig,
+                [Frozen] ImagingDeviceConfig deviceConfig,
                 [Frozen] ScannerSettings settings,
                 [Frozen, CollectionSize(1)] IEnumerable<ScannerSettings> _,
                 [Greedy] ScanningDevices sut)
@@ -63,7 +63,7 @@ namespace Mosey.Services.Imaging.Tests
             [Theory, ScanningDeviceAutoData]
             public void ContainUniqueDevices(
                 ScanningDevice device,
-                [Frozen] IImagingDeviceConfig deviceConfig,
+                [Frozen] ImagingDeviceConfig deviceConfig,
                 [Frozen, CollectionSize(5)] IEnumerable<ScannerSettings> scannerSettings,
                 [Greedy] ScanningDevices sut)
             {

@@ -9,7 +9,7 @@ namespace Mosey.GUI.Configuration
         public ImageFileConfig ImageFile { get; set; }
         public IntervalTimerConfig ScanTimer { get; set; }
         public IntervalTimerConfig UITimer { get; set; }
-        public ScanningDeviceSettings Image { get; set; }
+        public ImagingDeviceConfig Image { get; set; }
         public DeviceConfig Device { get; set; }
     }
 }

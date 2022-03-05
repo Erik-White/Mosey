@@ -23,7 +23,7 @@ namespace Mosey.Services.Imaging
         /// <inheritdoc/>
         /// <exception cref="COMException">If an error occurs within the specified number of <see cref="ConnectRetries"/></exception>
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <see cref="ConnectRetries"/></exception>
-        public IEnumerable<byte[]> PerformImaging(ScannerSettings settings, IImagingDeviceConfig config, IImagingDevice.ImageFormat format)
+        public IEnumerable<byte[]> PerformImaging(ScannerSettings settings, ImagingDeviceConfig config, IImagingDevice.ImageFormat format)
         {
             // Connect to the specified device and create a COM object representation
             using (var device = ConfiguredScannerDevice(settings, config))
@@ -64,7 +64,7 @@ namespace Mosey.Services.Imaging
         /// <param name="settings">A <see cref="GetScannerSettings"/> instance representing a physical device</param>
         /// <param name="config">Device settings used when capturing an image</param>
         /// <returns>A <see cref="ScannerDevice"/> instance configured using <paramref name="config"/></returns>
-        private static ScannerDevice ConfiguredScannerDevice(ScannerSettings settings, IImagingDeviceConfig config)
+        private static ScannerDevice ConfiguredScannerDevice(ScannerSettings settings, ImagingDeviceConfig config)
         {
             var device = new ScannerDevice(settings);
             var supportedResolutions = settings.SupportedResolutions;
@@ -73,10 +73,13 @@ namespace Mosey.Services.Imaging
             if (!supportedResolutions.Contains(config.Resolution))
             {
                 // Find the closest supported resolution instead
-                config.Resolution = supportedResolutions
-                    .OrderBy(v => v)
-                    .ThenBy(item => Math.Abs(config.Resolution - item))
-                    .First();
+                config = config with
+                {
+                    Resolution = supportedResolutions
+                        .OrderBy(v => v)
+                        .ThenBy(item => Math.Abs(config.Resolution - item))
+                        .First()
+                };
             }
 
             // Apply device config

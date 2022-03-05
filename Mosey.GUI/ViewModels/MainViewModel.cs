@@ -34,7 +34,7 @@ namespace Mosey.GUI.ViewModels
         private readonly DialogViewModel _dialog;
 
         // Configuration
-        private IImagingDeviceConfig _imageConfig;
+        private ImagingDeviceConfig _imageConfig;
         private ImageFileConfig _imageFileConfig;
         private IIntervalTimerConfig _scanTimerConfig;
         private DeviceConfig _userDeviceConfig;
