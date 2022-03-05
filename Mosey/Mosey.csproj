@@ -9,11 +9,11 @@
       <_Parameter1>Mosey.Tests</_Parameter1>
     </AssemblyAttribute>
     <PackageReference Include="DNTScanner.Core" Version="1.1.2" />
-    <PackageReference Include="Macross.Json.Extensions" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0" />
-    <PackageReference Include="System.Drawing.Common" Version="5.0.2" />
-    <PackageReference Include="System.IO.Abstractions" Version="13.2.38" />
-    <PackageReference Include="System.Text.Json" Version="5.0.2" />
+    <PackageReference Include="Macross.Json.Extensions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
+    <PackageReference Include="System.IO.Abstractions" Version="16.1.16" />
+    <PackageReference Include="System.Text.Json" Version="6.0.2" />
   </ItemGroup>
 
   <ItemGroup>
