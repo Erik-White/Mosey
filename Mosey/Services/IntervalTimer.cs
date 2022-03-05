@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using Mosey.Models;
 
@@ -8,7 +9,7 @@ namespace Mosey.Services
     /// <summary>
     /// A timer with interval callback events. Allows for pausing between intervals
     /// </summary>
-    public class IntervalTimer : IIntervalTimer
+    public sealed class IntervalTimer : IIntervalTimer
     {
         public DateTime StartTime { get; private set; }
         public DateTime FinishTime => StartTime.Add(Repetitions * Interval) + Delay;
@@ -20,7 +21,7 @@ namespace Mosey.Services
         public bool Paused { get; private set; }
         public event EventHandler Tick;
         public event EventHandler Complete;
-        private bool disposed;
+
         private Timer timer;
         private TimeSpan intervalRemaining;
         private readonly Stopwatch stopWatch = new();
@@ -82,13 +83,15 @@ namespace Mosey.Services
         /// Raises an event when an interval has elapsed
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void OnTick(EventArgs e) => Tick?.Invoke(this, EventArgs.Empty);
+        public void OnTick(EventArgs args)
+            => Tick?.Invoke(this, args);
 
         /// <summary>
         /// Raises an event when the timer has run to completion
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void OnComplete(EventArgs e) => Complete?.Invoke(this, EventArgs.Empty);
+        public void OnComplete(EventArgs args)
+            => Complete?.Invoke(this, args);
 
         /// <summary>
         /// Timer callback method. Continues the timer until the maximum repetition count is reached
@@ -160,67 +163,38 @@ namespace Mosey.Services
         /// </summary>
         public void Resume()
         {
-            if (timer is not null)
+            if (timer is null)
             {
-                if (intervalRemaining > TimeSpan.Zero)
-                {
-                    timer.Change(intervalRemaining, intervalRemaining);
-                    intervalRemaining = TimeSpan.Zero;
-                    stopWatch.Start();
-                }
-                else
-                {
-                    stopWatch.Restart();
-                    timer.Change(Interval, Interval);
-                }
-
-                Paused = false;
+                return;
             }
-        }
 
-        public virtual object Clone() => MemberwiseClone();
+            if (intervalRemaining > TimeSpan.Zero)
+            {
+                timer.Change(intervalRemaining, intervalRemaining);
+                intervalRemaining = TimeSpan.Zero;
+                stopWatch.Start();
+            }
+            else
+            {
+                stopWatch.Restart();
+                timer.Change(Interval, Interval);
+            }
+
+            Paused = false;
+        }
 
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposed)
+            foreach (var del in Tick?.GetInvocationList().Select(i => i as EventHandler))
             {
-                if (disposing)
-                {
-                    if (Tick is not null)
-                    {
-                        foreach (var del in Tick.GetInvocationList())
-                        {
-                            Tick -= (del as EventHandler);
-                        }
-                    }
-
-                    if (Complete is not null)
-                    {
-                        foreach (var del in Complete.GetInvocationList())
-                        {
-                            Complete -= (del as EventHandler);
-                        }
-                    }
-
-                    if (timer is not null)
-                    {
-                        timer.Dispose();
-                    }
-                }
-
-                disposed = true;
+                Tick -= del;
             }
-        }
+            foreach (var del in Complete?.GetInvocationList().Select(i => i as EventHandler))
+            {
+                Complete -= del;
+            }
 
-        ~IntervalTimer()
-        {
-            Dispose(false);
+            timer?.Dispose();
         }
     }
 }
