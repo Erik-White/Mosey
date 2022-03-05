@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Mosey.Models;
 
 namespace Mosey.GUI.Configuration
 {
     /// <summary>
     /// Configurations settings related to physical scanning devices.
     /// </summary>
-    public class DeviceConfig : IConfig
+    public record DeviceConfig
     {
         /// <summary>
         /// If devices should be enabled when they are connected.
@@ -35,8 +34,6 @@ namespace Mosey.GUI.Configuration
         /// </summary>
         public IEnumerable<int> StandardResolutions
             => GetResolutions(ResolutionData);
-
-        public object Clone() => MemberwiseClone();
 
         /// <summary>
         /// Get the available meta data for a particular image resolution

@@ -5,7 +5,7 @@ namespace Mosey.Models.Imaging
     /// <summary>
     /// Image settings used when writing an image captured by an <see cref="IImagingDevice"/> to disk.
     /// </summary>
-    public interface IImageFileConfig : IConfig
+    public interface IImageFileConfig
     {
         /// <summary>
         /// The directory used to store the image.

@@ -3,7 +3,7 @@ using Mosey.Models.Imaging;
 
 namespace Mosey.Services.Imaging
 {
-    public class ImageFileConfig : IImageFileConfig
+    public record ImageFileConfig : IImageFileConfig
     {
         public string Directory { get; set; }
         public string Prefix { get; set; }
@@ -11,7 +11,5 @@ namespace Mosey.Services.Imaging
         public List<string> SupportedFormats { get; set; }
         public string DateFormat { get; set; }
         public string TimeFormat { get; set; }
-
-        public object Clone() => MemberwiseClone();
     }
 }

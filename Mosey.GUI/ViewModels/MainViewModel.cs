@@ -385,9 +385,9 @@ namespace Mosey.GUI.ViewModels
                 return;
             }
 
-            _scanTimerConfig = (IIntervalTimerConfig)settings.ScanTimer.Clone();
-            _imageConfig = (IImagingDeviceConfig)settings.Image.Clone();
-            _imageFileConfig = (IImageFileConfig)settings.ImageFile.Clone();
+            _scanTimerConfig = settings.ScanTimer with { };
+            _imageConfig = settings.Image with { };
+            _imageFileConfig = settings.ImageFile with { };
             _userDeviceConfig = settings.Device;
 
             _scanningHost.UpdateConfig(_imageConfig, _imageFileConfig);

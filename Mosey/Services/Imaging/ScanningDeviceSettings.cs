@@ -7,7 +7,7 @@ namespace Mosey.Services.Imaging
     /// <summary>
     /// Device settings used by a <see cref="ScanningDevice"/> when capturing an image.
     /// </summary>
-    public sealed class ScanningDeviceSettings : IImagingDeviceConfig, IEquatable<ScanningDeviceSettings>
+    public record ScanningDeviceSettings : IImagingDeviceConfig
     {
         public ImageColorFormat ColorFormat { get; set; } = ImageColorFormat.Color;
         public int Resolution { get; set; }
@@ -33,21 +33,5 @@ namespace Mosey.Services.Imaging
             Brightness = brightness;
             Contrast = contrast;
         }
-
-        public object Clone()
-            => MemberwiseClone();
-
-        public override bool Equals(object obj)
-            => Equals(obj as ScanningDeviceSettings);
-
-        public bool Equals(ScanningDeviceSettings other)
-        {
-            return other is not null &&
-                (ColorFormat, Resolution, Brightness, Contrast).Equals(
-                    (other.ColorFormat, other.Resolution, other.Brightness, other.Contrast));
-        }
-
-        public override int GetHashCode()
-            => (ColorFormat, Resolution, Brightness, Contrast).GetHashCode();
     }
 }
