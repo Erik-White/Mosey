@@ -35,7 +35,7 @@ namespace Mosey.GUI.ViewModels
 
         // Configuration
         private IImagingDeviceConfig _imageConfig;
-        private IImageFileConfig _imageFileConfig;
+        private ImageFileConfig _imageFileConfig;
         private IIntervalTimerConfig _scanTimerConfig;
         private DeviceConfig _userDeviceConfig;
 
@@ -49,7 +49,7 @@ namespace Mosey.GUI.ViewModels
             get => _imageFileConfig.Format;
             set
             {
-                _imageFileConfig.Format = value;
+                _imageFileConfig = _imageFileConfig with { Format = value };
                 RaisePropertyChanged(nameof(ImageFormat));
             }
         }

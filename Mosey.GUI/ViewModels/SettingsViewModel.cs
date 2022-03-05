@@ -24,8 +24,8 @@ namespace Mosey.GUI.ViewModels
             get => _userSettings.ImageFile.Directory ?? _appSettings.Value.ImageFile.Directory;
             set
             {
-                _userSettings.ImageFile.Directory = value;
-                _appSettings.Update(c => c.ImageFile.Directory = value);
+                _userSettings.ImageFile = _userSettings.ImageFile with { Directory = value };
+                _appSettings.Update(c => c.ImageFile = c.ImageFile with { Directory = value });
                 RaisePropertyChanged(nameof(ImageSavePath));
 
                 _log.LogInformation($"{nameof(ImageSavePath)} changed to {value}");

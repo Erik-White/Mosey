@@ -18,15 +18,15 @@ namespace Mosey.Services.Imaging
         private readonly IFileSystem _fileSystem;
 
         private IImagingDeviceConfig _deviceConfig;
-        private IImageFileConfig _imageFileConfig;
+        private ImageFileConfig _imageFileConfig;
 
         /// <inheritdoc cref="IImagingDevices{T}"/>
         public IImagingDevices<IImagingDevice> ImagingDevices { get; private set; }
 
-        public DntScanningHost(IImagingDevices<IImagingDevice> imagingDevices, IImagingDeviceConfig deviceConfig, IImageFileConfig imageFileConfig, IFileSystem fileSystem = null)
+        public DntScanningHost(IImagingDevices<IImagingDevice> imagingDevices, IImagingDeviceConfig deviceConfig, ImageFileConfig imageFileConfig = null, IFileSystem fileSystem = null)
         {
             _deviceConfig = deviceConfig;
-            _imageFileConfig = imageFileConfig;
+            _imageFileConfig = imageFileConfig ?? new ImageFileConfig();
             _fileSystem = fileSystem ?? new FileSystem();
 
             ImagingDevices = imagingDevices;
@@ -150,7 +150,7 @@ namespace Mosey.Services.Imaging
                 _staQueue);
         }
 
-        public void UpdateConfig(IImagingDeviceConfig deviceConfig, IImageFileConfig imageFileConfig)
+        public void UpdateConfig(IImagingDeviceConfig deviceConfig, ImageFileConfig imageFileConfig)
         {
             _deviceConfig = deviceConfig;
             _imageFileConfig = imageFileConfig;
