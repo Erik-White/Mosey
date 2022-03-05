@@ -25,8 +25,6 @@ namespace Mosey.Services.Imaging
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <see cref="ConnectRetries"/></exception>
         public IEnumerable<byte[]> PerformImaging(ScannerSettings settings, IImagingDeviceConfig config, IImagingDevice.ImageFormat format)
         {
-            IEnumerable<byte[]> images = new List<byte[]>();
-
             // Connect to the specified device and create a COM object representation
             using (var device = ConfiguredScannerDevice(settings, config))
             {
@@ -35,10 +33,9 @@ namespace Mosey.Services.Imaging
                     ConnectRetries,
                     ConnectRetryDelay,
                     _semaphore);
-                images = WIARetry(device.ExtractScannedImageFiles, ConnectRetries, ConnectRetryDelay, _semaphore).ToList();
-            }
 
-            return images;
+                return WIARetry(device.ExtractScannedImageFiles, ConnectRetries, ConnectRetryDelay, _semaphore).ToList();
+            }
         }
 
         /// <inheritdoc/>

@@ -68,6 +68,7 @@ namespace Mosey.GUI
                 .AddTransient<IFactory<IIntervalTimer>, IntervalTimerFactory>()
                 .AddTransient<IFolderBrowserDialog, FolderBrowserDialog>()
                 .AddScoped<IDialogManager, DialogManager>()
+                .AddScoped<IImagingDeviceConfig, ScanningDeviceSettings>()
                 .AddTransient<IImagingDevice, ScanningDevice>()
                 .AddSingleton<IImagingDevices<IImagingDevice>, ScanningDevices>()
 
