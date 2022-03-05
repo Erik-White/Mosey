@@ -2,7 +2,7 @@
 
 namespace Mosey.Models
 {
-    public interface IIntervalTimer : ITimer, ICloneable
+    public interface IIntervalTimer : ITimer
     {
         DateTime StartTime { get; }
         DateTime FinishTime { get; }

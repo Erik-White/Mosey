@@ -30,7 +30,8 @@ namespace Mosey.Services.Imaging.Extensions
         /// </summary>
         /// <param name="value">An <see cref="Image"/> instance</param>
         /// <returns>A <see cref="byte"/> array</returns>
-        public static byte[] ToBytes(this Image value) => value.ToBytes(value.RawFormat);
+        public static byte[] ToBytes(this Image value)
+            => ImageToBytes(value, value.RawFormat, null);
 
         /// <summary>
         /// Create a <see cref="byte"/> array from an <see cref="Image"/> instance.
@@ -38,7 +39,8 @@ namespace Mosey.Services.Imaging.Extensions
         /// <param name="value">An <see cref="Image"/> instance</param>
         /// <param name="format">The image format</param>
         /// <returns>An image <see cref="byte"/> array in the specified format</returns>
-        public static byte[] ToBytes(this Image value, ImageFormat format) => value.ToBytes(format);
+        public static byte[] ToBytes(this Image value, ImageFormat format)
+            => ImageToBytes(value, format, null);
 
         /// <summary>
         /// Create a <see cref="byte"/> array from an <see cref="Image"/> instance.
@@ -47,13 +49,8 @@ namespace Mosey.Services.Imaging.Extensions
         /// <param name="format">The image format</param>
         /// <param name="encoderParameters">A collection of <see cref="EncoderParameter"/>s to set image quality, colour depth etc</param>
         /// <returns>An image <see cref="byte"/> array in the specified format and encoding</returns>
-        public static byte[] ToBytes(this Image value, ImageFormat format, EncoderParameters encoderParameters = null)
-        {
-            using (var ms = value.ToMemoryStream(format, encoderParameters))
-            {
-                return ms.ToArray();
-            }
-        }
+        public static byte[] ToBytes(this Image value, ImageFormat format, EncoderParameters encoderParameters)
+            => ImageToBytes(value, format, encoderParameters);
 
         /// <summary>
         /// Create a <see cref="MemoryStream"/> from an <see cref="Image"/> instance.
@@ -65,12 +62,10 @@ namespace Mosey.Services.Imaging.Extensions
         /// <returns>An <see cref="Image"/> <see cref="MemoryStream"/> in the specified format and encoding</returns>
         internal static MemoryStream ToMemoryStream(this Image value, ImageFormat format, EncoderParameters encoderParameters = null)
         {
-            using (var ms = new MemoryStream())
-            {
-                value.Save(ms, format.CodecInfo(), encoderParameters);
+            var ms = new MemoryStream();
+            value.Save(ms, format.CodecInfo(), encoderParameters);
 
-                return ms;
-            }
+            return ms;
         }
 
         /// <summary>
@@ -78,6 +73,15 @@ namespace Mosey.Services.Imaging.Extensions
         /// </summary>
         /// <param name="value">An image format instance</param>
         /// <returns>An <see cref="ImageCodecInfo"/> instance corresponding to the <see cref="ImageFormat"/></returns>
-        public static ImageCodecInfo CodecInfo(this ImageFormat value) => ImageCodecInfo.GetImageDecoders().First(codec => codec.FormatID == value.Guid);
+        public static ImageCodecInfo CodecInfo(this ImageFormat value)
+            => ImageCodecInfo.GetImageDecoders().First(codec => codec.FormatID == value.Guid);
+
+        private static byte[] ImageToBytes(Image image, ImageFormat format, EncoderParameters encoderParameters)
+        {
+            using (var ms = image.ToMemoryStream(format, encoderParameters))
+            {
+                return ms.ToArray();
+            }
+        }
     }
 }

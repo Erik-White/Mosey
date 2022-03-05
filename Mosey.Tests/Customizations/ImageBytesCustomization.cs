@@ -13,12 +13,11 @@ namespace Mosey.Tests.Customizations
         {
             var random = new Random();
             byte[] bitmapData;
-            var image = new Bitmap(width, height);
 
-            image.SetPixel(random.Next(width), random.Next(height), Color.Black);
-
+            using (var image = new Bitmap(width, height))
             using (var memoryStream = new MemoryStream())
             {
+                image.SetPixel(random.Next(width), random.Next(height), Color.Black);
                 image.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Bmp);
                 bitmapData = memoryStream.ToArray();
             }

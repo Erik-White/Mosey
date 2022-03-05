@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Mosey.Models;
+﻿using Mosey.Models;
 using Mosey.Services;
 using Mosey.Services.Imaging;
 
@@ -15,9 +12,8 @@ namespace Mosey.GUI.Configuration
         public ScanningDeviceSettings Image { get; set; }
         public DeviceConfig Device { get; set; }
 
-        public AppSettings Copy()
-        {
-            var copy = new AppSettings
+        public object Clone()
+            => new AppSettings()
             {
                 ImageFile = (ImageFileConfig)ImageFile.Clone(),
                 ScanTimer = (IntervalTimerConfig)ScanTimer.Clone(),
@@ -25,8 +21,5 @@ namespace Mosey.GUI.Configuration
                 Image = (ScanningDeviceSettings)Image.Clone(),
                 Device = (DeviceConfig)Device.Clone()
             };
-
-            return copy;
-        }
     }
 }

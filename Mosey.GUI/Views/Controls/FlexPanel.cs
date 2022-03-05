@@ -82,15 +82,9 @@ namespace Mosey.GUI.Views.Controls
 
                 foreach (UIElement child in Children)
                 {
-                    var arrangeRect = new Rect();
-                    if (GetFlex(child))
-                    {
-                        arrangeRect = new Rect(0, currentLength, finalSize.Width, flexSize * GetFlexWeight(child));
-                    }
-                    else
-                    {
-                        arrangeRect = new Rect(0, currentLength, finalSize.Width, child.DesiredSize.Height);
-                    }
+                    var arrangeRect = GetFlex(child)
+                        ? new Rect(0, currentLength, finalSize.Width, flexSize * GetFlexWeight(child))
+                        : new Rect(0, currentLength, finalSize.Width, child.DesiredSize.Height);
 
                     child.Arrange(arrangeRect);
                     currentLength += arrangeRect.Height;
@@ -114,15 +108,9 @@ namespace Mosey.GUI.Views.Controls
 
                 foreach (UIElement child in Children)
                 {
-                    var arrangeRect = new Rect();
-                    if (GetFlex(child))
-                    {
-                        arrangeRect = new Rect(currentLength, 0, flexSize * GetFlexWeight(child), finalSize.Height);
-                    }
-                    else
-                    {
-                        arrangeRect = new Rect(currentLength, 0, child.DesiredSize.Width, finalSize.Height);
-                    }
+                    var arrangeRect = GetFlex(child)
+                        ? new Rect(currentLength, 0, flexSize * GetFlexWeight(child), finalSize.Height)
+                        : new Rect(currentLength, 0, child.DesiredSize.Width, finalSize.Height);
 
                     child.Arrange(arrangeRect);
                     currentLength += arrangeRect.Width;

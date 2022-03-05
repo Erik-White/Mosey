@@ -4,7 +4,7 @@
     /// A collection of <see cref="IImagingDevice"/>s representing physical imaging devices.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IImagingDevices<T> : IDeviceCollection<T> where T : IImagingDevice
+    public interface IImagingDevices<out T> : IDeviceCollection<T> where T : IImagingDevice
     {
         /// <summary>
         /// <see langword="true"/> if the <see cref="IDeviceCollection{T}.Devices"/> collection is empty
@@ -22,6 +22,6 @@
         /// </summary>
         /// <param name="deviceConfig">The <see cref="IImagingDeviceConfig"/> used to initialize the device</param>
         /// <param name="enableDevices">Sets the <see cref="IDevice.IsEnabled"/> property of any new devices that are not already in the collection</param>
-        void RefreshDevices(IImagingDeviceConfig deviceConfig, bool enableDevices);
+        void RefreshDevices(IImagingDeviceConfig deviceConfig, bool enableDevices = true);
     }
 }

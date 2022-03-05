@@ -11,7 +11,7 @@ namespace Mosey.Tests.AutoData
     {
         public AutoNSubstituteDataAttribute(Action<IFixture> initialize) : base(() =>
         {
-            Fixture fixture = new Fixture();
+            var fixture = new Fixture();
 
             fixture.Customize(new AutoNSubstituteCustomization()
             {

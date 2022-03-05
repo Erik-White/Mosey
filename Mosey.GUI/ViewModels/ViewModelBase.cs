@@ -26,7 +26,7 @@ namespace Mosey.GUI.ViewModels
 
                 if (ThrowOnInvalidPropertyName)
                 {
-                    throw new Exception(msg);
+                    throw new ArgumentException(msg);
                 }
                 else
                 {

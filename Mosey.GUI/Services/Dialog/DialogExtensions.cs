@@ -80,20 +80,20 @@ namespace Mosey.GUI.Services.Dialog
             => (DialogResult)value;
 
         /// <summary>
-        /// Covert <see cref="DialogResult"/> to <see cref="MessageDialogResult"/>
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns>An equivalent <see cref="MessageDialogResult"/> instance</returns>
-        internal static MessageDialogResult ToMetroDialogResult(this DialogResult value)
-            => (MessageDialogResult)value;
-
-        /// <summary>
         /// Covert nullable <see cref="MessageDialogResult"/> to nullable <see cref="DialogResult"/>
         /// </summary>
         /// <param name="value"></param>
         /// <returns>An equivalent <see cref="DialogResult"/> instance</returns>
         internal static DialogResult? ToDialogResult(this MessageDialogResult? value)
             => (DialogResult?)value;
+
+        /// <summary>
+        /// Covert <see cref="DialogResult"/> to <see cref="MessageDialogResult"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns>An equivalent <see cref="MessageDialogResult"/> instance</returns>
+        internal static MessageDialogResult ToMetroDialogResult(this DialogResult value)
+            => (MessageDialogResult)value;
 
         /// <summary>
         /// Convert nullable <see cref="DialogResult"/> to nullable <see cref="MessageDialogResult"/>

@@ -197,7 +197,7 @@ namespace Mosey.GUI.ViewModels
             _log.LogDebug("Overwriting user settings with defaults.");
 
             // Copy default settings and write to disk
-            _userSettings = _appSettings.Value.Copy();
+            _userSettings = (AppSettings)_appSettings.Value.Clone();
             _appSettings.Update(c =>
             {
                 c.ScanTimer = _userSettings.ScanTimer;
@@ -231,8 +231,7 @@ namespace Mosey.GUI.ViewModels
 
             var selectedDirectory = _dialog.FolderBrowserDialog(
                 initialDirectory,
-                "Choose the default image file save location"
-                );
+                "Choose the default image file save location");
 
             // Only update the property if a path was actually returned
             if (!string.IsNullOrWhiteSpace(selectedDirectory))

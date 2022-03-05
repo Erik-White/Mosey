@@ -187,7 +187,8 @@ namespace Mosey.Services.Imaging.Tests
         public class EqualsShould
         {
             [Theory, ScanningDeviceAutoData]
-            public void BeEquivalentToClone([Frozen] ScannerSettings _, ScanningDevice sut, ScanningDevice clone) => sut.Equals(clone).Should().BeTrue();
+            public void BeEquivalentToClone([Frozen] ScannerSettings _, ScanningDevice sut, ScanningDevice clone)
+                => sut.Equals(clone).Should().BeTrue();
 
             [Theory, ScanningDeviceAutoData]
             public void EqualSettingsHash([Frozen] ScannerSettings settings, ScanningDevice sut)

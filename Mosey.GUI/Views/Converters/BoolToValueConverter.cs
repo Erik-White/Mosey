@@ -17,11 +17,9 @@ namespace Mosey.GUI.Views.Converters
         public T FalseValue { get; set; }
 
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return value is null
-                ? FalseValue
-                : ((bool)value ? TrueValue : FalseValue);
-        }
+            => value is not null && (bool)value
+                ? TrueValue
+                : FalseValue;
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
             => value is not null && value.Equals(TrueValue);

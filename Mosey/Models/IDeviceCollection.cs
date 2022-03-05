@@ -6,7 +6,7 @@ namespace Mosey.Models
     /// A collection of <see cref="IDevice"/>s representing physical devices.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IDeviceCollection<T> where T : IDevice
+    public interface IDeviceCollection<out T> where T : IDevice
     {
         /// <summary>
         /// A collection of <see cref="IDevice"/>s.

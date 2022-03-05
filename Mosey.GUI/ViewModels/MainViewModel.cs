@@ -15,11 +15,10 @@ using Mosey.GUI.Models;
 using Mosey.GUI.ViewModels.Extensions;
 using Mosey.Models;
 using Mosey.Models.Imaging;
-using Mosey.Services;
 
 namespace Mosey.GUI.ViewModels
 {
-    public class MainViewModel : ViewModelBase, IViewModelParent<IViewModel>, IClosing, IDisposable
+    public sealed class MainViewModel : ViewModelBase, IViewModelParent<IViewModel>, IClosing, IDisposable
     {
         // From IoC container
         private readonly IFactory<IIntervalTimer> _timerFactory;
@@ -38,7 +37,6 @@ namespace Mosey.GUI.ViewModels
         private IImagingDeviceConfig _imageConfig;
         private IImageFileConfig _imageFileConfig;
         private IIntervalTimerConfig _scanTimerConfig;
-        private ITimerConfig _uiTimerConfig;
         private DeviceConfig _userDeviceConfig;
 
         // Threading
@@ -46,7 +44,6 @@ namespace Mosey.GUI.ViewModels
         private static readonly StaTaskScheduler _staQueue = new(concurrencyLevel: 1);
         private static readonly SemaphoreSlim _staSemaphore = new(1, 1);
         private CancellationTokenSource _cancelScanTokenSource = new();
-        private bool _disposed;
 
         #region Properties
         public string ImageFormat
@@ -88,9 +85,10 @@ namespace Mosey.GUI.ViewModels
         /// Calculated by multiplying the current number of <see cref="ScanRepetitions"/> by the
         /// number of currently enabled scanners, by the selected image resolution file size.
         /// </remarks>
-        public long ImagesRequiredDiskSpace => ScanRepetitions
-                    * ScanningDevices.Devices.Count(d => d.IsEnabled)
-                    * _userDeviceConfig.GetResolutionMetaData(_imageConfig.Resolution).FileSize;
+        public long ImagesRequiredDiskSpace
+            => ScanRepetitions
+                * ScanningDevices.Devices.Count(d => d.IsEnabled)
+                * _userDeviceConfig.GetResolutionMetaData(_imageConfig.Resolution).FileSize;
 
         private bool _isWaiting;
         public bool IsWaiting
@@ -184,10 +182,6 @@ namespace Mosey.GUI.ViewModels
         /// <inheritdoc cref="IImagingDevices{T}"/>
         public IImagingDevices<IImagingDevice> ScanningDevices { get; private set; }
 
-        /// <inheritdoc cref="IImagingDevices{T}"/>
-        public ObservableItemsCollection<IImagingDevice> Devices
-            => (ObservableItemsCollection<IImagingDevice>)ScanningDevices.Devices;
-
         public ICollection<IViewModel> ViewModelChildren { get; private set; }
             = new System.Collections.ObjectModel.ObservableCollection<IViewModel>();
 
@@ -195,7 +189,7 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                var settingsViewModel = ViewModelChildren.Where(child => child is SettingsViewModel).FirstOrDefault();
+                var settingsViewModel = ViewModelChildren.FirstOrDefault(child => child is SettingsViewModel);
                 if (settingsViewModel is null)
                 {
                     settingsViewModel = AddChildViewModel(_settingsViewModel);
@@ -213,8 +207,7 @@ namespace Mosey.GUI.ViewModels
             IViewModel settingsViewModel,
             IOptionsMonitor<AppSettings> appSettings,
             IFileSystem fileSystem,
-            ILogger<MainViewModel> logger
-            )
+            ILogger<MainViewModel> logger)
         {
             _timerFactory = intervalTimerFactory;
             ScanningDevices = imagingDevices;
@@ -232,8 +225,7 @@ namespace Mosey.GUI.ViewModels
         }
 
         public override IViewModel Create()
-        {
-            return new MainViewModel(
+            => new MainViewModel(
                 intervalTimerFactory: _timerFactory,
                 imagingDevices: ScanningDevices,
                 uiServices: _uiServices,
@@ -241,7 +233,6 @@ namespace Mosey.GUI.ViewModels
                 appSettings: _appSettings,
                 fileSystem: _fileSystem,
                 logger: _log);
-        }
 
         #region Commands
         private ICommand _EnableScannersCommand;
@@ -275,9 +266,9 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                _StartScanCommand ??= new RelayCommand(
-                    o => StartScanWithDialog(),
-                    o => !ScanningDevices.IsEmpty && !ScanningDevices.IsImagingInProgress && !IsScanRunning && !_scanTimer.Paused);
+                _StartScanCommand ??= new AsyncCommand(
+                    () => StartScanWithDialog(),
+                    _ => !ScanningDevices.IsEmpty && !ScanningDevices.IsImagingInProgress && !IsScanRunning && !_scanTimer.Paused);
 
                 return _StartScanCommand;
             }
@@ -368,7 +359,6 @@ namespace Mosey.GUI.ViewModels
 
             // Load saved configuration values
             var userSettings = _appSettings.Get("UserSettings");
-            _uiTimerConfig = userSettings.UITimer;
             UpdateConfig(userSettings);
 
             // Lock scanners collection across threads to prevent conflicts
@@ -379,7 +369,7 @@ namespace Mosey.GUI.ViewModels
             _scanTimer.Tick += ScanTimer_Tick;
             _scanTimer.Complete += ScanTimer_Complete;
             _uiTimer.Tick += UITimer_Tick;
-            _uiTimer.Start(_uiTimerConfig.Delay, _uiTimerConfig.Interval);
+            _uiTimer.Start(userSettings.UITimer.Delay, userSettings.UITimer.Interval);
 
             // Start a task loop to update the scanners collection
             _ = RefreshDevicesAsync();
@@ -394,18 +384,20 @@ namespace Mosey.GUI.ViewModels
         /// <param name="settings">Application configuration settings</param>
         internal void UpdateConfig(AppSettings settings)
         {
-            if (!IsScanRunning)
+            if (IsScanRunning)
             {
-                _scanTimerConfig = (IIntervalTimerConfig)settings.ScanTimer.Clone();
-                _imageConfig = (IImagingDeviceConfig)settings.Image.Clone();
-                _imageFileConfig = (IImageFileConfig)settings.ImageFile.Clone();
-                _userDeviceConfig = settings.Device;
-
-                RaisePropertyChanged(nameof(ScanInterval));
-                RaisePropertyChanged(nameof(ScanRepetitions));
-                RaisePropertyChanged(nameof(ImageSavePath));
-                _log.LogDebug($"Configuration updated with {nameof(UpdateConfig)}.");
+                return;
             }
+
+            _scanTimerConfig = (IIntervalTimerConfig)settings.ScanTimer.Clone();
+            _imageConfig = (IImagingDeviceConfig)settings.Image.Clone();
+            _imageFileConfig = (IImageFileConfig)settings.ImageFile.Clone();
+            _userDeviceConfig = settings.Device;
+
+            RaisePropertyChanged(nameof(ScanInterval));
+            RaisePropertyChanged(nameof(ScanRepetitions));
+            RaisePropertyChanged(nameof(ImageSavePath));
+            _log.LogDebug($"Configuration updated with {nameof(UpdateConfig)}.");
         }
 
         /// <summary>
@@ -426,17 +418,14 @@ namespace Mosey.GUI.ViewModels
         /// <summary>
         /// Begin repeated scanning, after first checking if checking interval time and free disk space are sufficient.
         /// </summary>
-        public async void StartScanWithDialog()
+        public async Task StartScanWithDialog()
         {
             // Check that interval time is sufficient for selected resolution
             var imagingTime = ScanningDevices.Devices.Count(d => d.IsEnabled) * _userDeviceConfig.GetResolutionMetaData(_imageConfig.Resolution).ImagingTime;
-            if (imagingTime * 1.5 > TimeSpan.FromMinutes(ScanInterval))
+            if (imagingTime * 1.5 > TimeSpan.FromMinutes(ScanInterval) && !await _dialog.ImagingTimeDialog(TimeSpan.FromMinutes(ScanInterval), imagingTime))
             {
-                if (!await _dialog.ImagingTimeDialog(TimeSpan.FromMinutes(ScanInterval), imagingTime))
-                {
-                    _log.LogDebug($"Scanning not started due to low interval time: {imagingTime.TotalMinutes} minutes required, {ScanInterval} minutes selected.");
-                    return;
-                }
+                _log.LogDebug($"Scanning not started due to low interval time: {imagingTime.TotalMinutes} minutes required, {ScanInterval} minutes selected.");
+                return;
             }
 
             // Check that disk space is sufficient for selected resolution
@@ -445,13 +434,10 @@ namespace Mosey.GUI.ViewModels
                 var availableDiskSpace = FileSystemExtensions.AvailableFreeSpace(
                     _fileSystem.Path.GetPathRoot(_imageFileConfig.Directory),
                     _fileSystem);
-                if (ImagesRequiredDiskSpace * 1.5 > availableDiskSpace)
+                if (ImagesRequiredDiskSpace * 1.5 > availableDiskSpace && !await _dialog.DiskSpaceDialog(ImagesRequiredDiskSpace, availableDiskSpace))
                 {
-                    if (!await _dialog.DiskSpaceDialog(ImagesRequiredDiskSpace, availableDiskSpace))
-                    {
-                        _log.LogDebug($"Scanning not started due to low disk space: {StringFormat.ByteSize(ImagesRequiredDiskSpace)} required, {StringFormat.ByteSize(availableDiskSpace)} available.");
-                        return;
-                    }
+                    _log.LogDebug($"Scanning not started due to low disk space: {StringFormat.ByteSize(ImagesRequiredDiskSpace)} required, {StringFormat.ByteSize(availableDiskSpace)} available.");
+                    return;
                 }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -517,8 +503,6 @@ namespace Mosey.GUI.ViewModels
         /// Tidy up after scanning is completed
         /// Raised by <see cref="_scanTimer"/>
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         private async void ScanTimer_Complete(object sender, EventArgs e)
         {
             _log.LogDebug($"{nameof(ScanTimer_Complete)} event.");
@@ -545,9 +529,8 @@ namespace Mosey.GUI.ViewModels
         /// Update user interface components
         /// Raised by <see cref="_uiTimer"/>
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void UITimer_Tick(object sender, EventArgs e) => RaisePropertyChanged(nameof(ScanNextTime));
+        private void UITimer_Tick(object sender, EventArgs e)
+            => RaisePropertyChanged(nameof(ScanNextTime));
 
         /// <summary>
         /// Update <see cref="ScanningDevices"/> with any newly connected scanners
@@ -569,7 +552,6 @@ namespace Mosey.GUI.ViewModels
         /// </summary>
         /// <param name="intervalSeconds">The duration between refreshes</param>
         /// <param name="cancellationToken">Used to stop the refresh loop</param>
-        /// <returns></returns>
         internal async Task RefreshDevicesAsync(int intervalSeconds = 1, CancellationToken cancellationToken = default)
         {
             _log.LogDebug($"Device refresh initiated with {nameof(RefreshDevicesAsync)}");
@@ -705,14 +687,14 @@ namespace Mosey.GUI.ViewModels
                 // The apartment state MUST be single threaded for COM interop
                 // Runtime callable wrappers must be disposed manually to prevent problems with early disposal of COM servers
                 using (var staQueue = new StaTaskScheduler(concurrencyLevel: 1, disableComObjectEagerCleanup: true))
-            {
-                await Task.Factory.StartNew(() =>
                 {
-                    // Obtain images from scanners
-                    results = Scan(cancellationToken);
-                }, cancellationToken, TaskCreationOptions.LongRunning, staQueue)
-                .ContinueWith(t =>
-                {
+                    await Task.Factory.StartNew(() =>
+                    {
+                        // Obtain images from scanners
+                        results = Scan(cancellationToken);
+                    }, cancellationToken, TaskCreationOptions.LongRunning, staQueue)
+                    .ContinueWith(t =>
+                    {
                         // Manually clear (RCWs) to prevent memory leaks
                         System.Runtime.InteropServices.Marshal.CleanupUnusedObjectsInCurrentContext();
                         // Force any pending exceptions to propagate up
@@ -751,8 +733,7 @@ namespace Mosey.GUI.ViewModels
 
             var selectedDirectory = _dialog.FolderBrowserDialog(
                 initialDirectory,
-                "Choose the image file save location"
-                );
+                "Choose the image file save location");
 
             // Only update the property if a path was actually returned
             if (!string.IsNullOrWhiteSpace(selectedDirectory))
@@ -790,34 +771,15 @@ namespace Mosey.GUI.ViewModels
 
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
+            _scanTimer.Tick -= ScanTimer_Tick;
+            _scanTimer.Complete -= ScanTimer_Complete;
+            _uiTimer.Tick -= UITimer_Tick;
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposed)
-            {
-                if (disposing)
-                {
-                    _scanTimer.Tick -= ScanTimer_Tick;
-                    _scanTimer.Complete -= ScanTimer_Complete;
-                    _uiTimer.Tick -= UITimer_Tick;
-
-                    _cancelScanTokenSource?.Cancel();
-                    _cancelScanTokenSource?.Dispose();
-                    _scanTimer?.Dispose();
-                    _uiTimer?.Dispose();
-                    _staQueue?.Dispose();
-                }
-
-                _disposed = true;
-            }
-        }
-
-        ~MainViewModel()
-        {
-            Dispose(false);
+            _cancelScanTokenSource?.Cancel();
+            _cancelScanTokenSource?.Dispose();
+            _scanTimer?.Dispose();
+            _uiTimer?.Dispose();
+            _staQueue?.Dispose();
         }
     }
 }

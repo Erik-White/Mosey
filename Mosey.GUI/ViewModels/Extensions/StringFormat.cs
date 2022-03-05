@@ -4,7 +4,7 @@ namespace Mosey.GUI.ViewModels.Extensions
 {
     internal static class StringFormat
     {
-        public static readonly string[] sizeSuffixes =
+        private static readonly string[] sizeSuffixes =
         {
             "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"
         };
@@ -33,8 +33,7 @@ namespace Mosey.GUI.ViewModels.Extensions
 
             return string.Format(
                 formatTemplate,
-                size < 0 ? "-" : null, normSize, sizeSuffixes[iUnit]
-                );
+                size < 0 ? "-" : null, normSize, sizeSuffixes[iUnit]);
         }
     }
 }

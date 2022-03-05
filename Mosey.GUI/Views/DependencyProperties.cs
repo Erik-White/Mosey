@@ -4,7 +4,7 @@ using System.Windows.Controls;
 namespace Mosey.GUI.Views
 {
     #region Margin
-    public class Margin
+    public static class Margin
     {
         public static readonly DependencyProperty LeftProperty = DependencyProperty.RegisterAttached(
             "Left",
@@ -89,7 +89,7 @@ namespace Mosey.GUI.Views
     #endregion Margin
 
     #region Padding
-    public class Padding
+    public static class Padding
     {
         public static readonly DependencyProperty LeftProperty = DependencyProperty.RegisterAttached(
             "Left",
