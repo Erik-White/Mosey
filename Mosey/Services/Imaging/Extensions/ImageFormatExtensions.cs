@@ -13,11 +13,9 @@ namespace Mosey.Services.Imaging.Extensions
         /// <param name="imageFormatStr">A file extension <see cref="string"/></param>
         /// <returns>An <see cref="ScanningDevice.ImageFormat"/> <see cref="Enum"/></returns>
         public static IImagingDevice.ImageFormat FromString(this IImagingDevice.ImageFormat _, string imageFormatStr)
-        {
-            return Enum.TryParse(imageFormatStr, ignoreCase: true, out IImagingDevice.ImageFormat value)
+            => Enum.TryParse(imageFormatStr, ignoreCase: true, out IImagingDevice.ImageFormat value)
                 ? value
                 : throw new ArgumentException($"{imageFormatStr} is not a supported image file extension.");
-        }
 
         /// <summary>
         /// Convert to a <see cref="ImageFormat"/> instance.
@@ -25,11 +23,9 @@ namespace Mosey.Services.Imaging.Extensions
         /// <param name="value"></param>
         /// <returns>A <see cref="ImageFormat"/> instance</returns>
         public static ImageFormat ToDrawingImageFormat(this IImagingDevice.ImageFormat value)
-        {
-            return (ImageFormat)typeof(ImageFormat)
-                    .GetProperty(value.ToString(), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.IgnoreCase)
-                    .GetValue(null);
-        }
+            => (ImageFormat)typeof(ImageFormat)
+                .GetProperty(value.ToString(), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.IgnoreCase)
+                .GetValue(null);
 
         /// <summary>
         /// Convert to a <see cref="DNTScanner.Core.WiaImageFormat"/> instance.
@@ -37,10 +33,8 @@ namespace Mosey.Services.Imaging.Extensions
         /// <param name="value"></param>
         /// <returns>A <see cref="DNTScanner.Core.WiaImageFormat"/> instance</returns>
         public static DNTScanner.Core.WiaImageFormat ToWIAImageFormat(this IImagingDevice.ImageFormat value)
-        {
-            return (DNTScanner.Core.WiaImageFormat)typeof(DNTScanner.Core.WiaImageFormat)
-                    .GetProperty(value.ToString(), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.IgnoreCase)
-                    .GetValue(null);
-        }
+            => (DNTScanner.Core.WiaImageFormat)typeof(DNTScanner.Core.WiaImageFormat)
+                .GetProperty(value.ToString(), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.IgnoreCase)
+                .GetValue(null);
     }
 }

@@ -45,11 +45,9 @@ namespace Mosey.GUI
                     if (string.IsNullOrEmpty(config.ImageFile.Directory))
                     {
                         // Ensure default directory is user's Pictures folder
-                        config.ImageFile.Directory = Path.Combine
-                        (
+                        config.ImageFile.Directory = Path.Combine(
                             Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
-                            "Mosey"
-                        );
+                            "Mosey");
                     }
                 })
 

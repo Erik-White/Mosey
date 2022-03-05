@@ -231,8 +231,7 @@ namespace Mosey.GUI.ViewModels
 
             var selectedDirectory = _dialog.FolderBrowserDialog(
                 initialDirectory,
-                "Choose the default image file save location"
-                );
+                "Choose the default image file save location");
 
             // Only update the property if a path was actually returned
             if (!string.IsNullOrWhiteSpace(selectedDirectory))

@@ -14,7 +14,7 @@ namespace Mosey.GUI.ViewModels.Extensions
         /// <exception cref="IOException"></exception>
         /// <exception cref="UnauthorizedAccessException"></exception>
         public static IDriveInfo GetDriveInfo(string driveName, IFileSystem fileSystem)
-            => fileSystem.DriveInfo.GetDrives().Where(drive => drive.Name == driveName).FirstOrDefault();
+            => fileSystem.DriveInfo.GetDrives().FirstOrDefault(drive => drive.Name == driveName);
 
         /// <summary>
         /// The available free space of logical a drive on the system that matches <paramref name="driveName"/>.

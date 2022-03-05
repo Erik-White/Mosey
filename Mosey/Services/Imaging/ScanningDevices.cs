@@ -8,29 +8,14 @@ using Mosey.Models.Imaging;
 namespace Mosey.Services.Imaging
 {
     /// <summary>
-    /// A persistent collection of WIA enabled scanners
-    /// Items are not removed from the collection when it is refreshed
-    /// Instead, their status is updated to indicate that they may not be connected
+    /// A persistent collection of WIA enabled scanners.
+    /// Items are not removed from the collection when it is refreshed.
+    /// Instead, their status is updated to indicate that they may not be connected.
     /// </summary>
     public class ScanningDevices : IImagingDevices<IImagingDevice>
     {
-        private readonly ICollection<IImagingDevice> _devices = new ObservableItemsCollection<IImagingDevice>();
+        private readonly ObservableItemsCollection<ScanningDevice> _devices = new ();
         private readonly ISystemImagingDevices<ScannerSettings> _systemDevices;
-
-        /// <summary>
-        /// The number of time to attempt reconnection to the WIA driver.
-        /// </summary>
-        public int ConnectRetries
-        {
-            get => _systemDevices is SystemScanningDevices systemDevices ? systemDevices.ConnectRetries : 0;
-            set
-            {
-                if (_systemDevices is SystemScanningDevices systemDevices)
-                {
-                    systemDevices.ConnectRetries = value;
-                }
-            }
-        }
 
         /// <summary>
         /// A collection of <see cref="ScanningDevice"/>s, representing physical scanners.
@@ -151,7 +136,7 @@ namespace Mosey.Services.Imaging
             // These devices can no longer be found and are disconnected
             foreach (var deviceId in currentDevices.Except(deviceIds))
             {
-                var device = (ScanningDevice)_devices.FirstOrDefault(d => d.DeviceID == deviceId);
+                var device = _devices.FirstOrDefault(d => d.DeviceID == deviceId);
                 device.IsConnected = false;
             }
 
@@ -165,7 +150,7 @@ namespace Mosey.Services.Imaging
             // These devices are already in the collection, but previously disconnected
             foreach (var deviceId in currentDevices.Intersect(deviceIds))
             {
-                var existingDevice = (ScanningDevice)_devices.FirstOrDefault(d => d.DeviceID == deviceId && !d.IsConnected);
+                var existingDevice = _devices.FirstOrDefault(d => d.DeviceID == deviceId && !d.IsConnected);
                 if (existingDevice is not null)
                 {
                     // Remove the existing device and replace with the updated
@@ -199,19 +184,17 @@ namespace Mosey.Services.Imaging
         /// </summary>
         /// <param name="deviceConfig">Used to initialize the collection's <see cref="ScanningDevice"/>s</param>
         /// <returns>The number of devices added to the collection</returns>
-        private int GetDevices(IImagingDeviceConfig deviceConfig)
+        private void GetDevices(IImagingDeviceConfig deviceConfig)
         {
             deviceConfig ??= new ScanningDeviceSettings();
 
             // Populate a new collection of scanners using specified image settings
             _devices.Clear();
-            foreach (ScanningDevice device in ScannerDevices(deviceConfig))
+            foreach (var device in ScannerDevices(deviceConfig).Select(d => d as ScanningDevice))
             {
                 device.IsEnabled = true;
                 AddDevice(device);
             }
-
-            return _devices.Count;
         }
 
         /// <summary>

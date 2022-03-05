@@ -22,7 +22,7 @@ namespace Mosey.Services.Imaging.Tests
                 sut.AssertAllPropertiesAreNotDefault();
                 sut.IsEmpty.Should().BeFalse();
                 sut.Devices.Count().Should().Be(3);
-                sut.Devices.All(device => device.IsEnabled == true).Should().BeTrue();
+                sut.Devices.All(device => device.IsEnabled).Should().BeTrue();
             }
         }
 

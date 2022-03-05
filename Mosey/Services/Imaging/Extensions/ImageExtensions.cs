@@ -62,12 +62,10 @@ namespace Mosey.Services.Imaging.Extensions
         /// <returns>An <see cref="Image"/> <see cref="MemoryStream"/> in the specified format and encoding</returns>
         internal static MemoryStream ToMemoryStream(this Image value, ImageFormat format, EncoderParameters encoderParameters = null)
         {
-            using (var ms = new MemoryStream())
-            {
-                value.Save(ms, format.CodecInfo(), encoderParameters);
+            var ms = new MemoryStream();
+            value.Save(ms, format.CodecInfo(), encoderParameters);
 
-                return ms;
-            }
+            return ms;
         }
 
         /// <summary>

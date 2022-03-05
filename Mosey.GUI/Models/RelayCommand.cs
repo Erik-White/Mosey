@@ -42,19 +42,14 @@ namespace Mosey.GUI.Models
         }
 
         [DebuggerStepThrough]
-        public bool CanExecute(object parameters) => _canExecute is null || _canExecute(parameters);
+        public bool CanExecute(object parameter) => _canExecute is null || _canExecute(parameter);
 
         public event EventHandler CanExecuteChanged
         {
-            // Need to add PresentationCore reference
-            //add { CommandManager.RequerySuggested += value; }
-            //remove { CommandManager.RequerySuggested -= value; }
-            //add { }
-            //remove { }
             add { CommandManager.RequerySuggested += value; }
             remove { CommandManager.RequerySuggested -= value; }
         }
 
-        public void Execute(object parameters) => _execute(parameters);
+        public void Execute(object parameter) => _execute(parameter);
     }
 }

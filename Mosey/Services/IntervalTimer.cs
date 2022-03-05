@@ -99,12 +99,12 @@ namespace Mosey.Services
         /// <param name="state"></param>
         private void TimerInterval(object state)
         {
-            if (Repetitions == -1 | ++RepetitionsCount <= Repetitions)
+            if (++RepetitionsCount <= Repetitions || Repetitions == -1)
             {
                 // Notify event subscribers
                 OnTick(EventArgs.Empty);
                 Resume();
-                if (RepetitionsCount == Repetitions)
+                if (RepetitionsCount >= Repetitions)
                 {
                     Stop();
                 }

@@ -10,7 +10,7 @@ using Mosey.Services.Imaging.Extensions;
 namespace Mosey.Services.Imaging
 {
     /// <summary>
-    /// Provides access to the WIA driver devices via DNTScanner.Core
+    /// Provides access to the WIA driver devices via <see cref="DNTScanner.Core"/>
     /// </summary>
     internal sealed class SystemScanningDevices : ISystemImagingDevices<ScannerSettings>
     {
@@ -42,25 +42,21 @@ namespace Mosey.Services.Imaging
         /// <exception cref="COMException">If an error occurs within the specified number of <see cref="ConnectRetries"/></exception>
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <see cref="ConnectRetries"/></exception>
         public IList<IDictionary<string, object>> GetDeviceProperties()
-        {
-            return WIARetry(
-                    DNTScanner.Core.SystemDevices.GetScannerDeviceProperties,
-                    ConnectRetries,
-                    ConnectRetryDelay,
-                    _semaphore);
-        }
+            => WIARetry(
+                SystemDevices.GetScannerDeviceProperties,
+                ConnectRetries,
+                ConnectRetryDelay,
+                _semaphore);
 
         /// <inheritdoc/>
         /// <exception cref="COMException">If an error occurs within the specified number of <see cref="ConnectRetries"/></exception>
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <see cref="ConnectRetries"/></exception>
         public IEnumerable<ScannerSettings> GetDeviceSettings()
-        {
-            return WIARetry(
-                DNTScanner.Core.SystemDevices.GetScannerDevices,
+            => WIARetry(
+                SystemDevices.GetScannerDevices,
                 ConnectRetries,
                 ConnectRetryDelay,
                 _semaphore).AsEnumerable();
-        }
 
         /// <summary>
         /// Create and configure a new <see cref="ScannerDevice"/> instance.
@@ -68,7 +64,7 @@ namespace Mosey.Services.Imaging
         /// <param name="settings">A <see cref="GetScannerSettings"/> instance representing a physical device</param>
         /// <param name="config">Device settings used when capturing an image</param>
         /// <returns>A <see cref="ScannerDevice"/> instance configured using <paramref name="config"/></returns>
-        private ScannerDevice ConfiguredScannerDevice(ScannerSettings settings, IImagingDeviceConfig config)
+        private static ScannerDevice ConfiguredScannerDevice(ScannerSettings settings, IImagingDeviceConfig config)
         {
             var device = new ScannerDevice(settings);
             var supportedResolutions = settings.SupportedResolutions;
@@ -79,7 +75,7 @@ namespace Mosey.Services.Imaging
                 // Find the closest supported resolution instead
                 config.Resolution = supportedResolutions
                     .OrderBy(v => v)
-                    .OrderBy(item => Math.Abs(config.Resolution - item))
+                    .ThenBy(item => Math.Abs(config.Resolution - item))
                     .First();
             }
 
@@ -90,8 +86,7 @@ namespace Mosey.Services.Imaging
                     .Resolution(config.Resolution)
                     .Brightness(config.Brightness)
                     .Contrast(config.Contrast)
-                    .StartPosition(left: 0, top: 0)
-                );
+                    .StartPosition(left: 0, top: 0));
 
             return device;
         }
@@ -100,7 +95,7 @@ namespace Mosey.Services.Imaging
         private static void WIARetry(Action method, int connectRetries, TimeSpan retryDelay, SemaphoreSlim semaphore = null)
         {
             // Wrap the Action in a Func with a dummy return value
-            Func<bool> methodFunc = () => { method(); return true; };
+            bool methodFunc() { method(); return true; }
             WIARetry(methodFunc, connectRetries, retryDelay, semaphore);
         }
 
@@ -138,7 +133,7 @@ namespace Mosey.Services.Imaging
                         result = method.Invoke();
                         break;
                     }
-                    catch (Exception ex) when (ex is COMException | ex is NullReferenceException)
+                    catch (Exception ex) when (ex is COMException || ex is NullReferenceException)
                     {
                         if (--connectRetries > 0)
                         {

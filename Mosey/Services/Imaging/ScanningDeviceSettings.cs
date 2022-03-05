@@ -7,7 +7,7 @@ namespace Mosey.Services.Imaging
     /// <summary>
     /// Device settings used by a <see cref="ScanningDevice"/> when capturing an image.
     /// </summary>
-    public class ScanningDeviceSettings : IImagingDeviceConfig, IEquatable<ScanningDeviceSettings>
+    public sealed class ScanningDeviceSettings : IImagingDeviceConfig, IEquatable<ScanningDeviceSettings>
     {
         public ImageColorFormat ColorFormat { get; set; } = ImageColorFormat.Color;
         public int Resolution { get; set; }

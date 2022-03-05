@@ -30,13 +30,10 @@ namespace Mosey.GUI.ViewModels
         }
 
         public override IViewModel Create()
-        {
-            return new DialogViewModel(
+            => new DialogViewModel(
                 dialogContext: _context,
                 uiServices: new UIServices(_dialogManager, _folderBrowserDialog),
-                logger: _log
-                );
-        }
+                logger: _log);
 
         /// <summary>
         /// Confirm if the user wants to start scanning despite low interval time.
@@ -64,8 +61,7 @@ namespace Mosey.GUI.ViewModels
                 $"Scanning at the selected resolution will take approximately {scanningTime.TotalMinutes} minutes. The selected interval time, {intervalTime.TotalMinutes} minutes, may not be enough time for all scans to complete. Are you sure you want to continue?",
                 DialogStyle.AffirmativeAndNegative,
                 dialogSettings,
-                timeout
-                );
+                timeout);
 
             if (dialogResult == DialogResult.Canceled)
             {
@@ -103,8 +99,7 @@ namespace Mosey.GUI.ViewModels
                 $"Only {StringFormat.ByteSize(availableSpace)} is available, are you sure you want to continue?",
                 DialogStyle.AffirmativeAndNegative,
                 dialogSettings,
-                timeout
-                );
+                timeout);
 
             if (dialogResult == DialogResult.Canceled)
             {
@@ -140,8 +135,7 @@ namespace Mosey.GUI.ViewModels
                 "Are you sure you want to cancel scanning?",
                 DialogStyle.AffirmativeAndNegative,
                 dialogSettings,
-                timeout
-                );
+                timeout);
 
             if (dialogResult == DialogResult.Canceled)
             {
@@ -186,8 +180,7 @@ namespace Mosey.GUI.ViewModels
                 $"{errorMessage}{Environment.NewLine}{ex.GetType()}{Environment.NewLine}{ex.Message}",
                 DialogStyle.Affirmative,
                 dialogSettings,
-                timeout
-                );
+                timeout);
 
             if (dialogResult == DialogResult.Canceled)
             {

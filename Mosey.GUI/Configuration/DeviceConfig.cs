@@ -33,7 +33,8 @@ namespace Mosey.GUI.Configuration
         /// <summary>
         /// A common set of resolutions that are support by most devices.
         /// </summary>
-        public IEnumerable<int> StandardResolutions => ResolutionData.Select(r => r.Resolution).Distinct().ToList();
+        public IEnumerable<int> StandardResolutions
+            => GetResolutions(ResolutionData);
 
         public object Clone() => MemberwiseClone();
 
@@ -42,7 +43,11 @@ namespace Mosey.GUI.Configuration
         /// </summary>
         /// <param name="resolution">An image resolution, in DPI</param>
         /// <returns></returns>
-        public ResolutionMetaData GetResolutionMetaData(int resolution) => ResolutionData.Where(r => r.Resolution == resolution).FirstOrDefault();
+        public ResolutionMetaData GetResolutionMetaData(int resolution)
+            => ResolutionData.FirstOrDefault(r => r.Resolution == resolution);
+
+        private static IEnumerable<int> GetResolutions(IEnumerable<ResolutionMetaData> resolutionData)
+            => resolutionData.Select(r => r.Resolution).Distinct().ToList();
 
         /// <summary>
         /// Information related to an image resolution.

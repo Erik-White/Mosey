@@ -4,7 +4,6 @@ using AutoFixture;
 using DNTScanner.Core;
 using Moq;
 using Mosey.Models.Imaging;
-using Mosey.Services.Imaging;
 
 namespace Mosey.Tests.Customizations
 {
