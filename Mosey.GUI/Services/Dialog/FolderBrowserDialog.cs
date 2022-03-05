@@ -71,7 +71,7 @@ namespace Mosey.GUI.Services.Dialog
         /// Must be a child of <paramref name="rootDirectory"/>rootDirectory</param>
         /// <returns>A new instance of a <c>CommonOpenFileDialog</c></returns>
         private CommonOpenFileDialog CreateDialog(Environment.SpecialFolder rootDirectory, string initialDirectory)
-            => new ()
+            => new()
             {
                 IsFolderPicker = true,
                 EnsureFileExists = true,

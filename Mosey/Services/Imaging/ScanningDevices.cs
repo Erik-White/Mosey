@@ -14,7 +14,7 @@ namespace Mosey.Services.Imaging
     /// </summary>
     public class ScanningDevices : IImagingDevices<IImagingDevice>
     {
-        private readonly ObservableItemsCollection<ScanningDevice> _devices = new ();
+        private readonly ObservableItemsCollection<ScanningDevice> _devices = new();
         private readonly ISystemImagingDevices<ScannerSettings> _systemDevices;
 
         /// <summary>
