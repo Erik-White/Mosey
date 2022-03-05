@@ -12,8 +12,8 @@ namespace Mosey.GUI.Configuration
         public ScanningDeviceSettings Image { get; set; }
         public DeviceConfig Device { get; set; }
 
-        public AppSettings Copy()
-            => new ()
+        public object Clone()
+            => new AppSettings()
             {
                 ImageFile = (ImageFileConfig)ImageFile.Clone(),
                 ScanTimer = (IntervalTimerConfig)ScanTimer.Clone(),
