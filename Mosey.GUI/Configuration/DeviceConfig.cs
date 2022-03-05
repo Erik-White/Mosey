@@ -59,9 +59,6 @@ namespace Mosey.GUI.Configuration
             /// <summary>
             /// The time taken for an image to be obtained.
             /// </summary>
-            // System.Text.Json doesn't support TimeSpan [de]serialization
-            // It is planned for .NET Core 5
-            [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonTimeSpanConverter))]
             public TimeSpan ImagingTime { get; set; }
 
             /// <summary>
