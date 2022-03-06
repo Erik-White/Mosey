@@ -91,8 +91,8 @@ namespace Mosey.GUI.ViewModels
             get => (int)_userSettings.ScanTimer.Interval.TotalMinutes;
             set
             {
-                _userSettings.ScanTimer.Interval = TimeSpan.FromMinutes(value);
-                _appSettings.Update(c => c.ScanTimer.Interval = _userSettings.ScanTimer.Interval);
+                _userSettings.ScanTimer = _userSettings.ScanTimer with { Interval = TimeSpan.FromMinutes(value) };
+                _appSettings.Update(c => c.ScanTimer = c.ScanTimer with { Interval = _userSettings.ScanTimer.Interval });
                 RaisePropertyChanged(nameof(ScanInterval));
 
                 _log.LogInformation($"{nameof(ScanInterval)} changed to {value}");
@@ -104,8 +104,8 @@ namespace Mosey.GUI.ViewModels
             get => _userSettings.ScanTimer.Repetitions;
             set
             {
-                _userSettings.ScanTimer.Repetitions = value;
-                _appSettings.Update(c => c.ScanTimer.Repetitions = value);
+                _userSettings.ScanTimer = _userSettings.ScanTimer with { Repetitions = value };
+                _appSettings.Update(c => c.ScanTimer = c.ScanTimer with { Repetitions = value });
                 RaisePropertyChanged(nameof(ScanRepetitions));
 
                 _log.LogInformation($"{nameof(ScanRepetitions)} changed to {value}");
@@ -117,16 +117,11 @@ namespace Mosey.GUI.ViewModels
             get => _userSettings.ScanTimer.Delay != TimeSpan.Zero;
             set
             {
-                if (value)
-                {
-                    _userSettings.ScanTimer.Delay = _userSettings.ScanTimer.Interval;
-                }
-                else
-                {
-                    _userSettings.ScanTimer.Delay = TimeSpan.Zero;
-                }
+                _userSettings.ScanTimer = value
+                    ? _userSettings.ScanTimer with { Delay = _userSettings.ScanTimer.Interval }
+                    : _userSettings.ScanTimer with { Delay = TimeSpan.Zero };
 
-                _appSettings.Update(c => c.ScanTimer.Delay = _userSettings.ScanTimer.Delay);
+                _appSettings.Update(c => c.ScanTimer = c.ScanTimer with { Delay = _userSettings.ScanTimer.Delay });
                 RaisePropertyChanged(nameof(ScanningDelay));
 
                 _log.LogInformation($"{nameof(ScanningDelay)} changed to {value}");

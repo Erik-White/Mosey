@@ -1,6 +1,5 @@
-﻿using Mosey.Models.Imaging;
-using Mosey.Services;
-using Mosey.Services.Imaging;
+﻿using Mosey.Models;
+using Mosey.Models.Imaging;
 
 namespace Mosey.GUI.Configuration
 {

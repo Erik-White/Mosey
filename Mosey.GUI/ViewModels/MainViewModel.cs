@@ -36,7 +36,7 @@ namespace Mosey.GUI.ViewModels
         // Configuration
         private ImagingDeviceConfig _imageConfig;
         private ImageFileConfig _imageFileConfig;
-        private IIntervalTimerConfig _scanTimerConfig;
+        private IntervalTimerConfig _scanTimerConfig;
         private DeviceConfig _userDeviceConfig;
 
         // Threading
