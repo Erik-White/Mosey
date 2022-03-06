@@ -5,7 +5,7 @@ namespace Mosey.Models.Imaging
     public record ImageFileConfig(
         string Directory,
         string Prefix,
-        string Format,
+        IImagingDevice.ImageFormat ImageFormat,
         List<string> SupportedFormats,
         string DateFormat,
         string TimeFormat)

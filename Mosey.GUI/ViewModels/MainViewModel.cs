@@ -44,19 +44,6 @@ namespace Mosey.GUI.ViewModels
         private CancellationTokenSource _cancelScanTokenSource = new();
 
         #region Properties
-        public string ImageFormat
-        {
-            get => _imageFileConfig.Format;
-            set
-            {
-                _imageFileConfig = _imageFileConfig with { Format = value };
-                RaisePropertyChanged(nameof(ImageFormat));
-            }
-        }
-
-        public List<string> ImageFormatSupported
-            => _imageFileConfig.SupportedFormats;
-
         private string _imageSavePath;
         /// <summary>
         /// The directory path used to store images obtained when scanning.
@@ -248,7 +235,7 @@ namespace Mosey.GUI.ViewModels
             get
             {
                 _ManualScanCommand ??= new RelayCommand(
-                    o => _ = ScanAsync(),
+                    o => _ = ScanAndSaveImagesAsync(),
                     o => !ScanningDevices.IsEmpty && !ScanningDevices.IsImagingInProgress && !IsScanRunning);
 
                 return _ManualScanCommand;
@@ -390,7 +377,7 @@ namespace Mosey.GUI.ViewModels
             _imageFileConfig = settings.ImageFile with { };
             _userDeviceConfig = settings.Device;
 
-            _scanningHost.UpdateConfig(_imageConfig, _imageFileConfig);
+            _scanningHost.UpdateConfig(_imageConfig);
 
             RaisePropertyChanged(nameof(ScanInterval));
             RaisePropertyChanged(nameof(ScanRepetitions));
@@ -468,7 +455,7 @@ namespace Mosey.GUI.ViewModels
         }
 
         /// <summary>
-        /// Initiate scanning with <see cref="ScanAsync"/>.
+        /// Initiate scanning with <see cref="ScanAndSaveImagesAsync"/>.
         /// </summary>
         private async void ScanTimer_Tick(object sender, EventArgs e)
         {
@@ -476,7 +463,7 @@ namespace Mosey.GUI.ViewModels
 
             try
             {
-                await ScanAsync();
+                await ScanAndSaveImagesAsync();
             }
             catch (OperationCanceledException ex)
             {
@@ -575,19 +562,43 @@ namespace Mosey.GUI.ViewModels
             }
         }
 
+        private async Task<IEnumerable<IImagingHost.CapturedImage>> ScanImagesAsync()
+            => await _scanningHost.PerformImagingAsync(_userDeviceConfig.UseHighestResolution, _cancelScanTokenSource.Token);
+
         /// <summary>
         /// Initiate scanning with all available <see cref="ScanningDevice"/>s
+        /// and save any captured images to disk
         /// </summary>
         /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
-        private async Task<List<string>> ScanAsync()
+        private async Task<IEnumerable<string>> ScanAndSaveImagesAsync()
         {
-            _log.LogDebug($"Scan initiated with {nameof(ScanAsync)} method.");
+            _log.LogDebug($"Scan initiated with {nameof(ScanAndSaveImagesAsync)} method.");
 
-            var results = await _scanningHost.PerformImagingAsync(ImageSavePath, _userDeviceConfig.UseHighestResolution, _cancelScanTokenSource.Token);
+            var results = new List<string>();
+            var saveDateTime = DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat));
 
-            _log.LogDebug($"Scan completed with {nameof(ScanAsync)} method.");
+            foreach (var image in await ScanImagesAsync())
+            {
+                var filePath = GetFilePath(image, _imageFileConfig, images.Count() > 1);
+                _scanningHost.ImageFileHandler.SaveImage(image.Image, _imageFileConfig.ImageFormat, filePath);
+
+                results.Add(filePath);
+            }
+
+            _log.LogDebug($"Scan completed with {nameof(ScanAndSaveImagesAsync)} method.");
 
             return results;
+
+            string GetFilePath(IImagingHost.CapturedImage image, ImageFileConfig config, bool appendIndex)
+            {
+                string index = appendIndex ? image.Index.ToString() : null;
+
+                var directory = _fileSystem.Path.Combine(config.Directory, string.Join(string.Empty, "Scanner", image.DeviceId));
+                var fileName = string.Join("_", _imageFileConfig.Prefix, saveDateTime, index);
+                fileName = _fileSystem.Path.ChangeExtension(fileName, config.ImageFormat.ToString().ToLower());
+
+                return _fileSystem.Path.Combine(directory, fileName);
+            }
         }
 
         /// <summary>

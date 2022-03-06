@@ -68,6 +68,7 @@ namespace Mosey.GUI
                 .AddScoped<IDialogManager, DialogManager>()
                 .AddTransient<IImagingDevice, ScanningDevice>()
                 .AddSingleton<IImagingDevices<IImagingDevice>, ScanningDevices>()
+                .AddTransient<IImageFileHandler, ImageFileHandler>()
                 .AddSingleton<IImagingHost, DntScanningHost>()
 
                 // Aggregate services
