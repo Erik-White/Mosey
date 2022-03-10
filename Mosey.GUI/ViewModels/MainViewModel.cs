@@ -19,7 +19,6 @@ namespace Mosey.GUI.ViewModels
 {
     public sealed class MainViewModel : ViewModelBase, IViewModelParent<IViewModel>, IClosing, IDisposable
     {
-        // From IoC container
         private readonly IFactory<IIntervalTimer> _timerFactory;
         private readonly IImagingHost _scanningHost;
         private readonly Services.UIServices _uiServices;
@@ -27,20 +26,17 @@ namespace Mosey.GUI.ViewModels
         private readonly IOptionsMonitor<AppSettings> _appSettings;
         private readonly IFileSystem _fileSystem;
         private readonly ILogger<MainViewModel> _log;
+        private readonly object _scanningDevicesLock = new();
 
-        // From constructor
         private readonly IIntervalTimer _scanTimer;
         private readonly IIntervalTimer _uiTimer;
         private readonly DialogViewModel _dialog;
 
-        // Configuration
         private ImagingDeviceConfig _imageConfig;
         private ImageFileConfig _imageFileConfig;
         private IntervalTimerConfig _scanTimerConfig;
         private DeviceConfig _userDeviceConfig;
 
-        // Threading
-        private readonly object _scanningDevicesLock = new();
         private CancellationTokenSource _cancelScanTokenSource = new();
 
         #region Properties
@@ -170,13 +166,12 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                var settingsViewModel = ViewModelChildren.FirstOrDefault(child => child is SettingsViewModel);
-                if (settingsViewModel is null)
+                if (!ViewModelChildren.Any(ViewModels => ViewModels is SettingsViewModel))
                 {
-                    settingsViewModel = AddChildViewModel(_settingsViewModel);
+                    AddChildViewModel(_settingsViewModel);
                 }
 
-                return (SettingsViewModel)settingsViewModel;
+                return (SettingsViewModel)_settingsViewModel;
             }
         }
         #endregion Properties
@@ -562,6 +557,16 @@ namespace Mosey.GUI.ViewModels
             }
         }
 
+        internal static string GetImageFilePath(IImagingHost.CapturedImage image, ImageFileConfig config, bool appendIndex, DateTime saveDateTime)
+        {
+            string index = appendIndex ? image.Index.ToString() : null;
+            var dateTime = saveDateTime.ToString(string.Join("_", config.DateFormat, config.TimeFormat));
+            var directory = Path.Combine(config.Directory, $"Scanner{image.DeviceId}");
+            var fileName = string.Join("_", config.Prefix, dateTime, index);
+
+            return Path.Combine(directory, Path.ChangeExtension(fileName, config.ImageFormat.ToString().ToLower()));
+        }
+
         private async Task<IEnumerable<IImagingHost.CapturedImage>> ScanImagesAsync()
             => await _scanningHost.PerformImagingAsync(_userDeviceConfig.UseHighestResolution, _cancelScanTokenSource.Token);
 
@@ -575,12 +580,14 @@ namespace Mosey.GUI.ViewModels
             _log.LogDebug($"Scan initiated with {nameof(ScanAndSaveImagesAsync)} method.");
 
             var results = new List<string>();
-            var saveDateTime = DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat));
+            var saveDateTime = DateTime.Now;
 
-            foreach (var image in await ScanImagesAsync())
+            var images = await ScanImagesAsync();
+
+            foreach (var scannedImage in images)
             {
-                var filePath = GetFilePath(image, _imageFileConfig, images.Count() > 1);
-                _scanningHost.ImageFileHandler.SaveImage(image.Image, _imageFileConfig.ImageFormat, filePath);
+                var filePath = GetImageFilePath(scannedImage, _imageFileConfig, images.Count() > 1, saveDateTime);
+                _scanningHost.ImageFileHandler.SaveImage(scannedImage.Image, _imageFileConfig.ImageFormat, filePath);
 
                 results.Add(filePath);
             }
@@ -588,17 +595,6 @@ namespace Mosey.GUI.ViewModels
             _log.LogDebug($"Scan completed with {nameof(ScanAndSaveImagesAsync)} method.");
 
             return results;
-
-            string GetFilePath(IImagingHost.CapturedImage image, ImageFileConfig config, bool appendIndex)
-            {
-                string index = appendIndex ? image.Index.ToString() : null;
-
-                var directory = _fileSystem.Path.Combine(config.Directory, string.Join(string.Empty, "Scanner", image.DeviceId));
-                var fileName = string.Join("_", _imageFileConfig.Prefix, saveDateTime, index);
-                fileName = _fileSystem.Path.ChangeExtension(fileName, config.ImageFormat.ToString().ToLower());
-
-                return _fileSystem.Path.Combine(directory, fileName);
-            }
         }
 
         /// <summary>

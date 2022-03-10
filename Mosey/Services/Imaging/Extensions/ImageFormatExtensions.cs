@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Drawing.Imaging;
 using Mosey.Models.Imaging;
 
 namespace Mosey.Services.Imaging.Extensions
@@ -16,16 +15,6 @@ namespace Mosey.Services.Imaging.Extensions
             => Enum.TryParse(imageFormatStr, ignoreCase: true, out IImagingDevice.ImageFormat value)
                 ? value
                 : throw new ArgumentException($"{imageFormatStr} is not a supported image file extension.");
-
-        /// <summary>
-        /// Convert to a <see cref="ImageFormat"/> instance.
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns>A <see cref="ImageFormat"/> instance</returns>
-        public static ImageFormat ToDrawingImageFormat(this IImagingDevice.ImageFormat value)
-            => (ImageFormat)typeof(ImageFormat)
-                .GetProperty(value.ToString(), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.IgnoreCase)
-                .GetValue(null);
 
         /// <summary>
         /// Convert to a <see cref="DNTScanner.Core.WiaImageFormat"/> instance.

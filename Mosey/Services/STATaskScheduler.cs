@@ -52,7 +52,7 @@ namespace System.Threading.Tasks.Schedulers
                 }
 
                 thread.IsBackground = true;
-                thread.SetApartmentState(ApartmentState.STA);
+                thread.TrySetApartmentState(ApartmentState.STA);
                 return thread;
             }).ToList();
 

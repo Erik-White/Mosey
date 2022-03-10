@@ -6,6 +6,7 @@ namespace Mosey.Tests.Customizations
 {
     public class ConcreteScanningDeviceCustomization : ICustomization
     {
-        public void Customize(IFixture fixture) => fixture.Register<IImagingDevice>(fixture.Create<ScanningDevice>);
+        public void Customize(IFixture fixture)
+            => fixture.Register<IImagingDevice>(fixture.Create<ScanningDevice>);
     }
 }

@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing.Imaging;
-using System.IO;
-using System.IO.Abstractions;
 using System.Linq;
 using System.Runtime.InteropServices;
 using DNTScanner.Core;
 using Mosey.Models.Imaging;
 using Mosey.Services.Imaging.Extensions;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace Mosey.Services.Imaging
 {
@@ -21,9 +19,9 @@ namespace Mosey.Services.Imaging
         private bool _isImaging;
         private int _scanRetries = 5;
 
-        private readonly IFileSystem _fileSystem;
         private readonly ScannerSettings _scannerSettings;
         private readonly ISystemImagingDevices<ScannerSettings> _systemDevices;
+        private readonly IImageHandler<Rgba32> _imageHandler;
 
         public string Name => _scannerSettings.Name;
 
@@ -88,12 +86,12 @@ namespace Mosey.Services.Imaging
         /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
         /// <param name="config">Device settings used when capturing an image</param>
         /// <param name="systemDevices">An <see cref="ISystemImagingDevices"/> instance that provide access to the WIA driver devices</param>
-        public ScanningDevice(ScannerSettings settings, ImagingDeviceConfig config, ISystemImagingDevices<ScannerSettings> systemDevices, IFileSystem fileSystem)
+        public ScanningDevice(ScannerSettings settings, ImagingDeviceConfig config, ISystemImagingDevices<ScannerSettings> systemDevices, IImageHandler<Rgba32> imageHandler)
         {
             _scannerSettings = settings;
             ImageSettings = config;
             _systemDevices = systemDevices ?? new DntScannerDevices();
-            _fileSystem = fileSystem ?? new FileSystem();
+            _imageHandler = imageHandler;
         }
 
         public void ClearImages()
@@ -143,18 +141,20 @@ namespace Mosey.Services.Imaging
                 ClearImages();
 
                 // Store images for processing etc
-                foreach (var image in images)
+                foreach (var imageContent in images)
                 {
                     try
                     {
                         // Convert image to PNG format before storing byte array
                         // Greatly reduces memory footprint compared to raw BMP
-                        Images.Add(image.AsFormat(IImagingDevice.ImageFormat.Png.ToDrawingImageFormat()));
+                        // TODO: Convert before saving?
+                        //var image = _imageHandler.ConvertToFormat(imageContent, IImagingDevice.ImageFormat.Png);
+                        Images.Add(imageContent);
                     }
                     catch (ArgumentException)
                     {
                         // Store the image in its original format
-                        Images.Add(image);
+                        Images.Add(imageContent);
                     }
                 }
             }

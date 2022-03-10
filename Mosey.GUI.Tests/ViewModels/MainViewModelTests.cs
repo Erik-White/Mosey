@@ -99,5 +99,17 @@ namespace Mosey.GUI.ViewModels.Tests
                 }
             }
         }
+
+        public class GetImageFilePathShould
+        {
+            [Theory, ScanningDeviceAutoData]
+            public void Return_FilePath(IImagingHost.CapturedImage image, [Frozen] ImageFileConfig config, DateTime dateTime)
+            {
+                var result = MainViewModel.GetImageFilePath(image, config, true, dateTime);
+
+                result.Should().StartWith(config.Directory);
+                result.Should().EndWithEquivalentOf(config.ImageFormat.ToString());
+            }
+        }
     }
 }

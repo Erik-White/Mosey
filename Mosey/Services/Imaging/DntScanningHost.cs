@@ -55,6 +55,7 @@ namespace Mosey.Services.Imaging
                             }
 
                             // Run the scanner and retrieve the image(s) to memory
+                            // A single scan can generate multiple images, depending on scanner type and settings
                             scanner.PerformImaging();
                         }
                     }
