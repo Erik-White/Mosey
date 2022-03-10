@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
-namespace Mosey.Services
+namespace Mosey.Models
 {
     public class ObservableItemsCollection<T> : ObservableCollection<T> where T : INotifyPropertyChanged
     {

@@ -159,6 +159,10 @@ namespace Mosey.GUI.ViewModels
         /// <inheritdoc cref="IImagingDevices{T}"/>
         public IImagingDevices<IImagingDevice> ScanningDevices { get; private set; }
 
+        /// <inheritdoc cref="IImagingDevices{T}"/>
+        public ObservableItemsCollection<IImagingDevice> ObservableDevices
+            => (ObservableItemsCollection<IImagingDevice>)ScanningDevices.Devices;
+
         public ICollection<IViewModel> ViewModelChildren { get; private set; }
             = new System.Collections.ObjectModel.ObservableCollection<IViewModel>();
 

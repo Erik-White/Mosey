@@ -14,7 +14,7 @@ namespace Mosey.Services.Imaging
     /// </summary>
     public class ScanningDevices : IImagingDevices<IImagingDevice>
     {
-        private readonly ObservableItemsCollection<ScanningDevice> _devices = new();
+        private readonly ICollection<IImagingDevice> _devices = new ObservableItemsCollection<IImagingDevice>();
         private readonly ISystemImagingDevices<ScannerSettings> _systemDevices;
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace Mosey.Services.Imaging
             foreach (var deviceId in currentDevices.Except(deviceIds))
             {
                 var device = _devices.FirstOrDefault(d => d.DeviceID == deviceId);
-                device.IsConnected = false;
+                (device as ScanningDevice).IsConnected = false;
             }
 
             // These are new devices, add them to the collection
