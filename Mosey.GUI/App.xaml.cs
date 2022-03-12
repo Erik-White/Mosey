@@ -33,13 +33,13 @@ namespace Mosey.GUI
         {
             base.OnStartup(e);
 
-            _appConfig = CreateConfiguration("appsettings.json");
-            _userConfig = CreateConfiguration("usersettings.json");
+            _appConfig = CreateConfiguration(AppSettings.DefaultSettingsFileName);
+            _userConfig = CreateConfiguration(AppSettings.UserSettingsFileName);
 
             var serviceProvider = new ServiceCollection()
                 // Configuration
                 .Configure<AppSettings>(_appConfig)
-                .ConfigureWritable<AppSettings>(_userConfig, name: "UserSettings", fileName: "usersettings.json")
+                .ConfigureWritable<AppSettings>(_userConfig, name: "UserSettings", fileName: AppSettings.UserSettingsFileName)
                 .PostConfigureAll<AppSettings>(config =>
                 {
                     if (string.IsNullOrEmpty(config.ImageFile.Directory))

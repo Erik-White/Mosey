@@ -7,13 +7,11 @@ namespace Mosey.GUI.Configuration
 {
     public static class ServiceCollectionExtensions
     {
-        public const string DefaultFileName = "appsettings.json";
-
         public static IServiceCollection ConfigureWritable<T>(
             this IServiceCollection services,
             IConfiguration config,
             string name = null,
-            string fileName = DefaultFileName) where T : class, new()
+            string fileName = AppSettings.DefaultSettingsFileName) where T : class, new()
         {
             if (string.IsNullOrEmpty(name))
             {
