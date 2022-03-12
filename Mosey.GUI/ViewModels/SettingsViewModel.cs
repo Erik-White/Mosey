@@ -52,8 +52,8 @@ namespace Mosey.GUI.ViewModels
             get => _userSettings.Device.EnableWhenConnected;
             set
             {
-                _userSettings.Device.EnableWhenConnected = value ;
-                _appSettings.Update(c => c.Device.EnableWhenConnected = value);
+                _userSettings.Device = _userSettings.Device with { EnableWhenConnected = value };
+                _appSettings.Update(c => c.Device = c.Device with { EnableWhenConnected = value });
                 RaisePropertyChanged(nameof(ScannersEnableOnConnect));
 
                 _log.LogInformation($"{nameof(ScannersEnableOnConnect)} changed to {value}");
@@ -65,8 +65,8 @@ namespace Mosey.GUI.ViewModels
             get => _userSettings.Device.EnableWhenScanning;
             set
             {
-                _userSettings.Device.EnableWhenScanning = value;
-                _appSettings.Update(c => c.Device.EnableWhenScanning = value);
+                _userSettings.Device = _userSettings.Device with { EnableWhenScanning = value };
+                _appSettings.Update(c => c.Device = c.Device with { EnableWhenScanning = value });
                 RaisePropertyChanged(nameof(ScannersEnableWhenScanning));
 
                 _log.LogInformation($"{nameof(ScannersEnableWhenScanning)} changed to {value}");
@@ -78,8 +78,8 @@ namespace Mosey.GUI.ViewModels
             get => _userSettings.Device.UseHighestResolution;
             set
             {
-                _userSettings.Device.UseHighestResolution = value;
-                _appSettings.Update(c => c.Device.UseHighestResolution = value);
+                _userSettings.Device = _userSettings.Device with { UseHighestResolution = value };
+                _appSettings.Update(c => c.Device = c.Device with { UseHighestResolution = value });
                 RaisePropertyChanged(nameof(ScanHighestResolution));
 
                 _log.LogInformation($"{nameof(ScanHighestResolution)} changed to {value}");
