@@ -16,8 +16,9 @@ namespace Mosey.GUI.Configuration
         public IEnumerable<int> StandardResolutions
             => GetResolutions(ResolutionData);
 
+        // Parameterless constructor required for use with WriteableOptions
         public DeviceConfig()
-            : this(default, default, default, Enumerable.Empty<ResolutionMetadata>())
+            : this(default, default, default, default)
         {
         }
 
@@ -26,7 +27,7 @@ namespace Mosey.GUI.Configuration
         /// </summary>
         /// <param name="resolution">An image resolution, in DPI</param>
         /// <returns></returns>
-        public ResolutionMetadata GetResolutionMetaData(int resolution)
+        public ResolutionMetadata GetResolutionMetadata(int resolution)
             => ResolutionData.FirstOrDefault(r => r.Resolution == resolution);
 
         private static IEnumerable<int> GetResolutions(IEnumerable<ResolutionMetadata> resolutionData)
@@ -35,7 +36,7 @@ namespace Mosey.GUI.Configuration
         /// <summary>
         /// Information related to an image resolution.
         /// </summary>
-        public record ResolutionMetadata(int Resolution, TimeSpan ImagingTime, long FileSize)
+        public record struct ResolutionMetadata(int Resolution, TimeSpan ImagingTime, long FileSize)
         {
         }
     }

@@ -65,7 +65,7 @@ namespace Mosey.GUI.ViewModels
         public long ImagesRequiredDiskSpace
             => ScanRepetitions
                 * ScanningDevices.Devices.Count(d => d.IsEnabled)
-                * _userDeviceConfig.GetResolutionMetaData(_imageConfig.Resolution).FileSize;
+                * _userDeviceConfig.GetResolutionMetadata(_imageConfig.Resolution).FileSize;
 
         private bool _isWaiting;
         public bool IsWaiting
@@ -405,7 +405,7 @@ namespace Mosey.GUI.ViewModels
         public async Task StartScanWithDialog()
         {
             // Check that interval time is sufficient for selected resolution
-            var imagingTime = ScanningDevices.Devices.Count(d => d.IsEnabled) * _userDeviceConfig.GetResolutionMetaData(_imageConfig.Resolution).ImagingTime;
+            var imagingTime = ScanningDevices.Devices.Count(d => d.IsEnabled) * _userDeviceConfig.GetResolutionMetadata(_imageConfig.Resolution).ImagingTime;
             if (imagingTime * 1.5 > TimeSpan.FromMinutes(ScanInterval) && !await _dialog.ImagingTimeDialog(TimeSpan.FromMinutes(ScanInterval), imagingTime))
             {
                 _log.LogDebug($"Scanning not started due to low interval time: {imagingTime.TotalMinutes} minutes required, {ScanInterval} minutes selected.");
