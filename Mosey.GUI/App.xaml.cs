@@ -39,7 +39,7 @@ namespace Mosey.GUI
             var serviceProvider = new ServiceCollection()
                 // Configuration
                 .Configure<AppSettings>(_appConfig)
-                .ConfigureWritable<AppSettings>(_userConfig, name: "UserSettings", file: "usersettings.json")
+                .ConfigureWritable<AppSettings>(_userConfig, name: "UserSettings", fileName: "usersettings.json")
                 .PostConfigureAll<AppSettings>(config =>
                 {
                     if (string.IsNullOrEmpty(config.ImageFile.Directory))

@@ -35,7 +35,7 @@ namespace Mosey.GUI.ViewModels
         private ImagingDeviceConfig _imageConfig;
         private ImageFileConfig _imageFileConfig;
         private IntervalTimerConfig _scanTimerConfig;
-        private DeviceConfig _userDeviceConfig;
+        private ScanningDeviceConfig _userDeviceConfig;
 
         private CancellationTokenSource _cancelScanTokenSource = new();
 

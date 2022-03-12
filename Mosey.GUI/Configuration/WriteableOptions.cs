@@ -9,14 +9,12 @@ namespace Mosey.GUI.Configuration
     public class WritableOptions<T> : IWritableOptions<T> where T : class, new()
     {
         private readonly IOptionsSnapshot<T> _options;
-        private readonly string _file;
+        private readonly string _name;
 
-        public WritableOptions(
-            IOptionsSnapshot<T> options,
-            string file)
+        public WritableOptions(IOptionsSnapshot<T> options, string name)
         {
             _options = options;
-            _file = file;
+            _name = name;
         }
 
         public T Value => _options.Value;
@@ -24,7 +22,7 @@ namespace Mosey.GUI.Configuration
 
         public void Update(Action<T> applyChanges)
         {
-            var physicalPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _file);
+            var physicalPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _name);
 
             var optionsInstance = JsonSerializer.Deserialize<T>(File.ReadAllText(physicalPath)) ?? new T();
 
