@@ -30,7 +30,85 @@ namespace Mosey.Services.Imaging
             ImageFileHandler = imageFileHandler;
         }
 
-        public IEnumerable<CapturedImage> PerformImaging(bool useHighestResolution = false, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<CapturedImage>> PerformImagingAsync(bool useHighestResolution = false, CancellationToken cancellationToken = default)
+        {
+            var results = Enumerable.Empty<CapturedImage>();
+
+            try
+            {
+                await _semaphore.WaitAsync(cancellationToken);
+
+                // Runtime callable wrappers must be disposed manually to prevent problems with early disposal of COM servers
+                using (var staQueue = new StaTaskScheduler(concurrencyLevel: 1, disableComObjectEagerCleanup: true))
+                {
+                    results = await Task.Factory.StartNew(
+                        () => PerformImaging(useHighestResolution, cancellationToken),
+                        cancellationToken,
+                        TaskCreationOptions.LongRunning,
+                        staQueue)
+                    .ContinueWith(t =>
+                    {
+                        // Manually clear (RCWs) to prevent memory leaks
+                        System.Runtime.InteropServices.Marshal.CleanupUnusedObjectsInCurrentContext();
+                        // Force any pending exceptions to propagate up
+                        t.Wait();
+                        return t.Result;
+                    }, staQueue)
+                    .ConfigureAwait(false);
+                }
+            }
+            catch (AggregateException aggregateEx)
+            {
+                // Unpack the aggregate
+                var innerException = aggregateEx.Flatten().InnerExceptions.FirstOrDefault();
+                // Ensure stack trace is preserved and rethrow
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(innerException).Throw();
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+
+            return results;
+        }
+
+        public async Task RefreshDevicesAsync(bool enableDevices = true, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await _semaphore.WaitAsync(cancellationToken);
+
+                await Task.Factory.StartNew(
+                    () => ImagingDevices.RefreshDevices(_deviceConfig, enableDevices),
+                    cancellationToken,
+                    TaskCreationOptions.None,
+                    _scheduler)
+                    .ConfigureAwait(false);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        public void UpdateConfig(ImagingDeviceConfig deviceConfig)
+        {
+            _deviceConfig = deviceConfig;
+        }
+
+        public async Task WaitForImagingToComplete(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        private IEnumerable<CapturedImage> PerformImaging(bool useHighestResolution = false, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -75,81 +153,6 @@ namespace Mosey.Services.Imaging
                         };
                     }
                 }
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
-        }
-
-        public async Task<IEnumerable<CapturedImage>> PerformImagingAsync(bool useHighestResolution = false, CancellationToken cancellationToken = default)
-        {
-            var results = Enumerable.Empty<CapturedImage>();
-
-            try
-            {
-                // Runtime callable wrappers must be disposed manually to prevent problems with early disposal of COM servers
-                using (var staQueue = new StaTaskScheduler(concurrencyLevel: 1, disableComObjectEagerCleanup: true))
-                {
-                    results = await Task.Factory.StartNew(
-                        () => PerformImaging(useHighestResolution, cancellationToken),
-                        cancellationToken,
-                        TaskCreationOptions.LongRunning,
-                        staQueue)
-                    .ContinueWith(t =>
-                    {
-                        // Manually clear (RCWs) to prevent memory leaks
-                        System.Runtime.InteropServices.Marshal.CleanupUnusedObjectsInCurrentContext();
-                        // Force any pending exceptions to propagate up
-                        t.Wait();
-                        return t.Result;
-                    }, staQueue);
-                }
-            }
-            catch (AggregateException aggregateEx)
-            {
-                // Unpack the aggregate
-                var innerException = aggregateEx.Flatten().InnerExceptions.FirstOrDefault();
-                // Ensure stack trace is preserved and rethrow
-                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(innerException).Throw();
-            }
-
-            return results;
-        }
-
-        public void RefreshDevices(bool enableDevices = true, CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                _semaphore.Wait();
-                ImagingDevices.RefreshDevices(_deviceConfig, enableDevices);
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
-        }
-
-        public async Task RefreshDevicesAsync(bool enableDevices = true, CancellationToken cancellationToken = default)
-        {
-            // Use a dedicated thread for refresh tasks
-            await Task.Factory.StartNew(
-                () => RefreshDevices(enableDevices, cancellationToken),
-                cancellationToken,
-                TaskCreationOptions.None,
-                _scheduler);
-        }
-
-        public void UpdateConfig(ImagingDeviceConfig deviceConfig)
-        {
-            _deviceConfig = deviceConfig;
-        }
-
-        public async Task WaitForImagingToComplete(CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                await _semaphore.WaitAsync(cancellationToken);
             }
             finally
             {

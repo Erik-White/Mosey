@@ -292,14 +292,14 @@ namespace Mosey.GUI.ViewModels
             }
         }
 
-        private ICommand _RefreshScannersCommand;
-        public ICommand RefreshScannersCommand
+        private IAsyncCommand _RefreshScannersCommand;
+        public IAsyncCommand RefreshScannersCommand
         {
             get
             {
-                _RefreshScannersCommand ??= new RelayCommand(
-                    o => RefreshDevices(),
-                    o => !ScanningDevices.IsImagingInProgress && !IsScanRunning);
+                _RefreshScannersCommand ??= new AsyncCommand(
+                    () => RefreshDevicesAsync(),
+                    _ => !ScanningDevices.IsImagingInProgress && !IsScanRunning);
 
                 return _RefreshScannersCommand;
             }
@@ -458,7 +458,7 @@ namespace Mosey.GUI.ViewModels
         /// </summary>
         private async void ScanTimer_Tick(object sender, EventArgs e)
         {
-            _log.LogDebug($"{nameof(IImagingHost.PerformImaging)} event.");
+            _log.LogDebug($"{nameof(ScanTimer_Tick)} event.");
 
             try
             {
@@ -488,7 +488,10 @@ namespace Mosey.GUI.ViewModels
         {
             _log.LogDebug($"{nameof(ScanTimer_Complete)} event.");
 
-            await _scanningHost.WaitForImagingToComplete(_cancelScanTokenSource.Token);
+            if (!_cancelScanTokenSource.Token.IsCancellationRequested)
+            {
+                await _scanningHost.WaitForImagingToComplete(_cancelScanTokenSource.Token);
+            }
 
             // Ensure all other scanning related operations are stopped
             _cancelScanTokenSource.Cancel();
@@ -512,21 +515,6 @@ namespace Mosey.GUI.ViewModels
             => RaisePropertyChanged(nameof(ScanNextTime));
 
         /// <summary>
-        /// Update <see cref="ScanningDevices"/> with any newly connected scanners
-        /// </summary>
-        private void RefreshDevices()
-        {
-            _log.LogDebug($"Device refresh initiated with {nameof(RefreshDevices)}");
-            var enableDevices = !IsScanRunning ? _userDeviceConfig.EnableWhenConnected : _userDeviceConfig.EnableWhenScanning;
-            _scanningHost.RefreshDevices(enableDevices);
-
-            RaisePropertyChanged(nameof(ScanningDevices));
-            RaisePropertyChanged(nameof(StartScanCommand));
-            RaisePropertyChanged(nameof(StartStopScanCommand));
-            _log.LogDebug($"Device refresh complete with {nameof(RefreshDevices)}");
-        }
-
-        /// <summary>
         /// Starts a loop that continually refreshes the list of available scanners
         /// </summary>
         /// <param name="interval">The duration between refreshes, default is one second</param>
@@ -543,13 +531,13 @@ namespace Mosey.GUI.ViewModels
                     _log.LogTrace($"Initiating device refresh in {nameof(BeginRefreshDevicesAsync)}");
                     var enableDevices = !IsScanRunning ? _userDeviceConfig.EnableWhenConnected : _userDeviceConfig.EnableWhenScanning;
 
-                    await Task.Delay(interval.Value, cancellationToken);
-                    await _scanningHost.RefreshDevicesAsync(enableDevices, cancellationToken);
+                    await Task.Delay(interval.Value, cancellationToken).ConfigureAwait(false);
+                    await _scanningHost.RefreshDevicesAsync(enableDevices, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
                     _log.LogWarning(ex, "Error while attempting to refresh devices.");
-                    await _dialog.ExceptionDialog(ex, 5000, CancellationToken.None);
+                    await _dialog.ExceptionDialog(ex, 5000, CancellationToken.None).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -572,33 +560,62 @@ namespace Mosey.GUI.ViewModels
         }
 
         private async Task<IEnumerable<IImagingHost.CapturedImage>> ScanImagesAsync()
-            => await _scanningHost.PerformImagingAsync(_userDeviceConfig.UseHighestResolution, _cancelScanTokenSource.Token);
+            => await _scanningHost
+                .PerformImagingAsync(_userDeviceConfig.UseHighestResolution, _cancelScanTokenSource.Token)
+                .ConfigureAwait(false);
 
         /// <summary>
         /// Initiate scanning with all available <see cref="ScanningDevice"/>s
         /// and save any captured images to disk
         /// </summary>
         /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
-        private async Task<IEnumerable<string>> ScanAndSaveImagesAsync()
+        private async Task<IEnumerable<string>> ScanAndSaveImagesAsync(bool createDirectoryPath = true)
         {
             _log.LogDebug($"Scan initiated with {nameof(ScanAndSaveImagesAsync)} method.");
 
             var results = new List<string>();
             var saveDateTime = DateTime.Now;
 
-            var images = await ScanImagesAsync();
-
-            foreach (var scannedImage in images)
+            try
             {
-                var filePath = GetImageFilePath(scannedImage, _imageFileConfig, images.Count() > 1, saveDateTime);
-                _scanningHost.ImageFileHandler.SaveImage(scannedImage.Image, _imageFileConfig.ImageFormat, filePath);
+                var images = (await ScanImagesAsync().ConfigureAwait(false)).ToList();
 
-                results.Add(filePath);
+                foreach (var scannedImage in images)
+                {
+                    var filePath = GetImageFilePath(scannedImage, _imageFileConfig, images.Count > 1, saveDateTime);
+                    if (createDirectoryPath)
+                    {
+                        _fileSystem.Directory.CreateDirectory(_fileSystem.Path.GetDirectoryName(filePath));
+                    }
+                    _scanningHost.ImageFileHandler.SaveImage(scannedImage.Image, _imageFileConfig.ImageFormat, filePath);
+
+                    results.Add(filePath);
+                }
+            }
+            catch (IOException ex)
+            {
+                _log.LogError("An error occured when attempting to aquire images, or when saving them to disk", ex);
+                await _dialog.ExceptionDialog(ex, 5000, _cancelScanTokenSource.Token).ConfigureAwait(false);
             }
 
             _log.LogDebug($"Scan completed with {nameof(ScanAndSaveImagesAsync)} method.");
 
             return results;
+        }
+
+        /// <summary>
+        /// Update <see cref="ScanningDevices"/> with any newly connected scanners
+        /// </summary>
+        private async Task RefreshDevicesAsync()
+        {
+            _log.LogDebug($"Device refresh initiated with {nameof(RefreshDevicesAsync)}");
+            var enableDevices = !IsScanRunning ? _userDeviceConfig.EnableWhenConnected : _userDeviceConfig.EnableWhenScanning;
+            await _scanningHost.RefreshDevicesAsync(enableDevices);
+
+            RaisePropertyChanged(nameof(ScanningDevices));
+            RaisePropertyChanged(nameof(StartScanCommand));
+            RaisePropertyChanged(nameof(StartStopScanCommand));
+            _log.LogDebug($"Device refresh complete with {nameof(RefreshDevicesAsync)}");
         }
 
         /// <summary>
