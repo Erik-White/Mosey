@@ -35,7 +35,7 @@
   "ImageFile": {
     "Directory": "",
     "Prefix": "img",
-    "Format": "tiff",
+    "ImageFormat": "tiff",
     "SupportedFormats": [ "tiff", "png" ],
     "DateFormat": "yyyyMMdd",
     "TimeFormat": "HHmm"
