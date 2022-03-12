@@ -104,7 +104,7 @@ namespace Mosey.Services
                 // Notify event subscribers
                 OnTick(EventArgs.Empty);
                 Resume();
-                if (RepetitionsCount >= Repetitions)
+                if (RepetitionsCount == Repetitions)
                 {
                     Stop();
                 }
