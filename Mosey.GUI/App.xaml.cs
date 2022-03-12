@@ -17,7 +17,6 @@ using Mosey.Models.Imaging;
 using Mosey.Services;
 using Mosey.Services.Imaging;
 
-[assembly: InternalsVisibleTo("Mosey.GUI.Tests")]
 namespace Mosey.GUI
 {
     /// <summary>
