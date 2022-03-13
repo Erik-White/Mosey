@@ -117,11 +117,9 @@ namespace Mosey.GUI.ViewModels
             get => _userSettings.ScanTimer.Delay != TimeSpan.Zero;
             set
             {
-                _userSettings.ScanTimer = value
-                    ? _userSettings.ScanTimer with { Delay = _userSettings.ScanTimer.Interval }
-                    : _userSettings.ScanTimer with { Delay = TimeSpan.Zero };
-
-                _appSettings.Update(c => c.ScanTimer = c.ScanTimer with { Delay = _userSettings.ScanTimer.Delay });
+                var delay = value ? _userSettings.ScanTimer.Interval : TimeSpan.Zero;
+                _userSettings.ScanTimer = _userSettings.ScanTimer with { Delay = delay };
+                _appSettings.Update(c => c.ScanTimer = c.ScanTimer with { Delay = delay });
                 RaisePropertyChanged(nameof(ScanningDelay));
 
                 _log.LogInformation($"{nameof(ScanningDelay)} changed to {value}");
