@@ -344,7 +344,7 @@ namespace Mosey.GUI.ViewModels
                 if (dialogResult)
                 {
                     // Wait for current scan operation to complete, then exit
-                    _log.LogDebug($"Waiting for scanning operations to complete before shutting down from {nameof(OnClosingAsync)}.");
+                    _log.LogTrace($"Waiting for scanning operations to complete before shutting down from {nameof(OnClosingAsync)}.");
                     IsWaiting = true;
                     _cancelScanTokenSource.CancelAfter(TimeSpan.FromSeconds(30));
                     await _scanningHost.WaitForImagingToComplete(_cancelScanTokenSource.Token);
@@ -432,7 +432,7 @@ namespace Mosey.GUI.ViewModels
         /// <param name="cancellationToken">Used to stop the refresh loop</param>
         internal async Task BeginRefreshDevicesAsync(TimeSpan? interval = null, CancellationToken cancellationToken = default)
         {
-            _log.LogDebug($"Device refresh initiated with {nameof(BeginRefreshDevicesAsync)}");
+            _log.LogTrace($"Device refresh initiated with {nameof(BeginRefreshDevicesAsync)}");
             interval ??= TimeSpan.FromSeconds(1);
 
             while (!cancellationToken.IsCancellationRequested)
@@ -493,7 +493,7 @@ namespace Mosey.GUI.ViewModels
             RaisePropertyChanged(nameof(ScanRepetitions));
             RaisePropertyChanged(nameof(ImageSavePath));
 
-            _log.LogDebug($"Configuration updated with {nameof(UpdateConfig)}.");
+            _log.LogTrace($"Configuration updated with {nameof(UpdateConfig)}.");
         }
 
         /// <summary>
@@ -501,7 +501,7 @@ namespace Mosey.GUI.ViewModels
         /// </summary>
         private async void ScanTimer_Complete(object sender, EventArgs e)
         {
-            _log.LogDebug($"{nameof(ScanTimer_Complete)} event.");
+            _log.LogTrace($"{nameof(ScanTimer_Complete)} event.");
 
             if (!_cancelScanTokenSource.Token.IsCancellationRequested)
             {
@@ -528,7 +528,7 @@ namespace Mosey.GUI.ViewModels
         /// </summary>
         private async void ScanTimer_Tick(object sender, EventArgs e)
         {
-            _log.LogDebug($"{nameof(ScanTimer_Tick)} event.");
+            _log.LogTrace($"{nameof(ScanTimer_Tick)} event.");
 
             try
             {
@@ -588,7 +588,7 @@ namespace Mosey.GUI.ViewModels
 
         private void Initialize()
         {
-            _log.LogDebug($"ViewModel initialization starting.");
+            _log.LogTrace($"ViewModel initialization starting.");
 
             ScanningDevices = _scanningHost.ImagingDevices;
 
@@ -611,7 +611,7 @@ namespace Mosey.GUI.ViewModels
             _ = BeginRefreshDevicesAsync();
             ScanningDevices.EnableAll();
 
-            _log.LogDebug($"ViewModel initialization complete.");
+            _log.LogTrace($"ViewModel initialization complete.");
         }
 
         /// <summary>
@@ -619,14 +619,14 @@ namespace Mosey.GUI.ViewModels
         /// </summary>
         private async Task RefreshDevicesAsync()
         {
-            _log.LogDebug($"Device refresh initiated with {nameof(RefreshDevicesAsync)}");
+            _log.LogTrace($"Device refresh initiated with {nameof(RefreshDevicesAsync)}");
             var enableDevices = !IsScanRunning ? _appSettings.CurrentValue.Device.EnableWhenConnected : _appSettings.CurrentValue.Device.EnableWhenScanning;
             await _scanningHost.RefreshDevicesAsync(enableDevices);
 
             RaisePropertyChanged(nameof(ScanningDevices));
             RaisePropertyChanged(nameof(StartScanCommand));
             RaisePropertyChanged(nameof(StartStopScanCommand));
-            _log.LogDebug($"Device refresh complete with {nameof(RefreshDevicesAsync)}");
+            _log.LogTrace($"Device refresh complete with {nameof(RefreshDevicesAsync)}");
         }
 
         /// <summary>
@@ -636,7 +636,7 @@ namespace Mosey.GUI.ViewModels
         /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
         private async Task<IEnumerable<string>> ScanAndSaveImagesAsync(bool createDirectoryPath = true)
         {
-            _log.LogDebug($"Scan initiated with {nameof(ScanAndSaveImagesAsync)} method.");
+            _log.LogTrace($"Scan initiated with {nameof(ScanAndSaveImagesAsync)} method.");
 
             var results = new List<string>();
             var saveDateTime = DateTime.Now;
@@ -663,7 +663,7 @@ namespace Mosey.GUI.ViewModels
                 await _dialog.ExceptionDialog(ex, 5000, _cancelScanTokenSource.Token).ConfigureAwait(false);
             }
 
-            _log.LogDebug($"Scan completed with {nameof(ScanAndSaveImagesAsync)} method.");
+            _log.LogTrace($"Scan completed with {nameof(ScanAndSaveImagesAsync)} method.");
 
             return results;
         }

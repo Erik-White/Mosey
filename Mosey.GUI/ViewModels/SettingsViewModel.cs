@@ -187,7 +187,7 @@ namespace Mosey.GUI.ViewModels
         /// </summary>
         private void ResetUserOptions()
         {
-            _log.LogDebug("Overwriting user settings with defaults.");
+            _log.LogTrace("Overwriting user settings with defaults.");
 
             // Copy default settings and write to disk
             _userSettings = _appSettings.Value with { };
