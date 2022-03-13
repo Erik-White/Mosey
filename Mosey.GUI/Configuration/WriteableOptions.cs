@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 using Mosey.GUI.Models;
 
@@ -10,6 +11,15 @@ namespace Mosey.GUI.Configuration
     {
         private readonly IOptionsSnapshot<T> _options;
         private readonly string _file;
+
+        internal JsonSerializerOptions SerializerOptions { get; set; } = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Converters =
+                {
+                    new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)
+                }
+        };
 
         public WritableOptions(
             IOptionsSnapshot<T> options,
@@ -25,17 +35,13 @@ namespace Mosey.GUI.Configuration
         public void Update(Action<T> applyChanges)
         {
             var physicalPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _file);
+            var content = File.ReadAllText(physicalPath);
 
-            var optionsInstance = JsonSerializer.Deserialize<T>(File.ReadAllText(physicalPath)) ?? new T();
+            var optionsInstance = JsonSerializer.Deserialize<T>(content, SerializerOptions) ?? new T();
 
             applyChanges(optionsInstance);
 
-            var jsonOptions = new JsonSerializerOptions
-            {
-                WriteIndented = true
-            };
-
-            File.WriteAllText(physicalPath, JsonSerializer.Serialize(optionsInstance, jsonOptions));
+            File.WriteAllText(physicalPath, JsonSerializer.Serialize(optionsInstance, SerializerOptions));
         }
     }
 }

@@ -6,13 +6,13 @@ namespace Mosey.Models.Imaging
         string Directory,
         string Prefix,
         IImagingDevice.ImageFormat ImageFormat,
-        List<string> SupportedFormats,
+        List<IImagingDevice.ImageFormat> SupportedFormats,
         string DateFormat,
         string TimeFormat)
     {
         // Parameterless constructor required for use with WriteableOptions
         public ImageFileConfig()
-            : this(default, default, default, new List<string>(), default, default)
+            : this(default, default, default, default, default, default)
         {
         }
     }
