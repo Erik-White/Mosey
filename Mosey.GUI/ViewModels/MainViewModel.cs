@@ -29,7 +29,6 @@ namespace Mosey.GUI.ViewModels
         private readonly object _scanningDevicesLock = new();
 
         private readonly IIntervalTimer _scanTimer;
-        private readonly IIntervalTimer _uiTimer;
         private readonly DialogViewModel _dialog;
 
         private ImagingDeviceConfig _imageConfig;
@@ -198,7 +197,6 @@ namespace Mosey.GUI.ViewModels
             _log = logger;
 
             _scanTimer = intervalTimerFactory.Create();
-            _uiTimer = intervalTimerFactory.Create();
             _dialog = new DialogViewModel(this, _uiServices, _log);
 
             Initialize();
@@ -350,8 +348,9 @@ namespace Mosey.GUI.ViewModels
             _appSettings.OnChange(UpdateConfig);
             _scanTimer.Tick += ScanTimer_Tick;
             _scanTimer.Complete += ScanTimer_Complete;
-            _uiTimer.Tick += UITimer_Tick;
-            _uiTimer.Start(userSettings.UITimer.Delay, userSettings.UITimer.Interval);
+
+            // Start a task loop to update UI
+            _ = BeginRefreshUI(userSettings.UITimer.Interval);
 
             // Start a task loop to update the scanners collection
             _ = BeginRefreshDevicesAsync();
@@ -454,6 +453,18 @@ namespace Mosey.GUI.ViewModels
         }
 
         /// <summary>
+        /// Update user interface components
+        /// </summary>
+        private async Task BeginRefreshUI(TimeSpan interval)
+        {
+            while (!System.Windows.Application.Current.Dispatcher.HasShutdownStarted)
+            {
+                await Task.Delay(interval);
+                RaisePropertyChanged(nameof(ScanNextTime));
+            }
+        }
+
+        /// <summary>
         /// Initiate scanning with <see cref="ScanAndSaveImagesAsync"/>.
         /// </summary>
         private async void ScanTimer_Tick(object sender, EventArgs e)
@@ -507,12 +518,6 @@ namespace Mosey.GUI.ViewModels
 
             _log.LogInformation("Scanning complete.");
         }
-
-        /// <summary>
-        /// Update user interface components
-        /// </summary>
-        private void UITimer_Tick(object sender, EventArgs e)
-            => RaisePropertyChanged(nameof(ScanNextTime));
 
         /// <summary>
         /// Starts a loop that continually refreshes the list of available scanners
@@ -657,28 +662,21 @@ namespace Mosey.GUI.ViewModels
                     _cancelScanTokenSource.CancelAfter(TimeSpan.FromSeconds(30));
                     await _scanningHost.WaitForImagingToComplete(_cancelScanTokenSource.Token);
                     _log.LogInformation("User closing application before all scans completed. {ScanRepetitionsCount} of {ScanRepetitions} repetitions completed.", ScanRepetitionsCount, ScanRepetitions);
-                    _log.LogDebug($"Application shutdown requested from {nameof(OnClosingAsync)}.");
-                    System.Windows.Application.Current.Shutdown();
                 }
             }
-            else
-            {
-                // Exit immediately
-                _log.LogDebug($"Application shutdown requested from {nameof(OnClosingAsync)}.");
-                System.Windows.Application.Current.Shutdown();
-            }
+
+            _log.LogDebug($"Application shutdown requested from {nameof(OnClosingAsync)}.");
+            System.Windows.Application.Current.Shutdown();
         }
 
         public void Dispose()
         {
             _scanTimer.Tick -= ScanTimer_Tick;
             _scanTimer.Complete -= ScanTimer_Complete;
-            _uiTimer.Tick -= UITimer_Tick;
 
             _cancelScanTokenSource?.Cancel();
             _cancelScanTokenSource?.Dispose();
             _scanTimer?.Dispose();
-            _uiTimer?.Dispose();
         }
     }
 }
