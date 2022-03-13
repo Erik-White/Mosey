@@ -7,6 +7,7 @@ namespace Mosey.GUI.Configuration
     {
         internal const string DefaultSettingsFileName = "appsettings.json";
         internal const string UserSettingsFileName = "usersettings.json";
+        internal const string UserSettingsKey = "UserSettings";
 
         public ImageFileConfig ImageFile { get; set; }
         public IntervalTimerConfig ScanTimer { get; set; }

@@ -31,11 +31,6 @@ namespace Mosey.GUI.ViewModels
         private readonly IIntervalTimer _scanTimer;
         private readonly DialogViewModel _dialog;
 
-        private ImagingDeviceConfig _imageConfig;
-        private ImageFileConfig _imageFileConfig;
-        private IntervalTimerConfig _scanTimerConfig;
-        private DeviceConfig _userDeviceConfig;
-
         private CancellationTokenSource _cancelScanTokenSource = new();
 
         #region Properties
@@ -47,7 +42,7 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                _imageSavePath ??= _imageFileConfig.Directory;
+                _imageSavePath ??= _appSettings.CurrentValue.ImageFile.Directory;
 
                 return _imageSavePath;
             }
@@ -64,7 +59,7 @@ namespace Mosey.GUI.ViewModels
         public long ImagesRequiredDiskSpace
             => ScanRepetitions
                 * ScanningDevices.Devices.Count(d => d.IsEnabled)
-                * _userDeviceConfig.GetResolutionMetadata(_imageConfig.Resolution).FileSize;
+                * _appSettings.CurrentValue.Device.GetResolutionMetadata(_appSettings.CurrentValue.Image.Resolution).FileSize;
 
         private bool _isWaiting;
         public bool IsWaiting
@@ -83,7 +78,7 @@ namespace Mosey.GUI.ViewModels
             get
             {
                 // Use the default setting if no value is set
-                _scanDelay = _scanDelay > TimeSpan.Zero ? _scanDelay : _scanTimerConfig.Delay;
+                _scanDelay = _scanDelay > TimeSpan.Zero ? _scanDelay : _appSettings.CurrentValue.ScanTimer.Delay;
 
                 return (int)_scanDelay.TotalMinutes;
             }
@@ -100,7 +95,7 @@ namespace Mosey.GUI.ViewModels
             get
             {
                 // Use the default setting if no value is set
-                _scanInterval = _scanInterval > TimeSpan.Zero ? _scanInterval : _scanTimerConfig.Interval;
+                _scanInterval = _scanInterval > TimeSpan.Zero ? _scanInterval : _appSettings.CurrentValue.ScanTimer.Interval;
 
                 return (int)_scanInterval.TotalMinutes;
             }
@@ -119,7 +114,7 @@ namespace Mosey.GUI.ViewModels
                 // Use the default setting if no value is set
                 _scanRepetitions = _scanRepetitions > 0
                     ? _scanRepetitions
-                    : _scanTimerConfig.Repetitions;
+                    : _appSettings.CurrentValue.ScanTimer.Repetitions;
 
                 return _scanRepetitions;
             }
@@ -382,7 +377,7 @@ namespace Mosey.GUI.ViewModels
         public async Task StartScanWithDialog()
         {
             // Check that interval time is sufficient for selected resolution
-            var imagingTime = ScanningDevices.Devices.Count(d => d.IsEnabled) * _userDeviceConfig.GetResolutionMetadata(_imageConfig.Resolution).ImagingTime;
+            var imagingTime = ScanningDevices.Devices.Count(d => d.IsEnabled) * _appSettings.CurrentValue.Device.GetResolutionMetadata(_appSettings.CurrentValue.Image.Resolution).ImagingTime;
             if (imagingTime * 1.5 > TimeSpan.FromMinutes(ScanInterval) && !await _dialog.ImagingTimeDialog(TimeSpan.FromMinutes(ScanInterval), imagingTime))
             {
                 _log.LogDebug($"Scanning not started due to low interval time: {imagingTime.TotalMinutes} minutes required, {ScanInterval} minutes selected.");
@@ -393,7 +388,7 @@ namespace Mosey.GUI.ViewModels
             try
             {
                 var availableDiskSpace = FileSystemExtensions.AvailableFreeSpace(
-                    _fileSystem.Path.GetPathRoot(_imageFileConfig.Directory),
+                    _fileSystem.Path.GetPathRoot(_appSettings.CurrentValue.ImageFile.Directory),
                     _fileSystem);
                 if (ImagesRequiredDiskSpace * 1.5 > availableDiskSpace && !await _dialog.DiskSpaceDialog(ImagesRequiredDiskSpace, availableDiskSpace))
                 {
@@ -403,7 +398,7 @@ namespace Mosey.GUI.ViewModels
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                _log.LogWarning(ex, $"Unable to show {nameof(DialogViewModel.DiskSpaceDialog)} on path {_imageFileConfig.Directory} due to {ex.GetType()}");
+                _log.LogWarning(ex, $"Unable to show {nameof(DialogViewModel.DiskSpaceDialog)} on path {_appSettings.CurrentValue.ImageFile.Directory} due to {ex.GetType()}");
             }
 
             StartScan();
@@ -445,7 +440,7 @@ namespace Mosey.GUI.ViewModels
                 try
                 {
                     _log.LogTrace($"Initiating device refresh in {nameof(BeginRefreshDevicesAsync)}");
-                    var enableDevices = !IsScanRunning ? _userDeviceConfig.EnableWhenConnected : _userDeviceConfig.EnableWhenScanning;
+                    var enableDevices = !IsScanRunning ? _appSettings.CurrentValue.Device.EnableWhenConnected : _appSettings.CurrentValue.Device.EnableWhenScanning;
 
                     await Task.Delay(interval.Value, cancellationToken).ConfigureAwait(false);
                     await _scanningHost.RefreshDevicesAsync(enableDevices, cancellationToken).ConfigureAwait(false);
@@ -486,16 +481,18 @@ namespace Mosey.GUI.ViewModels
                 return;
             }
 
-            _scanTimerConfig = settings.ScanTimer with { };
-            _imageConfig = settings.Image with { };
-            _imageFileConfig = settings.ImageFile with { };
-            _userDeviceConfig = settings.Device;
+            // Copy settings as new instances
+            _appSettings.CurrentValue.ScanTimer = settings.ScanTimer with { };
+            _appSettings.CurrentValue.Image = settings.Image with { };
+            _appSettings.CurrentValue.ImageFile = settings.ImageFile with { };
+            _appSettings.CurrentValue.Device = settings.Device with { };
 
-            _scanningHost.UpdateConfig(_imageConfig);
+            _scanningHost.UpdateConfig(_appSettings.CurrentValue.Image);
 
             RaisePropertyChanged(nameof(ScanInterval));
             RaisePropertyChanged(nameof(ScanRepetitions));
             RaisePropertyChanged(nameof(ImageSavePath));
+
             _log.LogDebug($"Configuration updated with {nameof(UpdateConfig)}.");
         }
 
@@ -515,7 +512,7 @@ namespace Mosey.GUI.ViewModels
             _cancelScanTokenSource.Cancel();
 
             // Apply any changes to settings that were made during scanning
-            UpdateConfig(_appSettings.Get("UserSettings"));
+            UpdateConfig(_appSettings.Get(AppSettings.UserSettingsKey));
 
             // Update properties
             RaisePropertyChanged(nameof(ScanRepetitionsCount));
@@ -596,7 +593,7 @@ namespace Mosey.GUI.ViewModels
             ScanningDevices = _scanningHost.ImagingDevices;
 
             // Load saved configuration values
-            var userSettings = _appSettings.Get("UserSettings");
+            var userSettings = _appSettings.Get(AppSettings.UserSettingsKey);
             UpdateConfig(userSettings);
 
             // Lock scanners collection across threads to prevent conflicts
@@ -623,7 +620,7 @@ namespace Mosey.GUI.ViewModels
         private async Task RefreshDevicesAsync()
         {
             _log.LogDebug($"Device refresh initiated with {nameof(RefreshDevicesAsync)}");
-            var enableDevices = !IsScanRunning ? _userDeviceConfig.EnableWhenConnected : _userDeviceConfig.EnableWhenScanning;
+            var enableDevices = !IsScanRunning ? _appSettings.CurrentValue.Device.EnableWhenConnected : _appSettings.CurrentValue.Device.EnableWhenScanning;
             await _scanningHost.RefreshDevicesAsync(enableDevices);
 
             RaisePropertyChanged(nameof(ScanningDevices));
@@ -650,12 +647,12 @@ namespace Mosey.GUI.ViewModels
 
                 foreach (var scannedImage in images)
                 {
-                    var filePath = GetImageFilePath(scannedImage, _imageFileConfig, images.Count > 1, saveDateTime);
+                    var filePath = GetImageFilePath(scannedImage, _appSettings.CurrentValue.ImageFile, images.Count > 1, saveDateTime);
                     if (createDirectoryPath)
                     {
                         _fileSystem.Directory.CreateDirectory(_fileSystem.Path.GetDirectoryName(filePath));
                     }
-                    _scanningHost.ImageFileHandler.SaveImage(scannedImage.Image, _imageFileConfig.ImageFormat, filePath);
+                    _scanningHost.ImageFileHandler.SaveImage(scannedImage.Image, _appSettings.CurrentValue.ImageFile.ImageFormat, filePath);
 
                     results.Add(filePath);
                 }
@@ -673,7 +670,7 @@ namespace Mosey.GUI.ViewModels
 
         private async Task<IEnumerable<IImagingHost.CapturedImage>> ScanImagesAsync()
             => await _scanningHost
-                .PerformImagingAsync(_userDeviceConfig.UseHighestResolution, _cancelScanTokenSource.Token)
+                .PerformImagingAsync(_appSettings.CurrentValue.Device.UseHighestResolution, _cancelScanTokenSource.Token)
                 .ConfigureAwait(false);
     }
 }

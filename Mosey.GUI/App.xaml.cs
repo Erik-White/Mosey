@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.IO.Abstractions;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,7 +37,7 @@ namespace Mosey.GUI
             var serviceProvider = new ServiceCollection()
                 // Configuration
                 .Configure<AppSettings>(_appConfig)
-                .ConfigureWritable<AppSettings>(_userConfig, name: "UserSettings", fileName: AppSettings.UserSettingsFileName)
+                .ConfigureWritable<AppSettings>(_userConfig, name: AppSettings.UserSettingsKey, fileName: AppSettings.UserSettingsFileName)
                 .PostConfigureAll<AppSettings>(config =>
                 {
                     if (string.IsNullOrEmpty(config.ImageFile.Directory))

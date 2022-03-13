@@ -138,7 +138,7 @@ namespace Mosey.GUI.ViewModels
             _log = logger;
             _uiServices = uiServices;
             _appSettings = appSettings;
-            _userSettings = appSettings.Get("UserSettings");
+            _userSettings = appSettings.Get(AppSettings.UserSettingsKey);
             _dialog = new DialogViewModel(this, _uiServices, _log);
             _fileSystem = fileSystem;
         }
