@@ -29,17 +29,36 @@ namespace Mosey.Services.Imaging.Tests
             }
 
             [Theory, AutoNSubstituteData]
-            public void WriteExpectedPath([Frozen] IFileSystem fileSystem, ImageFileHandler sut, MockFilePath filePath)
+            public void WriteExpectedData([Frozen] IFileSystem fileSystem, ImageHandler imageHandler, [Frozen] Image<Rgba32> image,MockFilePath filePath)
             {
-                sut.SaveImage(Array.Empty<byte>(), default, filePath.Path);
+                try
+                {
+                    var pngImage = imageHandler.ConvertToFormat(image, IImagingDevice.ImageFormat.Png);
+                    var sut = new ImageFileHandler(imageHandler, fileSystem);
 
-                (fileSystem as MockFileSystem).AllFiles
-                    .Should().HaveCount(1)
-                    .And.ContainSingle(x => x == filePath.Path);
+                    sut.SaveImage(image, IImagingDevice.ImageFormat.Png, filePath.Path);
+
+                    using (new AssertionScope())
+                    using (var fileStream = fileSystem.File.OpenRead((fileSystem as MockFileSystem).AllFiles.First()))
+                    using (var savedImage = Image.Load<Rgba32>(fileStream))
+                    {
+                        savedImage.Should().NotBeSameAs(image);
+
+                        for (int i = 0; i < savedImage.Height; i++)
+                        {
+                            var row = savedImage.Frames.RootFrame.PixelBuffer.DangerousGetRowSpan(i);
+                            Assert.That(row.SequenceEqual(pngImage.Frames.RootFrame.PixelBuffer.DangerousGetRowSpan(i)));
+                        }
+                    }
+                }
+                finally
+                {
+                    image?.Dispose();
+                }
             }
 
             [Theory, AutoNSubstituteData]
-            public void WriteExpectedData([Frozen] IFileSystem fileSystem, [Frozen] IImageHandler<Rgba32> imageHandler, [Frozen] Image<Rgba32> image, MockFilePath filePath, ImageFileHandler sut)
+            public void WriteExpectedFormat([Frozen] IFileSystem fileSystem, [Frozen] IImageHandler<Rgba32> imageHandler, [Frozen] Image<Rgba32> image, ImageFileHandler sut, MockFilePath filePath)
             {
                 try
                 {
@@ -61,6 +80,16 @@ namespace Mosey.Services.Imaging.Tests
                 {
                     image?.Dispose();
                 }
+            }
+
+            [Theory, AutoNSubstituteData]
+            public void WriteExpectedPath([Frozen] IFileSystem fileSystem, ImageFileHandler sut, MockFilePath filePath)
+            {
+                sut.SaveImage(Array.Empty<byte>(), default, filePath.Path);
+
+                (fileSystem as MockFileSystem).AllFiles
+                    .Should().HaveCount(1)
+                    .And.ContainSingle(x => x == filePath.Path);
             }
         }
     }

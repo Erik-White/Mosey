@@ -64,6 +64,7 @@ namespace Mosey.Services.Imaging
                 ApplyEncoderDefaults(encoder);
 
                 image.Save(stream, encoder);
+                stream.Seek(0, System.IO.SeekOrigin.Begin);
 
                 return Image.Load<Rgba32>(stream);
             }
