@@ -556,7 +556,9 @@ namespace Mosey.GUI.ViewModels
         /// </summary>
         private async Task BeginRefreshUI(TimeSpan interval)
         {
-            while (!System.Windows.Application.Current.Dispatcher.HasShutdownStarted)
+            interval = new[] { interval, TimeSpan.FromMilliseconds(100) }.Max();
+
+            while (!System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted ?? true)
             {
                 await Task.Delay(interval);
                 RaisePropertyChanged(nameof(ScanNextTime));

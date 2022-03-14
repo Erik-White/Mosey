@@ -63,12 +63,12 @@ namespace Mosey.GUI.ViewModels.Tests
                 using var cts = new CancellationTokenSource();
                 cts.CancelAfter(1000);
 
-                await sut.BeginRefreshDevicesAsync(TimeSpan.Zero, cts.Token);
+                await sut.BeginRefreshDevicesAsync(TimeSpan.FromMilliseconds(100), cts.Token);
 
                 scanningHost
                     .ReceivedCalls()
                     .Count(x => x.GetMethodInfo().Name == nameof(scanningHost.RefreshDevicesAsync))
-                    .Should().BeGreaterThan(1);
+                    .Should().BeInRange(9, 11);
             }
 
             [Theory, MainViewModelAutoData]
@@ -80,7 +80,8 @@ namespace Mosey.GUI.ViewModels.Tests
                 await sut.BeginRefreshDevicesAsync(TimeSpan.FromSeconds(1), cts.Token);
 
                 await scanningHost
-                    .DidNotReceiveWithAnyArgs().RefreshDevicesAsync(default, default);
+                    .DidNotReceiveWithAnyArgs()
+                    .RefreshDevicesAsync(default, default);
             }
 
             [Theory, MainViewModelAutoData]
