@@ -21,7 +21,9 @@ namespace Mosey.GUI.Models
         /// <returns>Whether the windows should be closed by the caller</returns>
         bool OnClosing();
 
-        /// <inheritdoc cref="OnClosing"/>
+        /// <summary>
+        /// Executes when window is closing
+        /// </summary>
         void OnClosingAsync();
     }
 }

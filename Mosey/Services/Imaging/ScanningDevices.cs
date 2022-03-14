@@ -14,7 +14,7 @@ namespace Mosey.Services.Imaging
     /// </summary>
     public class ScanningDevices : IImagingDevices<IImagingDevice>
     {
-        private readonly ObservableItemsCollection<ScanningDevice> _devices = new();
+        private readonly ICollection<IImagingDevice> _devices = new ObservableItemsCollection<IImagingDevice>();
         private readonly ISystemImagingDevices<ScannerSettings> _systemDevices;
 
         /// <summary>
@@ -33,10 +33,10 @@ namespace Mosey.Services.Imaging
         /// </summary>
         /// <param name="deviceConfig">Used to initialize the collection's <see cref="ScanningDevice"/>s</param>
         /// <param name="systemDevices">An <see cref="ISystemImagingDevices"/> instance that provide access to the WIA driver devices</param>
-        public ScanningDevices(IImagingDeviceConfig deviceConfig, ISystemImagingDevices<ScannerSettings> systemDevices = null)
+        public ScanningDevices(ImagingDeviceConfig deviceConfig = null, ISystemImagingDevices<ScannerSettings> systemDevices = null)
         {
             _systemDevices = systemDevices ?? new DntScannerDevices();
-            GetDevices(deviceConfig);
+            GetDevices(deviceConfig ?? new ImagingDeviceConfig());
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace Mosey.Services.Imaging
         /// <param name="config"><see cref="IImagingDeviceConfig"/> settings for the returned <see cref="ScanningDevice"/></param>
         /// <param name="connectRetries">The number of attempts to retry connecting to the WIA driver</param>
         /// <returns>A <see cref="ScanningDevice"/> instance matching the <paramref name="deviceID"/>, or <see langword="null"/> if no matching device can be found</returns>
-        public ScanningDevice AddDevice(string deviceID, IImagingDeviceConfig config)
+        public ScanningDevice AddDevice(string deviceID, ImagingDeviceConfig config)
         {
             ScanningDevice device = null;
 
@@ -100,10 +100,10 @@ namespace Mosey.Services.Imaging
         /// Retrieve <see cref="ScanningDevice"/>s that are connected to the system and add them to the collection.
         /// Update the status of any devices are already present in the collection.
         /// </summary>
-        public void RefreshDevices() => RefreshDevices(new ScanningDeviceSettings());
+        public void RefreshDevices() => RefreshDevices(new ImagingDeviceConfig());
 
         /// <inheritdoc cref="RefreshDevices()"/>
-        public void RefreshDevices(IImagingDeviceConfig deviceConfig, bool enableDevices = true)
+        public void RefreshDevices(ImagingDeviceConfig deviceConfig, bool enableDevices = true)
         {
             const string DEVICE_ID_KEY = "Unique Device ID";
             var deviceIds = new List<string>();
@@ -137,7 +137,7 @@ namespace Mosey.Services.Imaging
             foreach (var deviceId in currentDevices.Except(deviceIds))
             {
                 var device = _devices.FirstOrDefault(d => d.DeviceID == deviceId);
-                device.IsConnected = false;
+                (device as ScanningDevice).IsConnected = false;
             }
 
             // These are new devices, add them to the collection
@@ -169,7 +169,7 @@ namespace Mosey.Services.Imaging
         /// <param name="deviceConfig">Used to initialize the <see cref="ScanningDevice"/> instances</param>
         /// <returns>A collection of <see cref="ScanningDevice"/> instances representing physical scanning devices connected to the system</returns>
         /// <param name="connectRetries">The number of retry attempts allowed if connecting to the WIA driver was unsuccessful</param>
-        private IEnumerable<IImagingDevice> ScannerDevices(IImagingDeviceConfig deviceConfig)
+        private IEnumerable<IImagingDevice> ScannerDevices(ImagingDeviceConfig deviceConfig)
         {
             foreach (var settings in _systemDevices.GetDeviceSettings())
             {
@@ -184,9 +184,9 @@ namespace Mosey.Services.Imaging
         /// </summary>
         /// <param name="deviceConfig">Used to initialize the collection's <see cref="ScanningDevice"/>s</param>
         /// <returns>The number of devices added to the collection</returns>
-        private void GetDevices(IImagingDeviceConfig deviceConfig)
+        private void GetDevices(ImagingDeviceConfig deviceConfig)
         {
-            deviceConfig ??= new ScanningDeviceSettings();
+            deviceConfig ??= new ImagingDeviceConfig(default, default, default);
 
             // Populate a new collection of scanners using specified image settings
             _devices.Clear();

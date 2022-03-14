@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing.Imaging;
-using System.IO;
-using System.IO.Abstractions;
 using System.Linq;
 using System.Runtime.InteropServices;
 using DNTScanner.Core;
+using Mosey.Models;
 using Mosey.Models.Imaging;
 using Mosey.Services.Imaging.Extensions;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace Mosey.Services.Imaging
 {
@@ -21,9 +20,9 @@ namespace Mosey.Services.Imaging
         private bool _isImaging;
         private int _scanRetries = 5;
 
-        private readonly IFileSystem _fileSystem;
         private readonly ScannerSettings _scannerSettings;
         private readonly ISystemImagingDevices<ScannerSettings> _systemDevices;
+        private readonly IImageHandler<Rgba32> _imageHandler;
 
         public string Name => _scannerSettings.Name;
 
@@ -36,7 +35,7 @@ namespace Mosey.Services.Imaging
 
         public IList<byte[]> Images { get; internal set; } = new List<byte[]>();
 
-        public IImagingDeviceConfig ImageSettings { get; set; }
+        public ImagingDeviceConfig ImageSettings { get; set; }
 
         /// <inheritdoc cref="ScannerSettings.IsAutomaticDocumentFeeder"/>
         public bool IsAutomaticDocumentFeeder => _scannerSettings.IsAutomaticDocumentFeeder;
@@ -79,7 +78,7 @@ namespace Mosey.Services.Imaging
         /// </summary>
         /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
         /// <param name="config">Device settings used when capturing an image</param>
-        public ScanningDevice(ScannerSettings settings, IImagingDeviceConfig config)
+        public ScanningDevice(ScannerSettings settings, ImagingDeviceConfig config)
             : this(settings, config, null, null) { }
 
         /// <summary>
@@ -88,18 +87,18 @@ namespace Mosey.Services.Imaging
         /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
         /// <param name="config">Device settings used when capturing an image</param>
         /// <param name="systemDevices">An <see cref="ISystemImagingDevices"/> instance that provide access to the WIA driver devices</param>
-        public ScanningDevice(ScannerSettings settings, IImagingDeviceConfig config, ISystemImagingDevices<ScannerSettings> systemDevices, IFileSystem fileSystem)
+        public ScanningDevice(ScannerSettings settings, ImagingDeviceConfig config, ISystemImagingDevices<ScannerSettings> systemDevices, IImageHandler<Rgba32> imageHandler)
         {
             _scannerSettings = settings;
             ImageSettings = config;
             _systemDevices = systemDevices ?? new DntScannerDevices();
-            _fileSystem = fileSystem ?? new FileSystem();
+            _imageHandler = imageHandler;
         }
 
         public void ClearImages()
             => Images = new List<byte[]>();
 
-        public void GetImage()
+        public void PerformImaging()
             => GetImage(IImagingDevice.ImageFormat.Bmp);
 
         /// <summary>
@@ -126,7 +125,7 @@ namespace Mosey.Services.Imaging
 
             // Default settings if none provided
             var deviceConfig = ImageSettings;
-            deviceConfig ??= new ScanningDeviceSettings
+            deviceConfig ??= new ImagingDeviceConfig
             {
                 Brightness = 1,
                 Contrast = 1,
@@ -143,18 +142,20 @@ namespace Mosey.Services.Imaging
                 ClearImages();
 
                 // Store images for processing etc
-                foreach (var image in images)
+                foreach (var imageContent in images)
                 {
                     try
                     {
                         // Convert image to PNG format before storing byte array
                         // Greatly reduces memory footprint compared to raw BMP
-                        Images.Add(image.AsFormat(IImagingDevice.ImageFormat.Png.ToDrawingImageFormat()));
+                        // TODO: Convert before saving?
+                        //var image = _imageHandler.ConvertToFormat(imageContent, IImagingDevice.ImageFormat.Png);
+                        Images.Add(imageContent);
                     }
                     catch (ArgumentException)
                     {
                         // Store the image in its original format
-                        Images.Add(image);
+                        Images.Add(imageContent);
                     }
                 }
             }
@@ -170,72 +171,6 @@ namespace Mosey.Services.Imaging
             }
         }
 
-        /// <summary>
-        /// Write an image captured with <see cref="GetImage"/> to disk
-        /// Images are stored in the user's <see cref="Environment.SpecialFolder.MyPictures"/> directory as PNGs
-        /// </summary>
-        public void SaveImage()
-        {
-            var directory = _fileSystem.Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
-                System.Reflection.Assembly.GetExecutingAssembly().GetName().Name);
-            SaveImage("image", directory, IImagingDevice.ImageFormat.Png);
-        }
-
-        /// <summary>
-        /// Write an image captured with <see cref="GetImage"/> to disk
-        /// </summary>
-        /// <param name="fileName">The image file name, the file extension ignored and instead inferred from <paramref name="fileFormat"/></param>
-        /// <param name="directory">The directory path to use when storing the image</param>
-        /// <param name="fileFormat">The image format file extension <see cref="string"/> used to store the image</param>
-        /// <returns>A collection of file path <see cref="string"/>s for the newly created images</returns>
-        public IEnumerable<string> SaveImage(string fileName, string directory, string fileFormat)
-        {
-            // Parse the file extension and ensure it is valid
-            var imageFormat = new IImagingDevice.ImageFormat().FromString(fileFormat);
-
-            return SaveImage(fileName, directory, imageFormat);
-        }
-
-        /// <summary>
-        /// Write an image captured with <see cref="GetImage"/> to disk.
-        /// Images are stored losslessly (in supported formats) with a colour depth of 24 bit per pixel.
-        /// </summary>
-        /// <param name="fileName">The image file name, the file extension ignored and instead inferred from <paramref name="fileFormat"/></param>
-        /// <param name="directory">The directory path to use when storing the image</param>
-        /// <param name="imageFormat">The <see cref="ImageFormat"/> used to store the image</param>
-        /// <returns>A collection of file path <see cref="string"/>s for the newly created images</returns>
-        /// <exception cref="ArgumentException">If <paramref name="directory"/> is <see langword="null"/> or whitespace</exception>
-        /// <exception cref="InvalidOperationException">If the <see cref="Images"/> property returns no images to save</exception>
-        public IEnumerable<string> SaveImage(string fileName, string directory, IImagingDevice.ImageFormat imageFormat = IImagingDevice.ImageFormat.Png)
-        {
-            if (Images is null || Images.Count == 0)
-            {
-                throw new InvalidOperationException($"No images available. Please call the {nameof(GetImage)} method first.");
-            }
-
-            if (string.IsNullOrWhiteSpace(fileName) || string.IsNullOrWhiteSpace(directory))
-            {
-                throw new ArgumentException("A valid filename and directory must be supplied");
-            }
-
-            // Get full filename and path
-            _fileSystem.Directory.CreateDirectory(directory);
-            fileName = _fileSystem.Path.Combine(directory, fileName);
-            fileName = _fileSystem.Path.ChangeExtension(fileName, imageFormat.ToString().ToLower());
-
-            // Use lossless compression with highest quality
-            using (var encoderParameters = new EncoderParameters().AddParams(
-                compression: EncoderValue.CompressionLZW,
-                quality: 100,
-                colorDepth: 24))
-            {
-                // Write image(s) to disk using specified encoding
-                // Ensure we enumerate here otherwise the encoderParameters will go out of context
-                return SaveImagesToDisk(Images, fileName, imageFormat, encoderParameters).ToList();
-            }
-        }
-
         public bool Equals(IImagingDevice device)
             => device is not null && DeviceID == device.DeviceID;
 
@@ -244,60 +179,6 @@ namespace Mosey.Services.Imaging
 
         public override int GetHashCode()
             => DeviceID.GetHashCode();
-
-        /// <summary>
-        /// Store image byte arrays to disk.
-        /// </summary>
-        /// <remarks>
-        /// The image count is appended to the filename in case of multiple images.
-        /// </remarks>
-        /// <param name="images">An image byte array</param>
-        /// <param name="filePath">The full file path used to store the images</param>
-        /// <param name="format">The <see cref="ImageFormat"/> used to store the images</param>
-        /// <param name="encoderParams">Specify image encoding when writing the images</param>
-        /// <returns>A collection of file path <see cref="string"/>s for the newly created images</returns>
-        internal IEnumerable<string> SaveImagesToDisk(IEnumerable<byte[]> images, string filePath, IImagingDevice.ImageFormat format = IImagingDevice.ImageFormat.Png, EncoderParameters encoderParams = null)
-        {
-            var count = 1;
-            var fileName = Path.GetFileName(filePath);
-
-            // Write all images to disk
-            foreach (var imageBytes in Images)
-            {
-                // Append count to filename in case of multiple images
-                var savePath = filePath;
-                if (images.Count() > 1)
-                {
-                    savePath = savePath.Replace(
-                        fileName,
-                        $"{Path.GetFileNameWithoutExtension(fileName)}_{count}{Path.GetExtension(filePath)}");
-                }
-
-                SaveImageToDisk(imageBytes, savePath, format, encoderParams);
-
-                yield return savePath;
-
-                count++;
-            }
-        }
-
-        /// <summary>
-        /// Store an image byte array to disk
-        /// </summary>
-        /// <param name="image">An image byte array</param>
-        /// <param name="filePath">The full file path used to store the image</param>
-        /// <param name="format">The <see cref="ImageFormat"/> used to store the image</param>
-        /// <param name="encoderParams">Specify image encoding when writing the image</param>
-        internal void SaveImageToDisk(byte[] image, string filePath, IImagingDevice.ImageFormat format = IImagingDevice.ImageFormat.Png, EncoderParameters encoderParams = null)
-        {
-            using (var fileStream = _fileSystem.File.Create(filePath))
-            {
-                image.ToImage().Save(
-                    fileStream,
-                    format.ToDrawingImageFormat().CodecInfo(),
-                    encoderParams);
-            }
-        }
 
         /// <summary>
         /// A simplified version of the unique device identifier, <see cref="DeviceID"/>

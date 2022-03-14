@@ -1,25 +1,18 @@
 ﻿using Mosey.Models;
-using Mosey.Services;
-using Mosey.Services.Imaging;
+using Mosey.Models.Imaging;
 
 namespace Mosey.GUI.Configuration
 {
-    public class AppSettings : IConfigGroup<AppSettings>
+    public record class AppSettings
     {
+        internal const string DefaultSettingsFileName = "appsettings.json";
+        internal const string UserSettingsFileName = "usersettings.json";
+        internal const string UserSettingsKey = "UserSettings";
+
         public ImageFileConfig ImageFile { get; set; }
         public IntervalTimerConfig ScanTimer { get; set; }
         public IntervalTimerConfig UITimer { get; set; }
-        public ScanningDeviceSettings Image { get; set; }
+        public ImagingDeviceConfig Image { get; set; }
         public DeviceConfig Device { get; set; }
-
-        public object Clone()
-            => new AppSettings()
-            {
-                ImageFile = (ImageFileConfig)ImageFile.Clone(),
-                ScanTimer = (IntervalTimerConfig)ScanTimer.Clone(),
-                UITimer = (IntervalTimerConfig)UITimer.Clone(),
-                Image = (ScanningDeviceSettings)Image.Clone(),
-                Device = (DeviceConfig)Device.Clone()
-            };
     }
 }

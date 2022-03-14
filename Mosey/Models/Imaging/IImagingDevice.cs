@@ -34,7 +34,7 @@ namespace Mosey.Models.Imaging
         /// <summary>
         /// Set the device settings used when imaging.
         /// </summary>
-        IImagingDeviceConfig ImageSettings { get; set; }
+        ImagingDeviceConfig ImageSettings { get; set; }
 
         /// <summary>
         /// <see langword="true"/> when imaging is in progress.
@@ -54,21 +54,7 @@ namespace Mosey.Models.Imaging
         /// <summary>
         /// Retrieve an image from the physical imaging device.
         /// </summary>
-        void GetImage();
-
-        /// <summary>
-        /// Write an image captured with <see cref="GetImage"/> to disk
-        /// </summary>
-        void SaveImage();
-
-        /// <summary>
-        /// Write an image captured with <see cref="GetImage"/> to disk
-        /// </summary>
-        /// <param name="fileName">The image file name, the file extension ignored and instead inferred from <paramref name="fileFormat"/></param>
-        /// <param name="directory">The directory path to use when storing the image</param>
-        /// <param name="fileFormat">The image format file extension <see cref="string"/> used to store the image</param>
-        /// <returns>A collection of file path <see cref="string"/>s for the newly created images</returns>
-        IEnumerable<string> SaveImage(string fileName, string directory, string fileFormat);
+        void PerformImaging();
     }
 
     /// <summary>

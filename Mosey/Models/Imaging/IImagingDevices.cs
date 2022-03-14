@@ -20,8 +20,8 @@
         /// Retrieve <see cref="IImagingDevice"/>s that are connected to the system and add them to the collection.
         /// Update the status of any devices are already present in the collection.
         /// </summary>
-        /// <param name="deviceConfig">The <see cref="IImagingDeviceConfig"/> used to initialize the device</param>
+        /// <param name="deviceConfig">The <see cref="ImagingDeviceConfig"/> used to initialize the device</param>
         /// <param name="enableDevices">Sets the <see cref="IDevice.IsEnabled"/> property of any new devices that are not already in the collection</param>
-        void RefreshDevices(IImagingDeviceConfig deviceConfig, bool enableDevices = true);
+        void RefreshDevices(ImagingDeviceConfig deviceConfig, bool enableDevices = true);
     }
 }

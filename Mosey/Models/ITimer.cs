@@ -10,10 +10,4 @@ namespace Mosey.Models
         void Pause();
         void Resume();
     }
-
-    public interface ITimerConfig : IConfig
-    {
-        TimeSpan Delay { get; set; }
-        TimeSpan Interval { get; set; }
-    }
 }

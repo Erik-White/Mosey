@@ -11,7 +11,7 @@ namespace Mosey.GUI.Configuration
             this IServiceCollection services,
             IConfiguration config,
             string name = null,
-            string file = "appsettings.json") where T : class, new()
+            string fileName = AppSettings.DefaultSettingsFileName) where T : class, new()
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -25,7 +25,7 @@ namespace Mosey.GUI.Configuration
             services.AddTransient<IWritableOptions<T>>(provider =>
             {
                 var options = provider.GetService<IOptionsSnapshot<T>>();
-                return new WritableOptions<T>(options, file);
+                return new WritableOptions<T>(options, fileName);
             });
 
             return services;

@@ -5,7 +5,6 @@ using System.IO.Abstractions;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Schedulers;
 using System.Windows.Input;
 using AsyncAwaitBestPractices.MVVM;
 using Microsoft.Extensions.Logging;
@@ -20,45 +19,21 @@ namespace Mosey.GUI.ViewModels
 {
     public sealed class MainViewModel : ViewModelBase, IViewModelParent<IViewModel>, IClosing, IDisposable
     {
-        // From IoC container
         private readonly IFactory<IIntervalTimer> _timerFactory;
+        private readonly IImagingHost _scanningHost;
         private readonly Services.UIServices _uiServices;
         private readonly IViewModel _settingsViewModel;
         private readonly IOptionsMonitor<AppSettings> _appSettings;
         private readonly IFileSystem _fileSystem;
         private readonly ILogger<MainViewModel> _log;
+        private readonly object _scanningDevicesLock = new();
 
-        // From constructor
         private readonly IIntervalTimer _scanTimer;
-        private readonly IIntervalTimer _uiTimer;
         private readonly DialogViewModel _dialog;
 
-        // Configuration
-        private IImagingDeviceConfig _imageConfig;
-        private IImageFileConfig _imageFileConfig;
-        private IIntervalTimerConfig _scanTimerConfig;
-        private DeviceConfig _userDeviceConfig;
-
-        // Threading
-        private readonly object _scanningDevicesLock = new();
-        private static readonly StaTaskScheduler _staQueue = new(concurrencyLevel: 1);
-        private static readonly SemaphoreSlim _staSemaphore = new(1, 1);
         private CancellationTokenSource _cancelScanTokenSource = new();
 
         #region Properties
-        public string ImageFormat
-        {
-            get => _imageFileConfig.Format;
-            set
-            {
-                _imageFileConfig.Format = value;
-                RaisePropertyChanged(nameof(ImageFormat));
-            }
-        }
-
-        public List<string> ImageFormatSupported
-            => _imageFileConfig.SupportedFormats;
-
         private string _imageSavePath;
         /// <summary>
         /// The directory path used to store images obtained when scanning.
@@ -67,7 +42,7 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                _imageSavePath ??= _imageFileConfig.Directory;
+                _imageSavePath ??= _appSettings.CurrentValue.ImageFile.Directory;
 
                 return _imageSavePath;
             }
@@ -81,14 +56,10 @@ namespace Mosey.GUI.ViewModels
         /// <summary>
         /// The estimated amount of disk space required for a full run of images, in bytes.
         /// </summary>
-        /// <remarks>
-        /// Calculated by multiplying the current number of <see cref="ScanRepetitions"/> by the
-        /// number of currently enabled scanners, by the selected image resolution file size.
-        /// </remarks>
         public long ImagesRequiredDiskSpace
             => ScanRepetitions
                 * ScanningDevices.Devices.Count(d => d.IsEnabled)
-                * _userDeviceConfig.GetResolutionMetaData(_imageConfig.Resolution).FileSize;
+                * _appSettings.CurrentValue.Device.GetResolutionMetadata(_appSettings.CurrentValue.Image.Resolution).FileSize;
 
         private bool _isWaiting;
         public bool IsWaiting
@@ -107,7 +78,7 @@ namespace Mosey.GUI.ViewModels
             get
             {
                 // Use the default setting if no value is set
-                _scanDelay = _scanDelay > TimeSpan.Zero ? _scanDelay : _scanTimerConfig.Delay;
+                _scanDelay = _scanDelay > TimeSpan.Zero ? _scanDelay : _appSettings.CurrentValue.ScanTimer.Delay;
 
                 return (int)_scanDelay.TotalMinutes;
             }
@@ -124,7 +95,7 @@ namespace Mosey.GUI.ViewModels
             get
             {
                 // Use the default setting if no value is set
-                _scanInterval = _scanInterval > TimeSpan.Zero ? _scanInterval : _scanTimerConfig.Interval;
+                _scanInterval = _scanInterval > TimeSpan.Zero ? _scanInterval : _appSettings.CurrentValue.ScanTimer.Interval;
 
                 return (int)_scanInterval.TotalMinutes;
             }
@@ -143,7 +114,7 @@ namespace Mosey.GUI.ViewModels
                 // Use the default setting if no value is set
                 _scanRepetitions = _scanRepetitions > 0
                     ? _scanRepetitions
-                    : _scanTimerConfig.Repetitions;
+                    : _appSettings.CurrentValue.ScanTimer.Repetitions;
 
                 return _scanRepetitions;
             }
@@ -158,7 +129,7 @@ namespace Mosey.GUI.ViewModels
             => _scanTimer is not null ? _scanTimer.RepetitionsCount : 0;
 
         public bool IsScanRunning
-            => _scanTimer is not null && (_scanTimer.Enabled || ScanningDevices.IsImagingInProgress);
+            => _scanTimer is not null && (_scanTimer.Enabled || _scanningHost.ImagingDevices.IsImagingInProgress);
 
         public TimeSpan ScanNextTime
         {
@@ -182,6 +153,10 @@ namespace Mosey.GUI.ViewModels
         /// <inheritdoc cref="IImagingDevices{T}"/>
         public IImagingDevices<IImagingDevice> ScanningDevices { get; private set; }
 
+        /// <inheritdoc cref="IImagingDevices{T}"/>
+        public ObservableItemsCollection<IImagingDevice> ObservableDevices
+            => (ObservableItemsCollection<IImagingDevice>)ScanningDevices.Devices;
+
         public ICollection<IViewModel> ViewModelChildren { get; private set; }
             = new System.Collections.ObjectModel.ObservableCollection<IViewModel>();
 
@@ -189,20 +164,19 @@ namespace Mosey.GUI.ViewModels
         {
             get
             {
-                var settingsViewModel = ViewModelChildren.FirstOrDefault(child => child is SettingsViewModel);
-                if (settingsViewModel is null)
+                if (!ViewModelChildren.Any(ViewModels => ViewModels is SettingsViewModel))
                 {
-                    settingsViewModel = AddChildViewModel(_settingsViewModel);
+                    AddChildViewModel(_settingsViewModel);
                 }
 
-                return (SettingsViewModel)settingsViewModel;
+                return (SettingsViewModel)_settingsViewModel;
             }
         }
         #endregion Properties
 
         public MainViewModel(
             IFactory<IIntervalTimer> intervalTimerFactory,
-            IImagingDevices<IImagingDevice> imagingDevices,
+            IImagingHost scanningHost,
             Services.UIServices uiServices,
             IViewModel settingsViewModel,
             IOptionsMonitor<AppSettings> appSettings,
@@ -210,7 +184,7 @@ namespace Mosey.GUI.ViewModels
             ILogger<MainViewModel> logger)
         {
             _timerFactory = intervalTimerFactory;
-            ScanningDevices = imagingDevices;
+            _scanningHost = scanningHost;
             _uiServices = uiServices;
             _settingsViewModel = settingsViewModel;
             _appSettings = appSettings;
@@ -218,16 +192,25 @@ namespace Mosey.GUI.ViewModels
             _log = logger;
 
             _scanTimer = intervalTimerFactory.Create();
-            _uiTimer = intervalTimerFactory.Create();
             _dialog = new DialogViewModel(this, _uiServices, _log);
 
             Initialize();
         }
 
+        public void Dispose()
+        {
+            _scanTimer.Tick -= ScanTimer_Tick;
+            _scanTimer.Complete -= ScanTimer_Complete;
+
+            _cancelScanTokenSource?.Cancel();
+            _cancelScanTokenSource?.Dispose();
+            _scanTimer?.Dispose();
+        }
+
         public override IViewModel Create()
             => new MainViewModel(
                 intervalTimerFactory: _timerFactory,
-                imagingDevices: ScanningDevices,
+                scanningHost: _scanningHost,
                 uiServices: _uiServices,
                 settingsViewModel: _settingsViewModel,
                 appSettings: _appSettings,
@@ -254,7 +237,7 @@ namespace Mosey.GUI.ViewModels
             get
             {
                 _ManualScanCommand ??= new RelayCommand(
-                    o => _ = ScanAsync(),
+                    o => _ = ScanAndSaveImagesAsync(),
                     o => !ScanningDevices.IsEmpty && !ScanningDevices.IsImagingInProgress && !IsScanRunning);
 
                 return _ManualScanCommand;
@@ -312,14 +295,14 @@ namespace Mosey.GUI.ViewModels
             }
         }
 
-        private ICommand _RefreshScannersCommand;
-        public ICommand RefreshScannersCommand
+        private IAsyncCommand _RefreshScannersCommand;
+        public IAsyncCommand RefreshScannersCommand
         {
             get
             {
-                _RefreshScannersCommand ??= new RelayCommand(
-                    o => RefreshDevices(),
-                    o => !ScanningDevices.IsImagingInProgress && !IsScanRunning);
+                _RefreshScannersCommand ??= new AsyncCommand(
+                    () => RefreshDevicesAsync(),
+                    _ => !ScanningDevices.IsImagingInProgress && !IsScanRunning);
 
                 return _RefreshScannersCommand;
             }
@@ -350,54 +333,27 @@ namespace Mosey.GUI.ViewModels
             return viewModel;
         }
 
-        /// <summary>
-        /// Load configuration and set initial state.
-        /// </summary>
-        private void Initialize()
-        {
-            _log.LogDebug($"ViewModel initialization starting.");
+        public bool OnClosing() => false;
 
-            // Load saved configuration values
-            var userSettings = _appSettings.Get("UserSettings");
-            UpdateConfig(userSettings);
-
-            // Lock scanners collection across threads to prevent conflicts
-            System.Windows.Data.BindingOperations.EnableCollectionSynchronization(ScanningDevices.Devices, _scanningDevicesLock);
-
-            // Register event callbacks
-            _appSettings.OnChange(UpdateConfig);
-            _scanTimer.Tick += ScanTimer_Tick;
-            _scanTimer.Complete += ScanTimer_Complete;
-            _uiTimer.Tick += UITimer_Tick;
-            _uiTimer.Start(userSettings.UITimer.Delay, userSettings.UITimer.Interval);
-
-            // Start a task loop to update the scanners collection
-            _ = RefreshDevicesAsync();
-            ScanningDevices.EnableAll();
-
-            _log.LogDebug($"ViewModel initialization complete.");
-        }
-
-        /// <summary>
-        /// Update local configuration from supplied <see cref="AppSettings"/>.
-        /// </summary>
-        /// <param name="settings">Application configuration settings</param>
-        internal void UpdateConfig(AppSettings settings)
+        public async void OnClosingAsync()
         {
             if (IsScanRunning)
             {
-                return;
+                // Check with user before exiting
+                var dialogResult = await _dialog.StopScanDialog(cancellationToken: _cancelScanTokenSource.Token);
+                if (dialogResult)
+                {
+                    // Wait for current scan operation to complete, then exit
+                    _log.LogTrace($"Waiting for scanning operations to complete before shutting down from {nameof(OnClosingAsync)}.");
+                    IsWaiting = true;
+                    _cancelScanTokenSource.CancelAfter(TimeSpan.FromSeconds(30));
+                    await _scanningHost.WaitForImagingToComplete(_cancelScanTokenSource.Token);
+                    _log.LogInformation("User closing application before all scans completed. {ScanRepetitionsCount} of {ScanRepetitions} repetitions completed.", ScanRepetitionsCount, ScanRepetitions);
+                }
             }
 
-            _scanTimerConfig = (IIntervalTimerConfig)settings.ScanTimer.Clone();
-            _imageConfig = (IImagingDeviceConfig)settings.Image.Clone();
-            _imageFileConfig = (IImageFileConfig)settings.ImageFile.Clone();
-            _userDeviceConfig = settings.Device;
-
-            RaisePropertyChanged(nameof(ScanInterval));
-            RaisePropertyChanged(nameof(ScanRepetitions));
-            RaisePropertyChanged(nameof(ImageSavePath));
-            _log.LogDebug($"Configuration updated with {nameof(UpdateConfig)}.");
+            _log.LogDebug($"Application shutdown requested from {nameof(OnClosingAsync)}.");
+            System.Windows.Application.Current.Shutdown();
         }
 
         /// <summary>
@@ -416,12 +372,12 @@ namespace Mosey.GUI.ViewModels
         }
 
         /// <summary>
-        /// Begin repeated scanning, after first checking if checking interval time and free disk space are sufficient.
+        /// Begin scanning at intervals, after first checking if checking interval time and free disk space are sufficient.
         /// </summary>
         public async Task StartScanWithDialog()
         {
             // Check that interval time is sufficient for selected resolution
-            var imagingTime = ScanningDevices.Devices.Count(d => d.IsEnabled) * _userDeviceConfig.GetResolutionMetaData(_imageConfig.Resolution).ImagingTime;
+            var imagingTime = ScanningDevices.Devices.Count(d => d.IsEnabled) * _appSettings.CurrentValue.Device.GetResolutionMetadata(_appSettings.CurrentValue.Image.Resolution).ImagingTime;
             if (imagingTime * 1.5 > TimeSpan.FromMinutes(ScanInterval) && !await _dialog.ImagingTimeDialog(TimeSpan.FromMinutes(ScanInterval), imagingTime))
             {
                 _log.LogDebug($"Scanning not started due to low interval time: {imagingTime.TotalMinutes} minutes required, {ScanInterval} minutes selected.");
@@ -432,7 +388,7 @@ namespace Mosey.GUI.ViewModels
             try
             {
                 var availableDiskSpace = FileSystemExtensions.AvailableFreeSpace(
-                    _fileSystem.Path.GetPathRoot(_imageFileConfig.Directory),
+                    _fileSystem.Path.GetPathRoot(_appSettings.CurrentValue.ImageFile.Directory),
                     _fileSystem);
                 if (ImagesRequiredDiskSpace * 1.5 > availableDiskSpace && !await _dialog.DiskSpaceDialog(ImagesRequiredDiskSpace, availableDiskSpace))
                 {
@@ -442,7 +398,7 @@ namespace Mosey.GUI.ViewModels
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                _log.LogWarning(ex, $"Unable to show {nameof(DialogViewModel.DiskSpaceDialog)} on path {_imageFileConfig.Directory} due to {ex.GetType()}");
+                _log.LogWarning(ex, $"Unable to show {nameof(DialogViewModel.DiskSpaceDialog)} on path {_appSettings.CurrentValue.ImageFile.Directory} due to {ex.GetType()}");
             }
 
             StartScan();
@@ -470,17 +426,113 @@ namespace Mosey.GUI.ViewModels
         }
 
         /// <summary>
-        /// Initiate scanning with <see cref="ScanAsync"/>.
+        /// Starts a loop that continually refreshes the list of available scanners
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        /// <param name="interval">The duration between refreshes, default is one second</param>
+        /// <param name="cancellationToken">Used to stop the refresh loop</param>
+        internal async Task BeginRefreshDevicesAsync(TimeSpan? interval = null, CancellationToken cancellationToken = default)
+        {
+            _log.LogTrace($"Device refresh initiated with {nameof(BeginRefreshDevicesAsync)}");
+            interval ??= TimeSpan.FromSeconds(1);
+
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    _log.LogTrace($"Initiating device refresh in {nameof(BeginRefreshDevicesAsync)}");
+                    var enableDevices = !IsScanRunning ? _appSettings.CurrentValue.Device.EnableWhenConnected : _appSettings.CurrentValue.Device.EnableWhenScanning;
+
+                    await Task.Delay(interval.Value, cancellationToken).ConfigureAwait(false);
+                    await _scanningHost.RefreshDevicesAsync(enableDevices, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _log.LogWarning(ex, "Error while attempting to refresh devices.");
+                    await _dialog.ExceptionDialog(ex, 5000, CancellationToken.None).ConfigureAwait(false);
+                }
+                finally
+                {
+                    RaisePropertyChanged(nameof(ScanningDevices));
+                    RaisePropertyChanged(nameof(StartScanCommand));
+                    RaisePropertyChanged(nameof(StartStopScanCommand));
+                    _log.LogTrace($"Device refresh completed in {nameof(BeginRefreshDevicesAsync)}");
+                }
+            }
+        }
+
+        internal static string GetImageFilePath(IImagingHost.CapturedImage image, ImageFileConfig config, bool appendIndex, DateTime saveDateTime)
+        {
+            string index = appendIndex ? image.Index.ToString() : null;
+            var dateTime = saveDateTime.ToString(string.Join("_", config.DateFormat, config.TimeFormat));
+            var directory = Path.Combine(config.Directory, $"Scanner{image.DeviceId}");
+            var fileName = string.Join("_", config.Prefix, dateTime, index);
+
+            return Path.Combine(directory, Path.ChangeExtension(fileName, config.ImageFormat.ToString().ToLower()));
+        }
+
+        /// <summary>
+        /// Update local configuration from supplied <see cref="AppSettings"/>.
+        /// </summary>
+        /// <param name="settings">Application configuration settings</param>
+        internal void UpdateConfig(AppSettings settings)
+        {
+            if (IsScanRunning)
+            {
+                return;
+            }
+
+            // Copy settings as new instances
+            _appSettings.CurrentValue.ScanTimer = settings.ScanTimer with { };
+            _appSettings.CurrentValue.Image = settings.Image with { };
+            _appSettings.CurrentValue.ImageFile = settings.ImageFile with { };
+            _appSettings.CurrentValue.Device = settings.Device with { };
+
+            _scanningHost.UpdateConfig(_appSettings.CurrentValue.Image);
+
+            RaisePropertyChanged(nameof(ScanInterval));
+            RaisePropertyChanged(nameof(ScanRepetitions));
+            RaisePropertyChanged(nameof(ImageSavePath));
+
+            _log.LogTrace($"Configuration updated with {nameof(UpdateConfig)}.");
+        }
+
+        /// <summary>
+        /// Tidy up after scanning is completed
+        /// </summary>
+        private async void ScanTimer_Complete(object sender, EventArgs e)
+        {
+            _log.LogTrace($"{nameof(ScanTimer_Complete)} event.");
+
+            if (!_cancelScanTokenSource.Token.IsCancellationRequested)
+            {
+                await _scanningHost.WaitForImagingToComplete(_cancelScanTokenSource.Token);
+            }
+
+            // Ensure all other scanning related operations are stopped
+            _cancelScanTokenSource.Cancel();
+
+            // Apply any changes to settings that were made during scanning
+            UpdateConfig(_appSettings.Get(AppSettings.UserSettingsKey));
+
+            // Update properties
+            RaisePropertyChanged(nameof(ScanRepetitionsCount));
+            RaisePropertyChanged(nameof(IsScanRunning));
+            RaisePropertyChanged(nameof(ScanFinishTime));
+            RaisePropertyChanged(nameof(StartStopScanCommand));
+
+            _log.LogInformation("Scanning complete.");
+        }
+
+        /// <summary>
+        /// Initiate scanning with <see cref="ScanAndSaveImagesAsync"/>.
+        /// </summary>
         private async void ScanTimer_Tick(object sender, EventArgs e)
         {
-            _log.LogDebug($"{nameof(Scan)} event.");
+            _log.LogTrace($"{nameof(ScanTimer_Tick)} event.");
 
             try
             {
-                await ScanAsync(_cancelScanTokenSource.Token);
+                await ScanAndSaveImagesAsync();
             }
             catch (OperationCanceledException ex)
             {
@@ -500,223 +552,17 @@ namespace Mosey.GUI.ViewModels
         }
 
         /// <summary>
-        /// Tidy up after scanning is completed
-        /// Raised by <see cref="_scanTimer"/>
-        /// </summary>
-        private async void ScanTimer_Complete(object sender, EventArgs e)
-        {
-            _log.LogDebug($"{nameof(ScanTimer_Complete)} event.");
-            // Wait for scanning to complete
-            await _staSemaphore.WaitAsync();
-
-            // Ensure all other scanning related operations are stopped
-            _cancelScanTokenSource.Cancel();
-
-            // Apply any changes to settings that were made during scanning
-            UpdateConfig(_appSettings.Get("UserSettings"));
-
-            // Update properties
-            RaisePropertyChanged(nameof(ScanRepetitionsCount));
-            RaisePropertyChanged(nameof(IsScanRunning));
-            RaisePropertyChanged(nameof(ScanFinishTime));
-            RaisePropertyChanged(nameof(StartStopScanCommand));
-
-            _log.LogInformation("Scanning complete.");
-            _staSemaphore.Release();
-        }
-
-        /// <summary>
         /// Update user interface components
-        /// Raised by <see cref="_uiTimer"/>
         /// </summary>
-        private void UITimer_Tick(object sender, EventArgs e)
-            => RaisePropertyChanged(nameof(ScanNextTime));
-
-        /// <summary>
-        /// Update <see cref="ScanningDevices"/> with any newly connected scanners
-        /// </summary>
-        private void RefreshDevices()
+        private async Task BeginRefreshUI(TimeSpan interval)
         {
-            _log.LogDebug($"Device refresh initiated with {nameof(RefreshDevices)}");
-            var enableDevices = !IsScanRunning ? _userDeviceConfig.EnableWhenConnected : _userDeviceConfig.EnableWhenScanning;
-            ScanningDevices.RefreshDevices(_imageConfig, enableDevices);
+            interval = new[] { interval, TimeSpan.FromMilliseconds(100) }.Max();
 
-            RaisePropertyChanged(nameof(ScanningDevices));
-            RaisePropertyChanged(nameof(StartScanCommand));
-            RaisePropertyChanged(nameof(StartStopScanCommand));
-            _log.LogDebug($"Device refresh complete with {nameof(RefreshDevices)}");
-        }
-
-        /// <summary>
-        /// Starts a loop that continually refreshes the list of available scanners
-        /// </summary>
-        /// <param name="intervalSeconds">The duration between refreshes</param>
-        /// <param name="cancellationToken">Used to stop the refresh loop</param>
-        internal async Task RefreshDevicesAsync(int intervalSeconds = 1, CancellationToken cancellationToken = default)
-        {
-            _log.LogDebug($"Device refresh initiated with {nameof(RefreshDevicesAsync)}");
-            while (true)
+            while (!System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted ?? true)
             {
-                // Exit at a safe point in the loop, if requested
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    _log.LogDebug($"Device refresh in {nameof(RefreshDevicesAsync)} cancelled with CancellationToken.");
-                    return;
-                }
-
-                // Wait until all other staQueue operations are complete
-                await _staSemaphore.WaitAsync(CancellationToken.None);
-
-                try
-                {
-                    _log.LogTrace($"Initiating device refresh in {nameof(RefreshDevicesAsync)}");
-                    var enableDevices = !IsScanRunning ? _userDeviceConfig.EnableWhenConnected : _userDeviceConfig.EnableWhenScanning;
-
-                    // Use a dedicated thread for refresh tasks
-                    // The apartment state MUST be single threaded for COM interop
-                    await Task.Factory.StartNew(() =>
-                    {
-                        Task.Delay(TimeSpan.FromSeconds(intervalSeconds)).Wait();
-                        ScanningDevices.RefreshDevices(_imageConfig, enableDevices);
-                    }, cancellationToken, TaskCreationOptions.None, _staQueue);
-                }
-                catch (Exception ex)
-                {
-                    _log.LogWarning(ex, "Error while attempting to refresh devices.");
-                    await _dialog.ExceptionDialog(ex, 5000, CancellationToken.None);
-                }
-                finally
-                {
-                    RaisePropertyChanged(nameof(ScanningDevices));
-                    RaisePropertyChanged(nameof(StartScanCommand));
-                    RaisePropertyChanged(nameof(StartStopScanCommand));
-                    _log.LogTrace($"Device refresh completed in {nameof(RefreshDevicesAsync)}");
-                    _staSemaphore.Release();
-                }
+                await Task.Delay(interval);
+                RaisePropertyChanged(nameof(ScanNextTime));
             }
-        }
-
-        /// <summary>
-        /// Initiate scanning with all available <see cref="ScanningDevice"/>s
-        /// </summary>
-        /// <param name="cancellationToken">Used to stop current scanning operations</param>
-        /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
-        /// <exception cref="OperationCanceledException">If scanning was cancelled before completion</exception>
-        public List<string> Scan(CancellationToken cancellationToken = default)
-        {
-            _log.LogDebug($"Scanning initiated with {nameof(Scan)} method.");
-            var scannerIDStr = string.Empty;
-            var saveDateTime = DateTime.Now.ToString(string.Join("_", _imageFileConfig.DateFormat, _imageFileConfig.TimeFormat));
-            var saveDirectory = ImageSavePath;
-            var imagePaths = new List<string>();
-
-            // Order devices by ID to provide clearer feedback to users
-            foreach (var scanner in ScanningDevices.Devices.OrderBy(o => o.DeviceID).ToList())
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                try
-                {
-                    scannerIDStr = scanner.ID.ToString();
-
-                    if (scanner.IsConnected && scanner.IsEnabled && !scanner.IsImaging)
-                    {
-                        // Update image config in case of changes
-                        scanner.ImageSettings = _imageConfig;
-
-                        // Set desired resolution
-                        if (_userDeviceConfig.UseHighestResolution)
-                        {
-                            scanner.ImageSettings.Resolution = scanner.SupportedResolutions.Max();
-                        }
-
-                        // Run the scanner and retrieve the image(s) to memory
-                        _log.LogDebug("Attempting to retrieve image on {ScannerName} (#{DeviceID})", scanner.Name, scannerIDStr);
-                        scanner.GetImage();
-
-                        if (scanner.Images.Count > 0)
-                        {
-                            _log.LogDebug("{ImageCount} images retrieved from scanner #{DeviceID}", scanner.Images.Count, scanner.ID);
-                            var fileName = string.Join("_", _imageFileConfig.Prefix, saveDateTime);
-                            var directory = _fileSystem.Path.Combine(saveDirectory, string.Join(string.Empty, "Scanner", scannerIDStr));
-                            _fileSystem.Directory.CreateDirectory(directory);
-
-                            // Write image(s) to filesystem and retrieve a list of saved file names
-                            var savedImages = scanner.SaveImage(fileName, directory: directory, fileFormat: ImageFormat);
-                            foreach (var image in savedImages)
-                            {
-                                imagePaths.Add(image);
-                                _log.LogInformation("Saved image from scanner #{DeviceID} to file: {ImagePath}", scanner.ID, image);
-                            }
-                        }
-                        else
-                        {
-                            _log.LogWarning("Scanning successful, but no images retrieved from {DeviceName} (#{DeviceID})", scanner.Name, scanner.ID);
-                        }
-                    }
-                }
-                catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException or InvalidOperationException)
-                {
-                    // Device will show as disconnected, no images returned
-                    _log.LogWarning(ex, "Communication error on scanner {DeviceName} (#{DeviceID}) while attempting scan.", scanner.Name, scannerIDStr);
-                    return imagePaths;
-                }
-            }
-
-            _log.LogDebug($"Scan completed with {nameof(Scan)} method.");
-
-            return imagePaths;
-        }
-
-        /// <summary>
-        /// Initiate scanning with all available <see cref="ScanningDevice"/>s
-        /// </summary>
-        /// <param name="cancellationToken">Used to stop current scanning operations</param>
-        /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
-        /// <exception cref="OperationCanceledException">If scanning was cancelled before completion</exception>
-        private async Task<List<string>> ScanAsync(CancellationToken cancellationToken = default)
-        {
-            _log.LogDebug($"Scan initiated with {nameof(ScanAsync)} method.");
-            var results = new List<string>();
-
-            // Ensure device refresh or other operations are complete
-            await _staSemaphore.WaitAsync(CancellationToken.None);
-
-            try
-            {
-                // The apartment state MUST be single threaded for COM interop
-                // Runtime callable wrappers must be disposed manually to prevent problems with early disposal of COM servers
-                using (var staQueue = new StaTaskScheduler(concurrencyLevel: 1, disableComObjectEagerCleanup: true))
-                {
-                    await Task.Factory.StartNew(() =>
-                    {
-                        // Obtain images from scanners
-                        results = Scan(cancellationToken);
-                    }, cancellationToken, TaskCreationOptions.LongRunning, staQueue)
-                    .ContinueWith(t =>
-                    {
-                        // Manually clear (RCWs) to prevent memory leaks
-                        System.Runtime.InteropServices.Marshal.CleanupUnusedObjectsInCurrentContext();
-                        // Force any pending exceptions to propagate up
-                        t.Wait();
-                    }, staQueue);
-                }
-            }
-            catch (AggregateException aggregateEx)
-            {
-                // Unpack the aggregate
-                var innerException = aggregateEx.Flatten().InnerExceptions.FirstOrDefault();
-                // Ensure stack trace is preserved and rethrow
-                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(innerException).Throw();
-            }
-            finally
-            {
-                _staSemaphore.Release();
-            }
-
-            _log.LogDebug($"Scan completed with {nameof(ScanAsync)} method.");
-
-            return results;
         }
 
         /// <summary>
@@ -742,44 +588,91 @@ namespace Mosey.GUI.ViewModels
             }
         }
 
-        public bool OnClosing() => false;
-
-        public async void OnClosingAsync()
+        private void Initialize()
         {
-            if (IsScanRunning)
+            _log.LogTrace($"ViewModel initialization starting.");
+
+            ScanningDevices = _scanningHost.ImagingDevices;
+
+            // Load saved configuration values
+            var userSettings = _appSettings.Get(AppSettings.UserSettingsKey);
+            UpdateConfig(userSettings);
+
+            // Lock scanners collection across threads to prevent conflicts
+            System.Windows.Data.BindingOperations.EnableCollectionSynchronization(ScanningDevices.Devices, _scanningDevicesLock);
+
+            // Register event callbacks
+            _appSettings.OnChange(UpdateConfig);
+            _scanTimer.Tick += ScanTimer_Tick;
+            _scanTimer.Complete += ScanTimer_Complete;
+
+            // Start a task loop to update UI
+            _ = BeginRefreshUI(userSettings.UITimer.Interval);
+
+            // Start a task loop to update the scanners collection
+            _ = BeginRefreshDevicesAsync();
+            ScanningDevices.EnableAll();
+
+            _log.LogTrace($"ViewModel initialization complete.");
+        }
+
+        /// <summary>
+        /// Update <see cref="ScanningDevices"/> with any newly connected scanners
+        /// </summary>
+        private async Task RefreshDevicesAsync()
+        {
+            _log.LogTrace($"Device refresh initiated with {nameof(RefreshDevicesAsync)}");
+            var enableDevices = !IsScanRunning ? _appSettings.CurrentValue.Device.EnableWhenConnected : _appSettings.CurrentValue.Device.EnableWhenScanning;
+            await _scanningHost.RefreshDevicesAsync(enableDevices);
+
+            RaisePropertyChanged(nameof(ScanningDevices));
+            RaisePropertyChanged(nameof(StartScanCommand));
+            RaisePropertyChanged(nameof(StartStopScanCommand));
+            _log.LogTrace($"Device refresh complete with {nameof(RefreshDevicesAsync)}");
+        }
+
+        /// <summary>
+        /// Initiate scanning with all available <see cref="ScanningDevice"/>s
+        /// and save any captured images to disk
+        /// </summary>
+        /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
+        private async Task<IEnumerable<string>> ScanAndSaveImagesAsync(bool createDirectoryPath = true)
+        {
+            _log.LogTrace($"Scan initiated with {nameof(ScanAndSaveImagesAsync)} method.");
+
+            var results = new List<string>();
+            var saveDateTime = DateTime.Now;
+
+            try
             {
-                // Check with user before exiting
-                var dialogResult = await _dialog.StopScanDialog(cancellationToken: _cancelScanTokenSource.Token);
-                if (dialogResult)
+                var images = (await ScanImagesAsync().ConfigureAwait(false)).ToList();
+
+                foreach (var scannedImage in images)
                 {
-                    // Wait for current scan operation to complete, then exit
-                    _log.LogDebug($"Waiting for scanning operations to complete before shutting down from {nameof(OnClosingAsync)}.");
-                    IsWaiting = true;
-                    await _staSemaphore?.WaitAsync();
-                    _log.LogInformation("User closing application before all scans completed. {ScanRepetitionsCount} of {ScanRepetitions} repetitions completed.", ScanRepetitionsCount, ScanRepetitions);
-                    _log.LogDebug($"Application shutdown requested from {nameof(OnClosingAsync)}.");
-                    System.Windows.Application.Current.Shutdown();
+                    var filePath = GetImageFilePath(scannedImage, _appSettings.CurrentValue.ImageFile, images.Count > 1, saveDateTime);
+                    if (createDirectoryPath)
+                    {
+                        _fileSystem.Directory.CreateDirectory(_fileSystem.Path.GetDirectoryName(filePath));
+                    }
+                    _scanningHost.ImageFileHandler.SaveImage(scannedImage.Image, _appSettings.CurrentValue.ImageFile.ImageFormat, filePath);
+
+                    results.Add(filePath);
                 }
             }
-            else
+            catch (IOException ex)
             {
-                // Exit immediately
-                _log.LogDebug($"Application shutdown requested from {nameof(OnClosingAsync)}.");
-                System.Windows.Application.Current.Shutdown();
+                _log.LogError("An error occured when attempting to aquire images, or when saving them to disk", ex);
+                await _dialog.ExceptionDialog(ex, 5000, _cancelScanTokenSource.Token).ConfigureAwait(false);
             }
+
+            _log.LogTrace($"Scan completed with {nameof(ScanAndSaveImagesAsync)} method.");
+
+            return results;
         }
 
-        public void Dispose()
-        {
-            _scanTimer.Tick -= ScanTimer_Tick;
-            _scanTimer.Complete -= ScanTimer_Complete;
-            _uiTimer.Tick -= UITimer_Tick;
-
-            _cancelScanTokenSource?.Cancel();
-            _cancelScanTokenSource?.Dispose();
-            _scanTimer?.Dispose();
-            _uiTimer?.Dispose();
-            _staQueue?.Dispose();
-        }
+        private async Task<IEnumerable<IImagingHost.CapturedImage>> ScanImagesAsync()
+            => await _scanningHost
+                .PerformImagingAsync(_appSettings.CurrentValue.Device.UseHighestResolution, _cancelScanTokenSource.Token)
+                .ConfigureAwait(false);
     }
 }

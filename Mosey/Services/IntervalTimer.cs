@@ -37,7 +37,7 @@ namespace Mosey.Services
             Repetitions = repetitions;
         }
 
-        public IntervalTimer(IIntervalTimerConfig config)
+        public IntervalTimer(IntervalTimerConfig config)
         {
             Delay = config.Delay;
             Interval = config.Interval;
@@ -104,7 +104,7 @@ namespace Mosey.Services
                 // Notify event subscribers
                 OnTick(EventArgs.Empty);
                 Resume();
-                if (RepetitionsCount >= Repetitions)
+                if (RepetitionsCount == Repetitions)
                 {
                     Stop();
                 }

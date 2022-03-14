@@ -14,7 +14,7 @@ namespace Mosey.Models.Imaging
         /// <param name="config">Device settings used when capturing an image</param>
         /// <param name="format">The image format used internally for storing the image</param>
         /// <returns>A list of retrieved images as byte arrays, in <paramref name="format"/></returns>
-        IEnumerable<byte[]> PerformImaging(T settings, IImagingDeviceConfig config, IImagingDevice.ImageFormat format);
+        IEnumerable<byte[]> PerformImaging(T settings, ImagingDeviceConfig config, IImagingDevice.ImageFormat format);
 
         /// <summary>
         /// Lists the static properties of imaging devices connected to the system.

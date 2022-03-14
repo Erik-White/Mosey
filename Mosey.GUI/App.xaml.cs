@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.IO.Abstractions;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +16,6 @@ using Mosey.Models.Imaging;
 using Mosey.Services;
 using Mosey.Services.Imaging;
 
-[assembly: InternalsVisibleTo("Mosey.GUI.Tests")]
 namespace Mosey.GUI
 {
     /// <summary>
@@ -33,21 +31,21 @@ namespace Mosey.GUI
         {
             base.OnStartup(e);
 
-            _appConfig = CreateConfiguration("appsettings.json");
-            _userConfig = CreateConfiguration("usersettings.json");
+            _appConfig = CreateConfiguration(AppSettings.DefaultSettingsFileName);
+            _userConfig = CreateConfiguration(AppSettings.UserSettingsFileName);
 
             var serviceProvider = new ServiceCollection()
                 // Configuration
                 .Configure<AppSettings>(_appConfig)
-                .ConfigureWritable<AppSettings>(_userConfig, name: "UserSettings", file: "usersettings.json")
+                .ConfigureWritable<AppSettings>(_userConfig, name: AppSettings.UserSettingsKey, fileName: AppSettings.UserSettingsFileName)
                 .PostConfigureAll<AppSettings>(config =>
                 {
                     if (string.IsNullOrEmpty(config.ImageFile.Directory))
                     {
                         // Ensure default directory is user's Pictures folder
-                        config.ImageFile.Directory = Path.Combine(
+                        config.ImageFile = config.ImageFile with { Directory = Path.Combine(
                             Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
-                            "Mosey");
+                            "Mosey")};
                     }
                 })
 
@@ -66,9 +64,11 @@ namespace Mosey.GUI
                 .AddTransient<IFactory<IIntervalTimer>, IntervalTimerFactory>()
                 .AddTransient<IFolderBrowserDialog, FolderBrowserDialog>()
                 .AddScoped<IDialogManager, DialogManager>()
-                .AddScoped<IImagingDeviceConfig, ScanningDeviceSettings>()
                 .AddTransient<IImagingDevice, ScanningDevice>()
                 .AddSingleton<IImagingDevices<IImagingDevice>, ScanningDevices>()
+                .AddTransient<IImageHandler<SixLabors.ImageSharp.PixelFormats.Rgba32>, ImageHandler>()
+                .AddTransient<IImageFileHandler, ImageFileHandler>()
+                .AddSingleton<IImagingHost, DntScanningHost>()
 
                 // Aggregate services
                 .AddTransient<UIServices>()

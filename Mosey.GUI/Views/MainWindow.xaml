@@ -27,7 +27,7 @@
     </Window.DataContext>
     -->
     <Window.Resources>
-        <CollectionViewSource x:Key="ScanningDevicesOrdered" Source="{Binding Path=Devices}">
+        <CollectionViewSource x:Key="ScanningDevicesOrdered" Source="{Binding Path=ObservableDevices}">
             <CollectionViewSource.SortDescriptions>
                 <scm:SortDescription PropertyName="ID" Direction="Ascending" />
             </CollectionViewSource.SortDescriptions>

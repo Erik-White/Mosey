@@ -24,8 +24,8 @@ namespace Mosey.GUI.ViewModels
             get => _userSettings.ImageFile.Directory ?? _appSettings.Value.ImageFile.Directory;
             set
             {
-                _userSettings.ImageFile.Directory = value;
-                _appSettings.Update(c => c.ImageFile.Directory = value);
+                _userSettings.ImageFile = _userSettings.ImageFile with { Directory = value };
+                _appSettings.Update(c => c.ImageFile = c.ImageFile with { Directory = value });
                 RaisePropertyChanged(nameof(ImageSavePath));
 
                 _log.LogInformation($"{nameof(ImageSavePath)} changed to {value}");
@@ -37,8 +37,8 @@ namespace Mosey.GUI.ViewModels
             get => _userSettings.Image.Resolution;
             set
             {
-                _userSettings.Image.Resolution = value;
-                _appSettings.Update(c => c.Image.Resolution = value);
+                _userSettings.Image = _userSettings.Image with { Resolution = value };
+                _appSettings.Update(c => c.Image = c.Image with { Resolution = value });
                 RaisePropertyChanged(nameof(DefaultResolution));
 
                 _log.LogInformation($"{nameof(DefaultResolution)} changed to {value}");
@@ -52,8 +52,8 @@ namespace Mosey.GUI.ViewModels
             get => _userSettings.Device.EnableWhenConnected;
             set
             {
-                _userSettings.Device.EnableWhenConnected = value;
-                _appSettings.Update(c => c.Device.EnableWhenConnected = value);
+                _userSettings.Device = _userSettings.Device with { EnableWhenConnected = value };
+                _appSettings.Update(c => c.Device = c.Device with { EnableWhenConnected = value });
                 RaisePropertyChanged(nameof(ScannersEnableOnConnect));
 
                 _log.LogInformation($"{nameof(ScannersEnableOnConnect)} changed to {value}");
@@ -65,8 +65,8 @@ namespace Mosey.GUI.ViewModels
             get => _userSettings.Device.EnableWhenScanning;
             set
             {
-                _userSettings.Device.EnableWhenScanning = value;
-                _appSettings.Update(c => c.Device.EnableWhenScanning = value);
+                _userSettings.Device = _userSettings.Device with { EnableWhenScanning = value };
+                _appSettings.Update(c => c.Device = c.Device with { EnableWhenScanning = value });
                 RaisePropertyChanged(nameof(ScannersEnableWhenScanning));
 
                 _log.LogInformation($"{nameof(ScannersEnableWhenScanning)} changed to {value}");
@@ -78,8 +78,8 @@ namespace Mosey.GUI.ViewModels
             get => _userSettings.Device.UseHighestResolution;
             set
             {
-                _userSettings.Device.UseHighestResolution = value;
-                _appSettings.Update(c => c.Device.UseHighestResolution = value);
+                _userSettings.Device = _userSettings.Device with { UseHighestResolution = value };
+                _appSettings.Update(c => c.Device = c.Device with { UseHighestResolution = value });
                 RaisePropertyChanged(nameof(ScanHighestResolution));
 
                 _log.LogInformation($"{nameof(ScanHighestResolution)} changed to {value}");
@@ -91,8 +91,8 @@ namespace Mosey.GUI.ViewModels
             get => (int)_userSettings.ScanTimer.Interval.TotalMinutes;
             set
             {
-                _userSettings.ScanTimer.Interval = TimeSpan.FromMinutes(value);
-                _appSettings.Update(c => c.ScanTimer.Interval = _userSettings.ScanTimer.Interval);
+                _userSettings.ScanTimer = _userSettings.ScanTimer with { Interval = TimeSpan.FromMinutes(value) };
+                _appSettings.Update(c => c.ScanTimer = c.ScanTimer with { Interval = _userSettings.ScanTimer.Interval });
                 RaisePropertyChanged(nameof(ScanInterval));
 
                 _log.LogInformation($"{nameof(ScanInterval)} changed to {value}");
@@ -104,8 +104,8 @@ namespace Mosey.GUI.ViewModels
             get => _userSettings.ScanTimer.Repetitions;
             set
             {
-                _userSettings.ScanTimer.Repetitions = value;
-                _appSettings.Update(c => c.ScanTimer.Repetitions = value);
+                _userSettings.ScanTimer = _userSettings.ScanTimer with { Repetitions = value };
+                _appSettings.Update(c => c.ScanTimer = c.ScanTimer with { Repetitions = value });
                 RaisePropertyChanged(nameof(ScanRepetitions));
 
                 _log.LogInformation($"{nameof(ScanRepetitions)} changed to {value}");
@@ -117,16 +117,9 @@ namespace Mosey.GUI.ViewModels
             get => _userSettings.ScanTimer.Delay != TimeSpan.Zero;
             set
             {
-                if (value)
-                {
-                    _userSettings.ScanTimer.Delay = _userSettings.ScanTimer.Interval;
-                }
-                else
-                {
-                    _userSettings.ScanTimer.Delay = TimeSpan.Zero;
-                }
-
-                _appSettings.Update(c => c.ScanTimer.Delay = _userSettings.ScanTimer.Delay);
+                var delay = value ? _userSettings.ScanTimer.Interval : TimeSpan.Zero;
+                _userSettings.ScanTimer = _userSettings.ScanTimer with { Delay = delay };
+                _appSettings.Update(c => c.ScanTimer = c.ScanTimer with { Delay = delay });
                 RaisePropertyChanged(nameof(ScanningDelay));
 
                 _log.LogInformation($"{nameof(ScanningDelay)} changed to {value}");
@@ -145,7 +138,7 @@ namespace Mosey.GUI.ViewModels
             _log = logger;
             _uiServices = uiServices;
             _appSettings = appSettings;
-            _userSettings = appSettings.Get("UserSettings");
+            _userSettings = appSettings.Get(AppSettings.UserSettingsKey);
             _dialog = new DialogViewModel(this, _uiServices, _log);
             _fileSystem = fileSystem;
         }
@@ -194,10 +187,10 @@ namespace Mosey.GUI.ViewModels
         /// </summary>
         private void ResetUserOptions()
         {
-            _log.LogDebug("Overwriting user settings with defaults.");
+            _log.LogTrace("Overwriting user settings with defaults.");
 
             // Copy default settings and write to disk
-            _userSettings = (AppSettings)_appSettings.Value.Clone();
+            _userSettings = _appSettings.Value with { };
             _appSettings.Update(c =>
             {
                 c.ScanTimer = _userSettings.ScanTimer;

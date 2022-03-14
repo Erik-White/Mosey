@@ -2,7 +2,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace Mosey.Services
+namespace Mosey.Models
 {
     /// <summary>
     /// Convenience methods for raising <see cref="PropertyChanged"/> events when property values are set.
