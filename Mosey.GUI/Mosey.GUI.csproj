@@ -9,12 +9,12 @@
     <Platforms>AnyCPU</Platforms>
     <PackageProjectUrl>https://github.com/Erik-White/Mosey</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Erik-White/Mosey.git</RepositoryUrl>
-    <Version>1.3.0</Version>
+    <Version>2.0.0</Version>
     <Company />
     <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
     <PackageTags>imaging, scan, scanning</PackageTags>
-    <AssemblyVersion>1.3.0.0</AssemblyVersion>
-    <FileVersion>1.3.0.0</FileVersion>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <FileVersion>2.0.0.0</FileVersion>
     <Description>Multi scanner interval imaging tool. Runs on Windows 7 and up</Description>
     <RepositoryType>git</RepositoryType>
     <StartupObject>
