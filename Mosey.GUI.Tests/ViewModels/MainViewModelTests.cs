@@ -68,7 +68,7 @@ namespace Mosey.GUI.ViewModels.Tests
                 scanningHost
                     .ReceivedCalls()
                     .Count(x => x.GetMethodInfo().Name == nameof(scanningHost.RefreshDevicesAsync))
-                    .Should().BeInRange(9, 11);
+                    .Should().BeInRange(5, 15);
             }
 
             [Theory, MainViewModelAutoData]
