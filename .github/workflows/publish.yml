@@ -14,8 +14,8 @@ jobs:
 
     env:
       OUTPUT_PATH: ./bin/release/${{ matrix.targetplatform }}
-      INSTALLER_NAME: ${GITHUB_REPOSITORY#*/}-${{ github.event.release.tag_name }}-${{ matrix.targetplatform }}.exe
-      TARGET_PROJECT: ${GITHUB_REPOSITORY#*/}.GUI
+      INSTALLER_NAME: ${{ github.event.repository.name }}-${{ github.event.release.tag_name }}-${{ matrix.targetplatform }}.exe
+      TARGET_PROJECT: ${{ github.event.repository.name }}.GUI
 
     steps:
     - name: Clone repo
@@ -29,7 +29,7 @@ jobs:
     - name: Build release
       run: |
         dotnet publish ${{ env.TARGET_PROJECT }}/${{ env.TARGET_PROJECT }}.csproj --configuration Release --output ${{ env.OUTPUT_PATH }} --runtime win-${{ matrix.targetplatform }} -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishReadyToRun=true -p:PublishSingleFile=true --self-contained true
-        Rename-Item -Path ${{ env.OUTPUT_PATH }}/${{ env.TARGET_PROJECT }}.exe -NewName ${GITHUB_REPOSITORY#*/}.exe
+        Rename-Item -Path ${{ env.OUTPUT_PATH }}/${{ env.TARGET_PROJECT }}.exe -NewName ${{ github.event.repository.name }}.exe
     
     - name: Build installer
       run: 7z a -sfx ${{ env.OUTPUT_PATH }}/${{ env.INSTALLER_NAME }} ${{ env.OUTPUT_PATH }}/*.exe ${{ env.OUTPUT_PATH }}/*.json
