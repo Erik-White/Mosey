@@ -20,7 +20,7 @@ Get the [latest release](https://github.com/Erik-White/Mosey/releases)
 ![Mosey scanning](Docs/images/scan_progress.gif "Mosey scanning")
 
 <p float="left">
-    <img src="Docs/images/window_med.png" alt="Mosey main window" width="33%"/>
-    <img src="Docs/images/scanning_med.png" alt="Mosey during scanning" width="33%"/>
-    <img src="Docs/images/options_med.png" alt="Mosey options" width="33%"/>
+    <img src="Docs/images/window_med.png" alt="Mosey main window" width="32%"/>
+    <img src="Docs/images/scanning_med.png" alt="Mosey during scanning" width="32%"/>
+    <img src="Docs/images/options_med.png" alt="Mosey options" width="32%"/>
 </p>
