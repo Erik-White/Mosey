@@ -25,7 +25,7 @@ jobs:
         dotnet-version: '6.0.x'
 
     - name: Build release
-      run: dotnet publish Mosey.GUI/Mosey.GUI.csproj --configuration Release --output ${{ env.RELEASE_PATH }}/${{ matrix.targetplatform }} --runtime win-${{ matrix.targetplatform }} -p:PublishReadyToRun=true -p:PublishSingleFile=true --self-contained true
+      run: dotnet publish Mosey.GUI/Mosey.GUI.csproj --configuration Release --output ${{ env.RELEASE_PATH }}/${{ matrix.targetplatform }} --runtime win-${{ matrix.targetplatform }} -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishReadyToRun=true -p:PublishSingleFile=true --self-contained true
 
     - name: Upload release
       uses: actions/upload-release-asset@v1.0.2
