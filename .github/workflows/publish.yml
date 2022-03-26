@@ -13,7 +13,9 @@ jobs:
         targetplatform: [x86, x64]
 
     env:
-      RELEASE_PATH: ./bin/release
+      OUTPUT_PATH: ./bin/release/${{ matrix.targetplatform }}
+      INSTALLER_NAME: ${{ github.event.repository.name }}-${{ github.event.release.tag_name }}-${{ matrix.targetplatform }}.exe
+      TARGET_PROJECT: ${{ github.event.repository.name }}.GUI
 
     steps:
     - name: Clone repo
@@ -25,7 +27,12 @@ jobs:
         dotnet-version: '6.0.x'
 
     - name: Build release
-      run: dotnet publish Mosey.GUI/Mosey.GUI.csproj --configuration Release --output ${{ env.RELEASE_PATH }}/${{ matrix.targetplatform }} --runtime win-${{ matrix.targetplatform }} -p:PublishReadyToRun=true -p:PublishSingleFile=true --self-contained true
+      run: |
+        dotnet publish ${{ env.TARGET_PROJECT }}/${{ env.TARGET_PROJECT }}.csproj --configuration Release --output ${{ env.OUTPUT_PATH }} --runtime win-${{ matrix.targetplatform }} -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishReadyToRun=true -p:PublishSingleFile=true --self-contained true
+        Rename-Item -Path ${{ env.OUTPUT_PATH }}/${{ env.TARGET_PROJECT }}.exe -NewName ${{ github.event.repository.name }}.exe
+    
+    - name: Build installer
+      run: 7z a -sfx ${{ env.OUTPUT_PATH }}/${{ env.INSTALLER_NAME }} ${{ env.OUTPUT_PATH }}/*.exe ${{ env.OUTPUT_PATH }}/*.json
 
     - name: Upload release
       uses: actions/upload-release-asset@v1.0.2
@@ -33,6 +40,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ${{ env.RELEASE_PATH }}/${{ matrix.targetplatform }}/Mosey.exe
-        asset_name: Mosey-${{ github.event.release.tag_name }}-${{ matrix.targetplatform }}.exe
+        asset_path: ${{ env.OUTPUT_PATH }}/${{ env.INSTALLER_NAME }}
+        asset_name: ${{ env.INSTALLER_NAME }}
         asset_content_type: binary/octet-stream
