@@ -1,7 +1,7 @@
 ﻿using System;
 using Mosey.Models.Imaging;
 
-namespace Mosey.Services.Imaging.Extensions
+namespace Mosey.Core.Services.Imaging.Extensions
 {
     public static class ImageFormatExtensions
     {

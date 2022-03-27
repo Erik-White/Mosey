@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading;
 using Mosey.Models;
 
-namespace Mosey.Services
+namespace Mosey.Core.Services
 {
     /// <summary>
     /// A timer with interval callback events. Allows for pausing between intervals

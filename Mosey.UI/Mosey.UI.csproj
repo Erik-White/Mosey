@@ -1,0 +1,63 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Mosey.ico</ApplicationIcon>
+    <Win32Resource />
+    <Authors>Erik White</Authors>
+    <Platforms>AnyCPU</Platforms>
+    <PackageProjectUrl>https://github.com/Erik-White/Mosey</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Erik-White/Mosey.git</RepositoryUrl>
+    <Version>2.0.1</Version>
+    <Company />
+    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+    <PackageTags>imaging, scan, scanning</PackageTags>
+    <AssemblyVersion>2.0.1.0</AssemblyVersion>
+    <FileVersion>2.0.1.0</FileVersion>
+    <Description>Multi scanner interval imaging tool. Runs on Windows 7 and up</Description>
+    <RepositoryType>git</RepositoryType>
+    <StartupObject>
+    </StartupObject>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Prefer32Bit>false</Prefer32Bit>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <TrimmerRootAssembly Include="System.IO.FileSystem.DriveInfo" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AsyncAwaitBestPractices.MVVM" Version="6.0.4" />
+    <PackageReference Include="MahApps.Metro" Version="2.4.9" />
+    <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="4.11.0" />
+    <PackageReference Include="Microsoft-WindowsAPICodePack-Shell" Version="1.1.4" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="6.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.39" />
+    <PackageReference Include="NReco.Logging.File" Version="1.1.4" />
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="6.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Mosey\Mosey.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="usersettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Generator>MSBuild:Compile</Generator>
+    </None>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Generator>MSBuild:Compile</Generator>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="ViewModels\Extensions\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+  </ItemGroup>
+</Project>

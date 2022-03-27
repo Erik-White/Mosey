@@ -5,9 +5,9 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using DNTScanner.Core;
 using Mosey.Models.Imaging;
-using Mosey.Services.Imaging.Extensions;
+using Mosey.Core.Services.Imaging.Extensions;
 
-namespace Mosey.Services.Imaging
+namespace Mosey.Core.Services.Imaging
 {
     /// <summary>
     /// Provides access to the WIA driver devices via <see cref="DNTScanner.Core"/>

@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Mosey.UI\Mosey.UI.csproj" />
+    <ProjectReference Include="..\Mosey.Tests\Mosey.Core.Tests.csproj" />
+    <ProjectReference Include="..\Mosey\Mosey.Core.csproj" />
+  </ItemGroup>
+</Project>

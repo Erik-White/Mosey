@@ -4,7 +4,7 @@ using Mosey.Models.Imaging;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
-namespace Mosey.Services.Imaging
+namespace Mosey.Core.Services.Imaging
 {
     public class ImageFileHandler : IImageFileHandler
     {

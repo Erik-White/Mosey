@@ -7,7 +7,7 @@ using System.Threading.Tasks.Schedulers;
 using Mosey.Models.Imaging;
 using static Mosey.Models.Imaging.IImagingHost;
 
-namespace Mosey.Services.Imaging
+namespace Mosey.Core.Services.Imaging
 {
     public class DntScanningHost : IImagingHost
     {

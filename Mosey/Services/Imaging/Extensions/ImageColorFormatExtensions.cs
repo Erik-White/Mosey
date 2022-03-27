@@ -2,7 +2,7 @@
 using DNTScanner.Core;
 using Mosey.Models.Imaging;
 
-namespace Mosey.Services.Imaging.Extensions
+namespace Mosey.Core.Services.Imaging.Extensions
 {
     /// <summary>
     /// Extension methods for <see cref="ImageColorFormat"/>

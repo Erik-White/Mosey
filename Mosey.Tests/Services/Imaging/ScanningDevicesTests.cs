@@ -10,7 +10,7 @@ using Mosey.Tests.AutoData;
 using Mosey.Tests.Extensions;
 using NUnit.Framework;
 
-namespace Mosey.Services.Imaging.Tests
+namespace Mosey.Core.Services.Imaging.Tests
 {
     public class ScanningDevicesTests
     {

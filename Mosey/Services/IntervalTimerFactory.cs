@@ -1,6 +1,6 @@
 ﻿using Mosey.Models;
 
-namespace Mosey.Services
+namespace Mosey.Core.Services
 {
     public class IntervalTimerFactory : IFactory<IIntervalTimer>
     {

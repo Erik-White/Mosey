@@ -5,10 +5,10 @@ using System.Runtime.InteropServices;
 using DNTScanner.Core;
 using Mosey.Models;
 using Mosey.Models.Imaging;
-using Mosey.Services.Imaging.Extensions;
+using Mosey.Core.Services.Imaging.Extensions;
 using SixLabors.ImageSharp.PixelFormats;
 
-namespace Mosey.Services.Imaging
+namespace Mosey.Core.Services.Imaging
 {
     /// <summary>
     /// Represents a physical scanning device connected to the system.

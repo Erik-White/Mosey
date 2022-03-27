@@ -3,7 +3,7 @@ using System.Linq;
 using AutoFixture;
 using DNTScanner.Core;
 using Mosey.Models.Imaging;
-using Mosey.Services.Imaging.Extensions;
+using Mosey.Core.Services.Imaging.Extensions;
 
 namespace Mosey.Tests.Customizations
 {

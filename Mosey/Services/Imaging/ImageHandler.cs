@@ -9,7 +9,7 @@ using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Tiff;
 using SixLabors.ImageSharp.PixelFormats;
 
-namespace Mosey.Services.Imaging
+namespace Mosey.Core.Services.Imaging
 {
     public class ImageHandler : IImageHandler<Rgba32>
     {

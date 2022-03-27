@@ -1,0 +1,175 @@
+﻿using System.Windows;
+using System.Windows.Controls;
+
+namespace Mosey.UI.Views
+{
+    #region Margin
+    public static class Margin
+    {
+        public static readonly DependencyProperty LeftProperty = DependencyProperty.RegisterAttached(
+            "Left",
+            typeof(double),
+            typeof(Margin),
+            new PropertyMetadata(0.0, LeftChanged));
+
+        private static void LeftChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var frameworkElement = d as FrameworkElement;
+            if (frameworkElement is not null)
+            {
+                var currentMargin = frameworkElement.Margin;
+                frameworkElement.Margin = new Thickness((double)e.NewValue, currentMargin.Top, currentMargin.Right, currentMargin.Bottom);
+            }
+        }
+
+        public static void SetLeft(UIElement element, double value) => element.SetValue(LeftProperty, value);
+
+        public static double GetLeft(UIElement _) => 0;
+
+        public static readonly DependencyProperty TopProperty = DependencyProperty.RegisterAttached(
+            "Top",
+            typeof(double),
+            typeof(Margin),
+            new PropertyMetadata(0.0, TopChanged));
+
+        private static void TopChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var frameworkElement = d as FrameworkElement;
+            if (frameworkElement is not null)
+            {
+                var currentMargin = frameworkElement.Margin;
+                frameworkElement.Margin = new Thickness(currentMargin.Left, (double)e.NewValue, currentMargin.Right, currentMargin.Bottom);
+            }
+        }
+
+        public static void SetTop(UIElement element, double value) => element.SetValue(TopProperty, value);
+
+        public static double GetTop(UIElement _) => 0;
+
+        public static readonly DependencyProperty RightProperty = DependencyProperty.RegisterAttached(
+            "Right",
+            typeof(double),
+            typeof(Margin),
+            new PropertyMetadata(0.0, RightChanged));
+
+        private static void RightChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var frameworkElement = d as FrameworkElement;
+            if (frameworkElement is not null)
+            {
+                var currentMargin = frameworkElement.Margin;
+                frameworkElement.Margin = new Thickness(currentMargin.Left, currentMargin.Top, (double)e.NewValue, currentMargin.Bottom);
+            }
+        }
+
+        public static void SetRight(UIElement element, double value) => element.SetValue(RightProperty, value);
+
+        public static double GetRight(UIElement _) => 0;
+
+        public static readonly DependencyProperty BottomProperty = DependencyProperty.RegisterAttached(
+            "Bottom",
+            typeof(double),
+            typeof(Margin),
+            new PropertyMetadata(0.0, BottomChanged));
+
+        private static void BottomChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var frameworkElement = d as FrameworkElement;
+            if (frameworkElement is not null)
+            {
+                var currentMargin = frameworkElement.Margin;
+                frameworkElement.Margin = new Thickness(currentMargin.Left, currentMargin.Top, currentMargin.Right, (double)e.NewValue);
+            }
+        }
+
+        public static void SetBottom(UIElement element, double value) => element.SetValue(BottomProperty, value);
+
+        public static double GetBottom(UIElement _) => 0;
+    }
+    #endregion Margin
+
+    #region Padding
+    public static class Padding
+    {
+        public static readonly DependencyProperty LeftProperty = DependencyProperty.RegisterAttached(
+            "Left",
+            typeof(double),
+            typeof(Padding),
+            new PropertyMetadata(0.0, LeftChanged));
+
+        private static void LeftChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var contentControl = d as ContentControl;
+            if (contentControl is not null)
+            {
+                var currentPadding = contentControl.Padding;
+                contentControl.Padding = new Thickness((double)e.NewValue, currentPadding.Top, currentPadding.Right, currentPadding.Bottom);
+            }
+        }
+
+        public static void SetLeft(UIElement element, double value) => element.SetValue(LeftProperty, value);
+
+        public static double GetLeft(UIElement _) => 0;
+
+        public static readonly DependencyProperty TopProperty = DependencyProperty.RegisterAttached(
+            "Top",
+            typeof(double),
+            typeof(Padding),
+            new PropertyMetadata(0.0, TopChanged));
+
+        private static void TopChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var contentControl = d as ContentControl;
+            if (contentControl is not null)
+            {
+                var currentPadding = contentControl.Padding;
+                contentControl.Padding = new Thickness(currentPadding.Left, (double)e.NewValue, currentPadding.Right, currentPadding.Bottom);
+            }
+        }
+
+        public static void SetTop(UIElement element, double value) => element.SetValue(TopProperty, value);
+
+        public static double GetTop(UIElement _) => 0;
+
+        public static readonly DependencyProperty RightProperty = DependencyProperty.RegisterAttached(
+            "Right",
+            typeof(double),
+            typeof(Padding),
+            new PropertyMetadata(0.0, RightChanged));
+
+        private static void RightChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var contentControl = d as ContentControl;
+            if (contentControl is not null)
+            {
+                var currentPadding = contentControl.Padding;
+                contentControl.Padding = new Thickness(currentPadding.Left, currentPadding.Top, (double)e.NewValue, currentPadding.Bottom);
+            }
+        }
+
+        public static void SetRight(UIElement element, double value) => element.SetValue(RightProperty, value);
+
+        public static double GetRight(UIElement _) => 0;
+
+        public static readonly DependencyProperty BottomProperty = DependencyProperty.RegisterAttached(
+            "Bottom",
+            typeof(double),
+            typeof(Padding),
+            new PropertyMetadata(0.0, BottomChanged));
+
+        private static void BottomChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var contentControl = d as ContentControl;
+            if (contentControl is not null)
+            {
+                var currentPadding = contentControl.Padding;
+                contentControl.Padding = new Thickness(currentPadding.Left, currentPadding.Top, currentPadding.Right, (double)e.NewValue);
+            }
+        }
+
+        public static void SetBottom(UIElement element, double value) => element.SetValue(BottomProperty, value);
+
+        public static double GetBottom(UIElement _) => 0;
+    }
+    #endregion Padding
+}

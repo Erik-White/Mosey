@@ -14,7 +14,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 
-namespace Mosey.Services.Imaging.Tests
+namespace Mosey.Core.Services.Imaging.Tests
 {
     public class ImageFileHandlerTests
     {

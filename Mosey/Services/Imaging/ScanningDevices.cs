@@ -5,7 +5,7 @@ using DNTScanner.Core;
 using Mosey.Models;
 using Mosey.Models.Imaging;
 
-namespace Mosey.Services.Imaging
+namespace Mosey.Core.Services.Imaging
 {
     /// <summary>
     /// A persistent collection of WIA enabled scanners.
