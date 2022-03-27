@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using static Mosey.UI.Configuration.DeviceConfig;
+using static Mosey.Applicaton.Configuration.DeviceConfig;
 
-namespace Mosey.UI.Configuration
+namespace Mosey.Applicaton.Configuration
 {
     /// <summary>
     /// Configurations settings related to physical scanning devices.

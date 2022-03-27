@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Mosey.UI.Models;
+using Mosey.Application.Models;
 
-namespace Mosey.UI.Configuration
+namespace Mosey.Application.Configuration
 {
     public static class ServiceCollectionExtensions
     {

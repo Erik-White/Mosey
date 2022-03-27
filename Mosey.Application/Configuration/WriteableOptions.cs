@@ -1,11 +1,9 @@
-﻿using System;
-using System.IO;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
-using Mosey.UI.Models;
+using Mosey.Application.Models;
 
-namespace Mosey.UI.Configuration
+namespace Mosey.Application.Configuration
 {
     public class WritableOptions<T> : IWritableOptions<T> where T : class, new()
     {

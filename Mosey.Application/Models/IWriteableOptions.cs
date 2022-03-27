@@ -1,7 +1,6 @@
-﻿using System;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 
-namespace Mosey.UI.Models
+namespace Mosey.Application.Models
 {
     public interface IWritableOptions<out T> : IOptionsSnapshot<T> where T : class, new()
     {

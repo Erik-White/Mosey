@@ -9,11 +9,11 @@ using System.Windows.Input;
 using AsyncAwaitBestPractices.MVVM;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Mosey.UI.Configuration;
 using Mosey.UI.Models;
 using Mosey.UI.ViewModels.Extensions;
 using Mosey.Core;
 using Mosey.Core.Imaging;
+using Mosey.Application.Configuration;
 
 namespace Mosey.UI.ViewModels
 {
