@@ -1,8 +1,9 @@
 ﻿using AutoFixture;
-using Mosey.Models;
-using Mosey.Core.Services;
+using Mosey.Application;
+using Mosey.Core;
+using Mosey.Tests.AutoData;
 
-namespace Mosey.Tests.AutoData
+namespace Mosey.UI.Tests.AutoData
 {
     public class MainViewModelAutoDataAttribute : AutoNSubstituteDataAttribute
     {

@@ -5,8 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture.NUnit3;
 using FluentAssertions;
-using Mosey.Models.Imaging;
-using Mosey.Tests.AutoData;
+using Mosey.Core.Imaging;
+using Mosey.UI.Tests.AutoData;
 using Mosey.Tests.Extensions;
 using NSubstitute;
 using NUnit.Framework;
@@ -103,7 +103,7 @@ namespace Mosey.UI.ViewModels.Tests
 
         public class GetImageFilePathShould
         {
-            [Theory, ScanningDeviceAutoData]
+            [Theory, AutoData]
             public void Return_FilePath(IImagingHost.CapturedImage image, [Frozen] ImageFileConfig config, DateTime dateTime)
             {
                 var result = MainViewModel.GetImageFilePath(image, config, true, dateTime);

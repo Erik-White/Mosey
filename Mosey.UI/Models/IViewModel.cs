@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using Mosey.Models;
+using Mosey.Core;
 
 namespace Mosey.UI.Models
 {

@@ -12,8 +12,8 @@ using Microsoft.Extensions.Options;
 using Mosey.UI.Configuration;
 using Mosey.UI.Models;
 using Mosey.UI.ViewModels.Extensions;
-using Mosey.Models;
-using Mosey.Models.Imaging;
+using Mosey.Core;
+using Mosey.Core.Imaging;
 
 namespace Mosey.UI.ViewModels
 {

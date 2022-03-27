@@ -11,17 +11,17 @@ using Mosey.UI.Models.Dialog;
 using Mosey.UI.Services;
 using Mosey.UI.Services.Dialog;
 using Mosey.UI.ViewModels;
-using Mosey.Models;
-using Mosey.Models.Imaging;
-using Mosey.Core.Services;
-using Mosey.Core.Services.Imaging;
+using Mosey.Core;
+using Mosey.Core.Imaging;
+using Mosey.Application;
+using Mosey.Application.Imaging;
 
 namespace Mosey.UI
 {
     /// <summary>
     /// Set up dependency injection, configuration and logging for application
     /// </summary>
-    public partial class App : Application
+    public partial class App : System.Windows.Application
     {
         private IConfiguration _appConfig;
         private IConfiguration _userConfig;
