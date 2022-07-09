@@ -10,6 +10,7 @@ using Mosey.UI.Tests.AutoData;
 using Mosey.Tests.Extensions;
 using NSubstitute;
 using NUnit.Framework;
+using Mosey.Application;
 
 namespace Mosey.UI.ViewModels.Tests
 {
@@ -34,7 +35,7 @@ namespace Mosey.UI.ViewModels.Tests
             [Theory, MainViewModelAutoData]
             public void SetScanningProperties(MainViewModel sut)
             {
-                sut.StartScan();
+                sut.StartScanning();
 
                 sut.IsScanRunning.Should().BeTrue();
                 sut.ScanRepetitionsCount.Should().Be(0);
@@ -46,7 +47,7 @@ namespace Mosey.UI.ViewModels.Tests
             {
                 using (var monitoredSubject = sut.Monitor())
                 {
-                    monitoredSubject.Subject.StartScan();
+                    monitoredSubject.Subject.StartScanning();
 
                     monitoredSubject.Should().RaisePropertyChangeFor(x => x.IsScanRunning);
                     monitoredSubject.Should().RaisePropertyChangeFor(x => x.ScanFinishTime);
@@ -55,61 +56,62 @@ namespace Mosey.UI.ViewModels.Tests
             }
         }
 
-        public class BeginRefreshDevicesAsyncShould
+        public class ScanningServiceDevicesRefreshedShould
         {
+            //[Theory, MainViewModelAutoData]
+            //public async Task RepeatRefreshDevices([Frozen] IImagingHost scanningHost, MainViewModel sut)
+            //{
+            //    using var cts = new CancellationTokenSource();
+            //    cts.CancelAfter(1000);
+
+            //    await sut.BeginRefreshDevicesAsync(TimeSpan.FromMilliseconds(100), cts.Token);
+
+            //    scanningHost
+            //        .ReceivedCalls()
+            //        .Count(x => x.GetMethodInfo().Name == nameof(scanningHost.RefreshDevicesAsync))
+            //        .Should().BeInRange(5, 15);
+            //}
+
+            //[Theory, MainViewModelAutoData]
+            //public async Task CancelTask([Frozen] IImagingHost scanningHost, MainViewModel sut)
+            //{
+            //    using var cts = new CancellationTokenSource();
+            //    cts.Cancel();
+
+            //    await sut.BeginRefreshDevicesAsync(TimeSpan.FromSeconds(1), cts.Token);
+
+            //    await scanningHost
+            //        .DidNotReceiveWithAnyArgs()
+            //        .RefreshDevicesAsync(default, default);
+            //}
+
+            //[Theory, MainViewModelAutoData]
+            //public async Task RaisePropertyChanged(MainViewModel sut)
+            //{
+            //    using var cts = new CancellationTokenSource();
+            //    cts.CancelAfter(1000);
+
+            //    using (var monitoredSubject = sut.Monitor())
+            //    {
+            //        await sut.BeginRefreshDevicesAsync(TimeSpan.Zero, cts.Token);
+
+            //        monitoredSubject.Should().RaisePropertyChangeFor(x => x.ScanningDevices);
+            //        monitoredSubject.Should().RaisePropertyChangeFor(x => x.StartScanCommand);
+            //        monitoredSubject.Should().RaisePropertyChangeFor(x => x.StartStopScanCommand);
+            //    }
+            //}
+
             [Theory, MainViewModelAutoData]
-            public async Task RepeatRefreshDevices([Frozen] IImagingHost scanningHost, MainViewModel sut)
+            public async Task RaisePropertyChanged([Frozen] IScanningService scanningService, MainViewModel sut)
             {
-                using var cts = new CancellationTokenSource();
-                cts.CancelAfter(1000);
-
-                await sut.BeginRefreshDevicesAsync(TimeSpan.FromMilliseconds(100), cts.Token);
-
-                scanningHost
-                    .ReceivedCalls()
-                    .Count(x => x.GetMethodInfo().Name == nameof(scanningHost.RefreshDevicesAsync))
-                    .Should().BeInRange(5, 15);
-            }
-
-            [Theory, MainViewModelAutoData]
-            public async Task CancelTask([Frozen] IImagingHost scanningHost, MainViewModel sut)
-            {
-                using var cts = new CancellationTokenSource();
-                cts.Cancel();
-
-                await sut.BeginRefreshDevicesAsync(TimeSpan.FromSeconds(1), cts.Token);
-
-                await scanningHost
-                    .DidNotReceiveWithAnyArgs()
-                    .RefreshDevicesAsync(default, default);
-            }
-
-            [Theory, MainViewModelAutoData]
-            public async Task RaisePropertyChanged(MainViewModel sut)
-            {
-                using var cts = new CancellationTokenSource();
-                cts.CancelAfter(1000);
-
                 using (var monitoredSubject = sut.Monitor())
                 {
-                    await sut.BeginRefreshDevicesAsync(TimeSpan.Zero, cts.Token);
+                    scanningService.DevicesRefreshed += Raise.Event();
 
                     monitoredSubject.Should().RaisePropertyChangeFor(x => x.ScanningDevices);
                     monitoredSubject.Should().RaisePropertyChangeFor(x => x.StartScanCommand);
                     monitoredSubject.Should().RaisePropertyChangeFor(x => x.StartStopScanCommand);
                 }
-            }
-        }
-
-        public class GetImageFilePathShould
-        {
-            [Theory, AutoData]
-            public void Return_FilePath(IImagingHost.CapturedImage image, [Frozen] ImageFileConfig config, DateTime dateTime)
-            {
-                var result = MainViewModel.GetImageFilePath(image, config, true, dateTime);
-
-                result.Should().StartWith(config.Directory);
-                result.Should().EndWithEquivalentOf(config.ImageFormat.ToString());
             }
         }
     }

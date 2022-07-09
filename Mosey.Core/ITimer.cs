@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Mosey.Core
+﻿namespace Mosey.Core
 {
     public interface ITimer : IDisposable
     {

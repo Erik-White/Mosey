@@ -1,0 +1,210 @@
+﻿using System.IO.Abstractions;
+using Microsoft.Extensions.Logging;
+using Mosey.Applicaton.Configuration;
+using Mosey.Core;
+using Mosey.Core.Imaging;
+using static Mosey.Application.IScanningService;
+using static Mosey.Core.Imaging.IImagingHost;
+
+namespace Mosey.Application
+{
+    public sealed class IntervalScanningService : IScanningService, IDisposable
+    {
+        private readonly IImagingHost _imagingHost;
+        private readonly IIntervalTimer _intervalTimer;
+        private readonly IFileSystem _fileSystem;
+        private readonly ILogger<IntervalScanningService> _log;
+        private readonly CancellationTokenSource _refreshDevicesCancellationSource = new();
+
+        private ScanningConfig _config;
+        private CancellationTokenSource _scanningCancellationSource = new();
+
+        public event EventHandler DevicesRefreshed;
+        public event EventHandler ScanRepetitionCompleted;
+        public event EventHandler ScanningCompleted;
+
+        public bool CreateDirectoryPath { get; set; } = true;
+
+        public TimeSpan DeviceRefreshInterval { get; set; } = TimeSpan.FromSeconds(1);
+
+        public IImagingDevices<IImagingDevice> Scanners => _imagingHost.ImagingDevices;
+
+        public bool IsScanRunning
+            => (_intervalTimer?.Enabled ?? false) || _imagingHost.ImagingDevices.IsImagingInProgress;
+
+        public int ScanRepetitionsCount
+            => _intervalTimer is not null ? _intervalTimer.RepetitionsCount : 0;
+
+        public DateTime StartTime
+            => _intervalTimer.StartTime;
+
+        public DateTime FinishTime
+            => _intervalTimer.FinishTime;
+
+        public IntervalScanningService(IImagingHost imagingHost, IIntervalTimer intervalTimer, IFileSystem fileSystem, ILogger<IntervalScanningService> logger)
+             : this(imagingHost, intervalTimer, new ScanningConfig(new DeviceConfig(), new ImagingDeviceConfig(), new ImageFileConfig()), fileSystem, logger)
+        {
+        }
+
+        public IntervalScanningService(IImagingHost imagingHost, IIntervalTimer intervalTimer, ScanningConfig config, IFileSystem fileSystem, ILogger<IntervalScanningService> logger)
+        {
+            _imagingHost = imagingHost;
+            _intervalTimer = intervalTimer;
+            _config = config;
+            _fileSystem = fileSystem;
+            _log = logger;
+
+            _intervalTimer.Tick += (_, _) => ScanAndSaveImages();
+            _intervalTimer.Complete += async (_, _) =>
+            {
+                await _imagingHost.WaitForImagingToComplete(_scanningCancellationSource.Token).ConfigureAwait(false);
+                ScanningCompleted.Invoke(this, EventArgs.Empty);
+            };
+
+            _ = BeginRefreshDevices(DeviceRefreshInterval, _refreshDevicesCancellationSource.Token).ConfigureAwait(false);
+        }
+
+        public void Dispose()
+        {
+            _refreshDevicesCancellationSource?.Cancel();
+            _refreshDevicesCancellationSource?.Dispose();
+            _scanningCancellationSource?.Cancel();
+            _scanningCancellationSource?.Dispose();
+            _intervalTimer?.Dispose();
+        }
+
+        /// <summary>
+        /// Initiate scanning with all available <see cref="ScanningDevice"/>s and save any captured images to disk
+        /// </summary>
+        /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
+        public async Task<IEnumerable<string>> ScanAndSaveImages()
+        {
+            _log.LogTrace($"Scan initiated with {nameof(ScanAndSaveImages)} method.");
+            var results = Enumerable.Empty<string>();
+            var args = EventArgs.Empty;
+
+            try
+            {
+                results = await ScanAndSaveImages(CreateDirectoryPath, _scanningCancellationSource.Token).ConfigureAwait(false);
+                args = new StringCollectionEventArgs(results);
+            }
+            catch (OperationCanceledException ex)
+            {
+
+                _log.LogInformation(ex, "Scanning cancelled before it could be completed");
+            }
+            catch (Exception ex)
+            {
+                _log.LogError("An error occured when attempting to aquire images, or when saving them to disk", ex);
+                args = new ExceptionEventArgs(ex);
+            }
+            finally
+            {
+                _log.LogTrace($"Scan completed with {nameof(ScanAndSaveImages)} method.");
+                ScanRepetitionCompleted.Invoke(this, args);
+            }
+
+            return results;
+        }
+
+        public void StartScanning(TimeSpan delay, TimeSpan interval, int repetitions)
+            => _intervalTimer.Start(delay, interval, repetitions);
+
+        public void StopScanning(bool waitForCompletion = true)
+        {
+            try
+            {
+                if (!waitForCompletion)
+                {
+                    _scanningCancellationSource?.Cancel();
+                }
+                _intervalTimer.Stop();
+            }
+            finally
+            {
+                _scanningCancellationSource = new CancellationTokenSource();
+            }
+        }
+
+        public void UpdateConfig(ScanningConfig config)
+        {
+            _config = config;
+            _imagingHost.UpdateConfig(_config.ImagingDeviceConfig);
+        }
+
+        /// <summary>
+        /// Starts a loop that continually refreshes the list of available scanners
+        /// </summary>
+        /// <param name="interval">The duration between refreshes</param>
+        /// <param name="cancellationToken">Used to stop the refresh loop</param>
+        internal async Task BeginRefreshDevices(TimeSpan interval, CancellationToken cancellationToken)
+        {
+            var args = EventArgs.Empty;
+            _log.LogTrace($"Device refresh initiated with {nameof(BeginRefreshDevices)}");
+
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    _log.LogTrace($"Initiating device refresh in {nameof(BeginRefreshDevices)}");
+                    var enableDevices = !IsScanRunning ? _config.DeviceConfig.EnableWhenConnected : _config.DeviceConfig.EnableWhenScanning;
+
+                    await Task.Delay(interval, cancellationToken).ConfigureAwait(false);
+                    await _imagingHost.RefreshDevicesAsync(enableDevices, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _log.LogWarning(ex, "Error while attempting to refresh devices.");
+                    args = new ExceptionEventArgs(ex);
+                }
+                finally
+                {
+                    _log.LogTrace($"Device refresh completed in {nameof(BeginRefreshDevices)}");
+                    DevicesRefreshed.Invoke(this, args);
+                }
+            }
+        }
+
+        internal async Task<IEnumerable<CapturedImage>> PerformImaging(bool useHighestResolution = false, CancellationToken cancellationToken = default)
+            => await _imagingHost.PerformImagingAsync(useHighestResolution, cancellationToken);
+
+        /// <summary>
+        /// Initiate scanning with all available <see cref="ScanningDevice"/>s and save any captured images to disk
+        /// </summary>
+        /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
+        internal async Task<IEnumerable<string>> ScanAndSaveImages(bool createDirectoryPath = true, CancellationToken cancellationToken = default)
+        {
+            var results = new List<string>();
+            var saveDateTime = DateTime.Now;
+
+            var images = (await PerformImaging(_config.DeviceConfig.UseHighestResolution, cancellationToken).ConfigureAwait(false)).ToList();
+
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                foreach (var scannedImage in images)
+                {
+                    var filePath = GetImageFilePath(scannedImage, _config.ImageFileConfig, images.Count > 1, saveDateTime);
+                    if (createDirectoryPath)
+                    {
+                        _fileSystem.Directory.CreateDirectory(_fileSystem.Path.GetDirectoryName(filePath));
+                    }
+                    _imagingHost.ImageFileHandler.SaveImage(scannedImage.Image, _config.ImageFileConfig.ImageFormat, filePath);
+
+                    results.Add(filePath);
+                }
+            }
+
+            return results;
+        }
+
+        internal static string GetImageFilePath(CapturedImage image, ImageFileConfig config, bool appendIndex, DateTime saveDateTime)
+        {
+            var index = appendIndex ? image.Index.ToString() : null;
+            var dateTime = saveDateTime.ToString(string.Join("_", config.DateFormat, config.TimeFormat));
+            var directory = Path.Combine(config.Directory, $"Scanner{image.DeviceId}");
+            var fileName = string.Join("_", config.Prefix, dateTime, index);
+
+            return Path.Combine(directory, Path.ChangeExtension(fileName, config.ImageFormat.ToString().ToLower()));
+        }
+    }
+}

@@ -9,8 +9,8 @@ namespace Mosey.Application
 {
     public static class ApplicationServices
     {
-        public static IConfiguration ApplicationSettings { get; } = CreateConfigurationFile(AppSettings.DefaultSettingsFileName, false);
-        public static IConfiguration UserSettings { get; } = CreateConfigurationFile(AppSettings.UserSettingsFileName, false);
+        public static IConfiguration ApplicationSettings { get; } = CreateConfigurationFile("Configuration", AppSettings.DefaultSettingsFileName, false);
+        public static IConfiguration UserSettings { get; } = CreateConfigurationFile("Configuration", AppSettings.UserSettingsFileName, false);
 
         public static IServiceCollection ConfigureApplicationSettings(this IServiceCollection service, IConfiguration appConfig, IConfiguration userConfig)
         {
@@ -22,23 +22,23 @@ namespace Mosey.Application
 
         public static IServiceCollection RegisterApplicationServices(this IServiceCollection service)
         {
-            // TODO: Move scanning timer to a scanning service
-            // service.AddTransient<IIntervalTimer, IntervalTimer>();
+            service.AddTransient<IIntervalTimer, IntervalTimer>();
             service.AddTransient<IImagingDevice, ScanningDevice>();
             service.AddSingleton<IImagingDevices<IImagingDevice>, ScanningDevices>();
             service.AddTransient<IImageHandler<SixLabors.ImageSharp.PixelFormats.Rgba32>, ImageHandler>();
             service.AddTransient<IImageFileHandler, ImageFileHandler>();
             service.AddSingleton<IImagingHost, DntScanningHost>();
+            service.AddSingleton<IScanningService, IntervalScanningService>();
 
             return service;
         }
 
-        internal static IConfiguration CreateConfigurationFile(string fileName, bool optional)
+        internal static IConfiguration CreateConfigurationFile(string directory, string fileName, bool optional)
         {
             // Register settings file
             IConfiguration config = new ConfigurationBuilder()
                 .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile(fileName, optional: optional, reloadOnChange: true)
+                .AddJsonFile(Path.Join(directory, fileName), optional: optional, reloadOnChange: true)
                 .AddEnvironmentVariables()
                 .Build();
 

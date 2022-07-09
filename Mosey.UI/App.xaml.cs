@@ -9,10 +9,12 @@ using Mosey.UI.Models.Dialog;
 using Mosey.UI.Services;
 using Mosey.UI.Services.Dialog;
 using Mosey.UI.ViewModels;
-using Mosey.Core;
 using Mosey.Application;
 using Mosey.Application.Configuration;
+using Mosey.Application.Imaging;
 using System.IO;
+using Mosey.Core;
+using Mosey.Core.Imaging;
 
 namespace Mosey.UI
 {
@@ -43,9 +45,8 @@ namespace Mosey.UI
                 })
 
                 .RegisterApplicationServices()
+
                 .AddSingleton<IFileSystem, FileSystem>()
-                // TODO: Move scanning timer to a scanning service
-                .AddTransient<IFactory<IIntervalTimer>, IntervalTimerFactory>()
                 .AddTransient<IFolderBrowserDialog, FolderBrowserDialog>()
                 .AddScoped<IDialogManager, DialogManager>()
 
