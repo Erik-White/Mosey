@@ -15,7 +15,7 @@ jobs:
     env:
       OUTPUT_PATH: ./bin/release/${{ matrix.targetplatform }}
       INSTALLER_NAME: ${{ github.event.repository.name }}-${{ github.event.release.tag_name }}-${{ matrix.targetplatform }}.exe
-      TARGET_PROJECT: ${{ github.event.repository.name }}.GUI
+      TARGET_PROJECT: ${{ github.event.repository.name }}.Gui
 
     steps:
     - name: Clone repo
