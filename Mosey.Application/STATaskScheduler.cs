@@ -14,7 +14,7 @@ namespace System.Threading.Tasks.Schedulers
     public sealed class StaTaskScheduler : TaskScheduler, IDisposable
     {
         /// <summary>Stores the queued tasks to be executed by our pool of STA threads.</summary>
-        private BlockingCollection<Task> _tasks;
+        private readonly BlockingCollection<Task> _tasks;
         /// <summary>The STA threads used by the scheduler.</summary>
         private readonly List<Thread> _threads;
 
@@ -104,7 +104,6 @@ namespace System.Threading.Tasks.Schedulers
 
                 // Cleanup
                 _tasks.Dispose();
-                _tasks = null;
             }
         }
     }

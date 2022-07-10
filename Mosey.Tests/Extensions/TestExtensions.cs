@@ -38,9 +38,10 @@ namespace Mosey.Tests.Extensions
             {
                 var ubody = (UnaryExpression)exp.Body;
                 body = ubody.Operand as MemberExpression;
+
             }
 
-            return body.Member.Name;
+            return body?.Member.Name ?? string.Empty;
         }
     }
 }

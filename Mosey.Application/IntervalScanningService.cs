@@ -20,9 +20,9 @@ namespace Mosey.Application
         private ScanningConfig _config;
         private CancellationTokenSource _scanningCancellationSource = new();
 
-        public event EventHandler DevicesRefreshed;
-        public event EventHandler ScanRepetitionCompleted;
-        public event EventHandler ScanningCompleted;
+        public event EventHandler? DevicesRefreshed;
+        public event EventHandler? ScanRepetitionCompleted;
+        public event EventHandler? ScanningCompleted;
 
         public bool CreateDirectoryPath { get; set; } = true;
 

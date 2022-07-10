@@ -17,7 +17,7 @@ namespace Mosey.Application.Imaging
 
         public IImageFileHandler ImageFileHandler { get; private set; }
 
-        public DntScanningHost(IImagingDevices<IImagingDevice> imagingDevices, IImageFileHandler imageFileHandler, ImagingDeviceConfig deviceConfig = null)
+        public DntScanningHost(IImagingDevices<IImagingDevice> imagingDevices, IImageFileHandler imageFileHandler, ImagingDeviceConfig? deviceConfig = null)
         {
             _deviceConfig = deviceConfig ?? new ImagingDeviceConfig();
 

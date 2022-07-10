@@ -30,7 +30,7 @@ namespace Mosey.Application.Imaging
         /// </summary>
         /// <param name="deviceConfig">Used to initialize the collection's <see cref="ScanningDevice"/>s</param>
         /// <param name="systemDevices">An <see cref="ISystemImagingDevices"/> instance that provide access to the WIA driver devices</param>
-        public ScanningDevices(ImagingDeviceConfig deviceConfig = null, ISystemImagingDevices<ScannerSettings> systemDevices = null)
+        public ScanningDevices(ImagingDeviceConfig? deviceConfig = null, ISystemImagingDevices<ScannerSettings>? systemDevices = null)
         {
             _systemDevices = systemDevices ?? new DntScannerDevices();
             GetDevices(deviceConfig ?? new ImagingDeviceConfig());
@@ -41,7 +41,7 @@ namespace Mosey.Application.Imaging
         /// </summary>
         /// <param name="deviceID">A unique <see cref="IDevice.DeviceID"/> to match to a device listed by the WIA driver</param>
         /// <returns>A <see cref="ScanningDevice"/> instance matching the <paramref name="deviceID"/>, or <see langword="null"/> if no matching device can be found</returns>
-        public ScanningDevice AddDevice(string deviceID)
+        public ScanningDevice? AddDevice(string deviceID)
             => AddDevice(deviceID, null);
 
         /// <inheritdoc/>
@@ -73,9 +73,9 @@ namespace Mosey.Application.Imaging
         /// <param name="config"><see cref="IImagingDeviceConfig"/> settings for the returned <see cref="ScanningDevice"/></param>
         /// <param name="connectRetries">The number of attempts to retry connecting to the WIA driver</param>
         /// <returns>A <see cref="ScanningDevice"/> instance matching the <paramref name="deviceID"/>, or <see langword="null"/> if no matching device can be found</returns>
-        public ScanningDevice AddDevice(string deviceID, ImagingDeviceConfig config)
+        public ScanningDevice? AddDevice(string deviceID, ImagingDeviceConfig config)
         {
-            ScanningDevice device = null;
+            ScanningDevice? device = null;
 
             // Attempt to connect a device matching the deviceID
             var settings = _systemDevices.GetDeviceSettings().FirstOrDefault(x => x.Id == deviceID);

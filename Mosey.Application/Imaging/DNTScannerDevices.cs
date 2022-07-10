@@ -95,7 +95,7 @@ namespace Mosey.Application.Imaging
         }
 
         /// <inheritdoc cref="WIARetry{T}(Func{T}, int, TimeSpan, SemaphoreSlim)"/>
-        private static void WIARetry(Action method, int connectRetries, TimeSpan retryDelay, SemaphoreSlim semaphore = null)
+        private static void WIARetry(Action method, int connectRetries, TimeSpan retryDelay, SemaphoreSlim? semaphore = null)
         {
             // Wrap the Action in a Func with a dummy return value
             bool methodFunc() { method(); return true; }
@@ -121,9 +121,9 @@ namespace Mosey.Application.Imaging
         /// <returns></returns>
         /// <exception cref="COMException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
         /// <exception cref="NullReferenceException">If an error occurs within the specified number of <paramref name="connectRetries"/></exception>
-        private static T WIARetry<T>(Func<T> method, int connectRetries, TimeSpan retryDelay, SemaphoreSlim semaphore = null)
+        private static T WIARetry<T>(Func<T> method, int connectRetries, TimeSpan retryDelay, SemaphoreSlim? semaphore = null)
         {
-            T result = default;
+            T? result = default;
             semaphore?.Wait();
 
             try

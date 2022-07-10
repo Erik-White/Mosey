@@ -14,7 +14,7 @@ namespace Mosey.Tests.AutoData
 
         public CollectionSizeAttribute(int size) => _size = size;
 
-        public override ICustomization GetCustomization(ParameterInfo parameter)
+        public override ICustomization? GetCustomization(ParameterInfo parameter)
         {
             if (parameter is null)
             {
@@ -33,7 +33,7 @@ namespace Mosey.Tests.AutoData
             }
 
             var customizationType = typeof(CollectionSizeCustomization<>).MakeGenericType(objectType);
-            return (ICustomization)Activator.CreateInstance(customizationType, parameter, _size);
+            return (ICustomization?)Activator.CreateInstance(customizationType, parameter, _size);
         }
 
         public class CollectionSizeCustomization<T> : ICustomization

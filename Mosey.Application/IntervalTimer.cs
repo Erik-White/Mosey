@@ -16,8 +16,8 @@ namespace Mosey.Application
         public int RepetitionsCount { get; private set; }
         public bool Enabled => timer is not null;
         public bool Paused { get; private set; }
-        public event EventHandler Tick;
-        public event EventHandler Complete;
+        public event EventHandler? Tick;
+        public event EventHandler? Complete;
 
         private Timer? timer;
         private TimeSpan intervalRemaining;
@@ -92,7 +92,7 @@ namespace Mosey.Application
         /// Timer callback method. Continues the timer until the maximum repetition count is reached
         /// </summary>
         /// <param name="state"></param>
-        private void TimerInterval(object state)
+        private void TimerInterval(object? state)
         {
             if (RepetitionsCount++ <= Repetitions || Repetitions == -1)
             {

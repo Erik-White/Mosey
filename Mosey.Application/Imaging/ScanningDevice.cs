@@ -152,10 +152,10 @@ namespace Mosey.Application.Imaging
             }
         }
 
-        public bool Equals(IImagingDevice device)
+        public bool Equals(IImagingDevice? device)
             => device is not null && DeviceID == device.DeviceID;
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
             => Equals(obj as ScanningDevice);
 
         public override int GetHashCode()
