@@ -56,8 +56,11 @@ namespace Mosey.Application.Imaging
             {
                 // Unpack the aggregate
                 var innerException = aggregateEx.Flatten().InnerExceptions.FirstOrDefault();
-                // Ensure stack trace is preserved and rethrow
-                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(innerException).Throw();
+                if (innerException is not null)
+                {
+                    // Ensure stack trace is preserved and rethrow
+                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(innerException).Throw();
+                }
             }
             finally
             {
@@ -105,53 +108,44 @@ namespace Mosey.Application.Imaging
 
         private IEnumerable<CapturedImage> PerformImaging(bool useHighestResolution = false, CancellationToken cancellationToken = default)
         {
-            try
+            // Order devices by ID to provide clearer feedback to users
+            foreach (var scanner in ImagingDevices.Devices.OrderBy(o => o.DeviceID).ToList())
             {
-                _semaphore.Wait(cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
 
-                // Order devices by ID to provide clearer feedback to users
-                foreach (var scanner in ImagingDevices.Devices.OrderBy(o => o.DeviceID).ToList())
+                try
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    try
+                    if (scanner.IsConnected && scanner.IsEnabled && !scanner.IsImaging)
                     {
-                        if (scanner.IsConnected && scanner.IsEnabled && !scanner.IsImaging)
+                        // Update image config in case of changes
+                        scanner.ImageSettings = _deviceConfig;
+
+                        if (useHighestResolution)
                         {
-                            // Update image config in case of changes
-                            scanner.ImageSettings = _deviceConfig;
-
-                            if (useHighestResolution)
-                            {
-                                // Override the config and just use the highest available resolution
-                                scanner.ImageSettings = scanner.ImageSettings with { Resolution = scanner.SupportedResolutions.Max() };
-                            }
-
-                            // Run the scanner and retrieve the image(s) to memory
-                            // A single scan can generate multiple images, depending on scanner type and settings
-                            scanner.PerformImaging();
+                            // Override the config and just use the highest available resolution
+                            scanner.ImageSettings = scanner.ImageSettings with { Resolution = scanner.SupportedResolutions.Max() };
                         }
-                    }
-                    catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException or InvalidOperationException)
-                    {
-                        // Device will show as disconnected, no images retrieved
-                    }
 
-                    int imageIndex = 0;
-                    foreach (var image in scanner.Images)
-                    {
-                        yield return new CapturedImage
-                        {
-                            Image = image,
-                            DeviceId = scanner.ID.ToString(),
-                            Index = imageIndex++
-                        };
+                        // Run the scanner and retrieve the image(s) to memory
+                        // A single scan can generate multiple images, depending on scanner type and settings
+                        scanner.PerformImaging();
                     }
                 }
-            }
-            finally
-            {
-                _semaphore.Release();
+                catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException or InvalidOperationException)
+                {
+                    // Device will show as disconnected, no images retrieved
+                }
+
+                int imageIndex = 0;
+                foreach (var image in scanner.Images)
+                {
+                    yield return new CapturedImage
+                    {
+                        Image = image,
+                        DeviceId = scanner.ID.ToString(),
+                        Index = imageIndex++
+                    };
+                }
             }
         }
     }

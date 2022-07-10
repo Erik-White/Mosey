@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using DNTScanner.Core;
 using Mosey.Core;
 using Mosey.Core.Imaging;
@@ -22,7 +19,6 @@ namespace Mosey.Application.Imaging
 
         private readonly ScannerSettings _scannerSettings;
         private readonly ISystemImagingDevices<ScannerSettings> _systemDevices;
-        private readonly IImageHandler<Rgba32> _imageHandler;
 
         public string Name => _scannerSettings.Name;
 
@@ -79,7 +75,7 @@ namespace Mosey.Application.Imaging
         /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
         /// <param name="config">Device settings used when capturing an image</param>
         public ScanningDevice(ScannerSettings settings, ImagingDeviceConfig config)
-            : this(settings, config, null, null) { }
+            : this(settings, config, new DntScannerDevices()) { }
 
         /// <summary>
         /// Initialize a new instance using a <see cref="ScannerSettings"/> instance that represents a physical scanner.
@@ -87,12 +83,11 @@ namespace Mosey.Application.Imaging
         /// <param name="settings">A <see cref="ScannerSettings"/> instance representing a physical device</param>
         /// <param name="config">Device settings used when capturing an image</param>
         /// <param name="systemDevices">An <see cref="ISystemImagingDevices"/> instance that provide access to the WIA driver devices</param>
-        public ScanningDevice(ScannerSettings settings, ImagingDeviceConfig config, ISystemImagingDevices<ScannerSettings> systemDevices, IImageHandler<Rgba32> imageHandler)
+        public ScanningDevice(ScannerSettings settings, ImagingDeviceConfig config, ISystemImagingDevices<ScannerSettings> systemDevices)
         {
             _scannerSettings = settings;
             ImageSettings = config;
-            _systemDevices = systemDevices ?? new DntScannerDevices();
-            _imageHandler = imageHandler;
+            _systemDevices = systemDevices;
         }
 
         public void ClearImages()
@@ -124,8 +119,7 @@ namespace Mosey.Application.Imaging
             }
 
             // Default settings if none provided
-            var deviceConfig = ImageSettings;
-            deviceConfig ??= new ImagingDeviceConfig
+            var deviceConfig = ImageSettings ?? new ImagingDeviceConfig
             {
                 Brightness = 1,
                 Contrast = 1,
@@ -142,21 +136,9 @@ namespace Mosey.Application.Imaging
                 ClearImages();
 
                 // Store images for processing etc
-                foreach (var imageContent in images)
+                foreach (var image in images)
                 {
-                    try
-                    {
-                        // Convert image to PNG format before storing byte array
-                        // Greatly reduces memory footprint compared to raw BMP
-                        // TODO: Convert before saving?
-                        //var image = _imageHandler.ConvertToFormat(imageContent, IImagingDevice.ImageFormat.Png);
-                        Images.Add(imageContent);
-                    }
-                    catch (ArgumentException)
-                    {
-                        // Store the image in its original format
-                        Images.Add(imageContent);
-                    }
+                    Images.Add(image);
                 }
             }
             catch (Exception ex) when (ex is COMException or InvalidOperationException)

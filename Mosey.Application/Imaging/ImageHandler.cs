@@ -1,6 +1,6 @@
-﻿using System;
-using Mosey.Core.Imaging;
+﻿using Mosey.Core.Imaging;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Bmp;
 using SixLabors.ImageSharp.Formats.Gif;
@@ -58,13 +58,13 @@ namespace Mosey.Application.Imaging
 
         public Image<Rgba32> ConvertToFormat(Image<Rgba32> image, IImagingDevice.ImageFormat imageFormat)
         {
-            using (var stream = new System.IO.MemoryStream())
+            using (var stream = new MemoryStream())
             {
                 var encoder = GetImageEncoder(imageFormat);
                 ApplyEncoderDefaults(encoder);
 
                 image.Save(stream, encoder);
-                stream.Seek(0, System.IO.SeekOrigin.Begin);
+                stream.Seek(0,SeekOrigin.Begin);
 
                 return Image.Load<Rgba32>(stream);
             }
@@ -72,6 +72,20 @@ namespace Mosey.Application.Imaging
 
         public Image<Rgba32> LoadImage(byte[] imageContent)
             => Image.Load<Rgba32>(imageContent);
+
+        public byte[] GetImageBytes(Image<Rgba32> image)
+        {
+            var format = image.GetConfiguration().ImageFormats.FirstOrDefault();
+            if (format is null)
+            {
+                throw new InvalidOperationException("Unable to detect image format.");
+            }
+
+            using var stream = new MemoryStream();
+            image.Save(stream, format);
+
+            return stream.ToArray();
+        }
 
         public IImageEncoder GetImageEncoder(IImagingDevice.ImageFormat imageFormat)
             => imageFormat switch

@@ -15,6 +15,7 @@ namespace Mosey.Application
         private readonly IFileSystem _fileSystem;
         private readonly ILogger<IntervalScanningService> _log;
         private readonly CancellationTokenSource _refreshDevicesCancellationSource = new();
+        private readonly SemaphoreSlim _semaphore = new(1, 1);
 
         private ScanningConfig _config;
         private CancellationTokenSource _scanningCancellationSource = new();
@@ -33,7 +34,7 @@ namespace Mosey.Application
             => (_intervalTimer?.Enabled ?? false) || _imagingHost.ImagingDevices.IsImagingInProgress;
 
         public int ScanRepetitionsCount
-            => _intervalTimer is not null ? _intervalTimer.RepetitionsCount : 0;
+            => _intervalTimer?.RepetitionsCount ?? 0;
 
         public DateTime StartTime
             => _intervalTimer.StartTime;
@@ -54,18 +55,15 @@ namespace Mosey.Application
             _fileSystem = fileSystem;
             _log = logger;
 
-            _intervalTimer.Tick += (_, _) => ScanAndSaveImages();
-            _intervalTimer.Complete += async (_, _) =>
-            {
-                await _imagingHost.WaitForImagingToComplete(_scanningCancellationSource.Token).ConfigureAwait(false);
-                ScanningCompleted.Invoke(this, EventArgs.Empty);
-            };
+            _intervalTimer.Tick += async (_, _) => await ScanAndSaveImages();
+            _intervalTimer.Complete += OnScanningCompleted;
 
             _ = BeginRefreshDevices(DeviceRefreshInterval, _refreshDevicesCancellationSource.Token).ConfigureAwait(false);
         }
 
         public void Dispose()
         {
+            _intervalTimer.Complete -= OnScanningCompleted;
             _refreshDevicesCancellationSource?.Cancel();
             _refreshDevicesCancellationSource?.Dispose();
             _scanningCancellationSource?.Cancel();
@@ -85,6 +83,7 @@ namespace Mosey.Application
 
             try
             {
+                await _semaphore.WaitAsync(_scanningCancellationSource.Token);
                 results = await ScanAndSaveImages(CreateDirectoryPath, _scanningCancellationSource.Token).ConfigureAwait(false);
                 args = new StringCollectionEventArgs(results);
             }
@@ -102,6 +101,7 @@ namespace Mosey.Application
             {
                 _log.LogTrace($"Scan completed with {nameof(ScanAndSaveImages)} method.");
                 ScanRepetitionCompleted.Invoke(this, args);
+                _semaphore.Release();
             }
 
             return results;
@@ -168,11 +168,32 @@ namespace Mosey.Application
         internal async Task<IEnumerable<CapturedImage>> PerformImaging(bool useHighestResolution = false, CancellationToken cancellationToken = default)
             => await _imagingHost.PerformImagingAsync(useHighestResolution, cancellationToken);
 
-        /// <summary>
-        /// Initiate scanning with all available <see cref="ScanningDevice"/>s and save any captured images to disk
-        /// </summary>
-        /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
-        internal async Task<IEnumerable<string>> ScanAndSaveImages(bool createDirectoryPath = true, CancellationToken cancellationToken = default)
+        internal static string GetImageFilePath(CapturedImage image, ImageFileConfig config, bool appendIndex, DateTime saveDateTime)
+        {
+            var index = appendIndex ? image.Index.ToString() : null;
+            var dateTime = saveDateTime.ToString(string.Join("_", config.DateFormat, config.TimeFormat));
+            var directory = Path.Combine(config.Directory, $"Scanner{image.DeviceId}");
+            var fileName = string.Join("_", config.Prefix, dateTime, index);
+
+            return Path.Combine(directory, Path.ChangeExtension(fileName, config.ImageFormat.ToString().ToLower()));
+        }
+
+        private async void OnScanningCompleted(object? sender, EventArgs e)
+        {
+            try
+            {
+                await _semaphore.WaitAsync(_scanningCancellationSource.Token);
+                await _imagingHost.WaitForImagingToComplete(_scanningCancellationSource.Token).ConfigureAwait(false);
+                ScanningCompleted.Invoke(this, EventArgs.Empty);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        /// <inheritdoc cref="ScanAndSaveImages"/>
+        private async Task<IEnumerable<string>> ScanAndSaveImages(bool createDirectoryPath, CancellationToken cancellationToken)
         {
             var results = new List<string>();
             var saveDateTime = DateTime.Now;
@@ -195,16 +216,6 @@ namespace Mosey.Application
             }
 
             return results;
-        }
-
-        internal static string GetImageFilePath(CapturedImage image, ImageFileConfig config, bool appendIndex, DateTime saveDateTime)
-        {
-            var index = appendIndex ? image.Index.ToString() : null;
-            var dateTime = saveDateTime.ToString(string.Join("_", config.DateFormat, config.TimeFormat));
-            var directory = Path.Combine(config.Directory, $"Scanner{image.DeviceId}");
-            var fileName = string.Join("_", config.Prefix, dateTime, index);
-
-            return Path.Combine(directory, Path.ChangeExtension(fileName, config.ImageFormat.ToString().ToLower()));
         }
     }
 }

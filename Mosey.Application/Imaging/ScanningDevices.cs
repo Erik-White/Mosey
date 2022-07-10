@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using DNTScanner.Core;
+﻿using DNTScanner.Core;
 using Mosey.Core;
 using Mosey.Core.Imaging;
 

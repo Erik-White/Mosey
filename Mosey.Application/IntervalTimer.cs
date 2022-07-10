@@ -14,16 +14,21 @@ namespace Mosey.Application
         public TimeSpan Interval { get; private set; } = TimeSpan.FromSeconds(1);
         public int Repetitions { get; private set; } = -1;
         public int RepetitionsCount { get; private set; }
-        public bool Enabled => (timer is not null);
+        public bool Enabled => timer is not null;
         public bool Paused { get; private set; }
         public event EventHandler Tick;
         public event EventHandler Complete;
 
-        private Timer timer;
+        private Timer? timer;
         private TimeSpan intervalRemaining;
         private readonly Stopwatch stopWatch = new();
 
         public IntervalTimer()
+        {
+        }
+
+        public IntervalTimer(IntervalTimerConfig config)
+            : this(config.Delay, config.Interval, config.Repetitions)
         {
         }
 
@@ -32,13 +37,6 @@ namespace Mosey.Application
             Delay = delay;
             Interval = interval;
             Repetitions = repetitions;
-        }
-
-        public IntervalTimer(IntervalTimerConfig config)
-        {
-            Delay = config.Delay;
-            Interval = config.Interval;
-            Repetitions = config.Repetitions;
         }
 
         /// <summary>
@@ -96,17 +94,14 @@ namespace Mosey.Application
         /// <param name="state"></param>
         private void TimerInterval(object state)
         {
-            if (++RepetitionsCount <= Repetitions || Repetitions == -1)
+            if (RepetitionsCount++ <= Repetitions || Repetitions == -1)
             {
-                // Notify event subscribers
+                // Notify that a repetition was completed
                 OnTick(EventArgs.Empty);
                 Resume();
-                if (RepetitionsCount == Repetitions)
-                {
-                    Stop();
-                }
             }
-            else
+
+            if (RepetitionsCount == Repetitions)
             {
                 // Finished
                 Stop();

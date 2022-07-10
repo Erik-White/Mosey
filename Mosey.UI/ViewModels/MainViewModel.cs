@@ -195,6 +195,10 @@ namespace Mosey.UI.ViewModels
 
         public void Dispose()
         {
+            _scanningService.ScanRepetitionCompleted -= ScanRepetition_Completed;
+            _scanningService.ScanningCompleted -= Scanning_Complete;
+            _scanningService.DevicesRefreshed -= ScanningDevices_Refreshed;
+
             _cancelScanTokenSource?.Cancel();
             _cancelScanTokenSource?.Dispose();
         }
@@ -288,6 +292,7 @@ namespace Mosey.UI.ViewModels
                 {
                     // Wait for current scan operation to complete, then exit
                     _log.LogTrace($"Waiting for scanning operations to complete before shutting down from {nameof(OnClosingAsync)}.");
+                    IsWaiting = true;
                     StopScanning();
                 }
             }
@@ -316,6 +321,7 @@ namespace Mosey.UI.ViewModels
         /// </summary>
         public async Task StartScanningWithDialog()
         {
+            // TODO: Move time and space estimates to ScanningService
             // Check that interval time is sufficient for selected resolution
             var imagingTime = ScanningDevices.Devices.Count(d => d.IsEnabled) * _appSettings.CurrentValue.Device.GetResolutionMetadata(_appSettings.CurrentValue.Image.Resolution).ImagingTime;
             if (imagingTime * 1.5 > TimeSpan.FromMinutes(ScanInterval) && !await _dialog.ImagingTimeDialog(TimeSpan.FromMinutes(ScanInterval), imagingTime))
@@ -412,22 +418,33 @@ namespace Mosey.UI.ViewModels
             _log.LogInformation("Scanning complete.");
         }
 
-        private async void ScanRepetitionCompleted(object sender, EventArgs e)
+        private async void ScanRepetition_Completed(object sender, EventArgs e)
         {
-            _log.LogTrace($"{nameof(ScanRepetitionCompleted)} event.");
+            _log.LogTrace($"{nameof(ScanRepetition_Completed)} event.");
 
             if (e is ExceptionEventArgs exceptionEventArgs)
             {
                 // An unhandled error occurred, notify the user and cancel scanning
                 _log.LogError(exceptionEventArgs.Exception, exceptionEventArgs.Exception.Message);
                 await _dialog.ExceptionDialog(exceptionEventArgs.Exception);
-                IsWaiting = true;
                 StopScanning(false);
             }
 
             // Update progress
             RaisePropertyChanged(nameof(ScanNextTime));
             RaisePropertyChanged(nameof(ScanRepetitionsCount));
+        }
+
+        private async void ScanningDevices_Refreshed(object sender, EventArgs e)
+        {
+            if (e is ExceptionEventArgs exceptionEventArgs)
+            {
+                await _dialog.ExceptionDialog(exceptionEventArgs.Exception, 5000, CancellationToken.None).ConfigureAwait(false);
+            }
+
+            RaisePropertyChanged(nameof(ScanningDevices));
+            RaisePropertyChanged(nameof(StartScanCommand));
+            RaisePropertyChanged(nameof(StartStopScanCommand));
         }
 
         /// <summary>
@@ -482,7 +499,7 @@ namespace Mosey.UI.ViewModels
 
             // Register event callbacks
             _appSettings.OnChange(UpdateConfig);
-            _scanningService.ScanRepetitionCompleted += ScanRepetitionCompleted;
+            _scanningService.ScanRepetitionCompleted += ScanRepetition_Completed;
             _scanningService.ScanningCompleted += Scanning_Complete;
             _scanningService.DevicesRefreshed += ScanningDevices_Refreshed;
 
@@ -492,18 +509,6 @@ namespace Mosey.UI.ViewModels
             ScanningDevices.EnableAll();
 
             _log.LogTrace($"ViewModel initialization complete.");
-        }
-
-        private async void ScanningDevices_Refreshed(object sender, EventArgs e)
-        {
-            if (e is ExceptionEventArgs exceptionEventArgs)
-            {
-                await _dialog.ExceptionDialog(exceptionEventArgs.Exception, 5000, CancellationToken.None).ConfigureAwait(false);
-            }
-
-            RaisePropertyChanged(nameof(ScanningDevices));
-            RaisePropertyChanged(nameof(StartScanCommand));
-            RaisePropertyChanged(nameof(StartStopScanCommand));
         }
     }
 }
