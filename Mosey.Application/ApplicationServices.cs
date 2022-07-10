@@ -28,7 +28,7 @@ namespace Mosey.Application
             service.AddTransient<IImageHandler<SixLabors.ImageSharp.PixelFormats.Rgba32>, ImageHandler>();
             service.AddTransient<IImageFileHandler, ImageFileHandler>();
             service.AddSingleton<IImagingHost, DntScanningHost>();
-            service.AddSingleton<IScanningService, IntervalScanningService>();
+            service.AddSingleton<IIntervalScanningService, IntervalScanningService>();
 
             return service;
         }

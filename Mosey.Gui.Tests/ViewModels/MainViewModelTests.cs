@@ -92,7 +92,7 @@ namespace Mosey.Gui.ViewModels.Tests
             //}
 
             [Theory, MainViewModelAutoData]
-            public async Task RaisePropertyChanged([Frozen] IScanningService scanningService, MainViewModel sut)
+            public async Task RaisePropertyChanged([Frozen] IIntervalScanningService scanningService, MainViewModel sut)
             {
                 using (var monitoredSubject = sut.Monitor())
                 {

@@ -8,7 +8,7 @@ using static Mosey.Core.Imaging.IImagingHost;
 
 namespace Mosey.Application
 {
-    public sealed class IntervalScanningService : IScanningService, IDisposable
+    public sealed class IntervalScanningService : IIntervalScanningService, IDisposable
     {
         private readonly IImagingHost _imagingHost;
         private readonly IIntervalTimer _intervalTimer;

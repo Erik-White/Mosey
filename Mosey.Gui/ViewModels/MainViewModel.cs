@@ -20,7 +20,7 @@ namespace Mosey.Gui.ViewModels
 {
     public sealed class MainViewModel : ViewModelBase, IViewModelParent<IViewModel>, IClosing, IDisposable
     {
-        private readonly IScanningService _scanningService;
+        private readonly IIntervalScanningService _scanningService;
         private readonly IViewModel _settingsViewModel;
         private readonly Services.UIServices _uiServices;
         private readonly IOptionsMonitor<AppSettings> _appSettings;
@@ -174,7 +174,7 @@ namespace Mosey.Gui.ViewModels
         #endregion Properties
 
         public MainViewModel(
-            IScanningService scanningService,
+            IIntervalScanningService scanningService,
             Services.UIServices uiServices,
             IViewModel settingsViewModel,
             IOptionsMonitor<AppSettings> appSettings,
@@ -390,7 +390,7 @@ namespace Mosey.Gui.ViewModels
             appSettings.ImageFile = settings.ImageFile with { };
             appSettings.Device = settings.Device with { };
 
-            _scanningService.UpdateConfig(new IScanningService.ScanningConfig(appSettings.Device, appSettings.Image, appSettings.ImageFile));
+            _scanningService.UpdateConfig(new IIntervalScanningService.ScanningConfig(appSettings.Device, appSettings.Image, appSettings.ImageFile));
 
             RaisePropertyChanged(nameof(ScanInterval));
             RaisePropertyChanged(nameof(ScanRepetitions));

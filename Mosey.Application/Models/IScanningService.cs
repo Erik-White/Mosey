@@ -5,19 +5,10 @@ namespace Mosey.Application
 {
     public interface IScanningService
     {
-        event EventHandler DevicesRefreshed;
-        event EventHandler ScanRepetitionCompleted;
-        event EventHandler ScanningCompleted;
-
         IImagingDevices<IImagingDevice> Scanners { get; }
         bool IsScanRunning { get; }
-        int ScanRepetitionsCount { get; }
-        DateTime StartTime { get; }
-        DateTime FinishTime { get; }
 
-        void StartScanning(TimeSpan delay, TimeSpan interval, int repetitions);
-
-        void StopScanning(bool waitForCompletion = true);
+        Task<IEnumerable<string>> ScanAndSaveImages();
 
         void UpdateConfig(ScanningConfig config);
 

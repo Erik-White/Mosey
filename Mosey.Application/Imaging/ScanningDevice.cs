@@ -3,7 +3,6 @@ using DNTScanner.Core;
 using Mosey.Core;
 using Mosey.Core.Imaging;
 using Mosey.Application.Imaging.Extensions;
-using SixLabors.ImageSharp.PixelFormats;
 
 namespace Mosey.Application.Imaging
 {
