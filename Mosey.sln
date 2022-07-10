@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mosey.UI", "Mosey.UI\Mosey.UI.csproj", "{B1DD8B7D-FFF0-406C-9765-14848EAB126F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mosey.Gui", "Mosey.Gui\Mosey.Gui.csproj", "{B1DD8B7D-FFF0-406C-9765-14848EAB126F}"
 	ProjectSection(ProjectDependencies) = postProject
 		{45B4F94A-2397-4E40-B944-FC170D83698D} = {45B4F94A-2397-4E40-B944-FC170D83698D}
 	EndProjectSection
@@ -11,7 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mosey.Core", "Mosey.Core\Mosey.Core.csproj", "{45B4F94A-2397-4E40-B944-FC170D83698D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mosey.UI.Tests", "Mosey.UI.Tests\Mosey.UI.Tests.csproj", "{B8E03FAD-4F53-4C55-8AE3-F1CC62C5390A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mosey.Gui.Tests", "Mosey.Gui.Tests\Mosey.Gui.Tests.csproj", "{B8E03FAD-4F53-4C55-8AE3-F1CC62C5390A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mosey.Application", "Mosey.Application\Mosey.Application.csproj", "{0A9DB5A1-ABF8-4F09-A44D-0AC331C1D0A9}"
 EndProject

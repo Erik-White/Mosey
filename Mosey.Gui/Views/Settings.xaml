@@ -1,0 +1,81 @@
+﻿<UserControl x:Class="Mosey.Gui.Views.Settings"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:Views="clr-namespace:Mosey.Gui.Views"
+             xmlns:Converters="clr-namespace:Mosey.Gui.Views.Converters"
+             xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+             xmlns:IconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+             mc:Ignorable="d"
+             Style="{StaticResource StyleBase}"
+             d:DesignHeight="450" d:DesignWidth="800">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="{StaticResource Margin.Vertical.Default}">
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Top">
+                <StackPanel.Resources>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource TextBlockNormal}">
+                        <Setter Property="Margin" Value="0" />
+                        <Setter Property="Margin" Value="{StaticResource Margin.Horizontal.Default}" />
+                        <Setter Property="Views:Margin.Top" Value="{StaticResource Wide}" />
+                        <Setter Property="Views:Margin.Bottom" Value="{StaticResource Tiny}" />
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Foreground" Value="{StaticResource FontColor.Heading}" />
+                    </Style>
+                    <Style TargetType="TextBox" BasedOn="{StaticResource MahApps.Styles.TextBox}">
+                        <Setter Property="VerticalContentAlignment" Value="Center" />
+                        <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Gray5}" />
+                        <Setter Property="Foreground" Value="{StaticResource FontColor.Dark}" />
+                        <Setter Property="FontSize" Value="{StaticResource FontSize.Default}" />
+                    </Style>
+                    <Style TargetType="ComboBox" BasedOn="{StaticResource ComboBoxNormal}">
+                        <Style.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                    <Style TargetType="Controls:ToggleSwitch" BasedOn="{StaticResource ToggleSwitchBase}">
+                        <Setter Property="Margin" Value="0" />
+                        <Setter Property="Margin" Value="{StaticResource Margin.Horizontal.Default}" />
+                        <Setter Property="Views:Margin.Top" Value="{StaticResource Wide}" />
+                        <Setter Property="Views:Margin.Bottom" Value="{StaticResource Tiny}" />
+                        <Setter Property="Views:Margin.Right" Value="{StaticResource Narrow}" />
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Foreground" Value="{StaticResource FontColor.Heading}" />
+                    </Style>
+                    <Style TargetType="Controls:NumericUpDown" BasedOn="{StaticResource NumericUpDownNormal}">
+                        <Setter Property="Minimum" Value="1" />
+                        <Setter Property="Margin" Value="0" />
+                        <Setter Property="Views:Margin.Top" Value="{StaticResource Tiny}" />
+                    </Style>
+                </StackPanel.Resources>
+                <TextBlock Text="Default save path" />
+                <DockPanel Margin="{StaticResource Margin.Horizontal.Default}">
+                    <Button DockPanel.Dock="Right" Command="{Binding SelectFolderCommand}" HorizontalAlignment="Right" Cursor="Hand">
+                        <Label Style="{StaticResource IconSmall}" Margin="{StaticResource Margin.Horizontal.Tiny}">
+                            <IconPacks:Material Kind="DotsHorizontal" Width="20" Height="20" />
+                        </Label>
+                    </Button>
+                    <TextBox Text="{Binding Path=ImageSavePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Stretch" Views:Margin.Right="{StaticResource Narrow}" />
+                </DockPanel>
+                <Controls:ToggleSwitch OnContent="Delay scanning by interval duration" OffContent="{Binding RelativeSource={RelativeSource Self}, Path=OnContent}" IsOn="{Binding Path=ScanningDelay, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <DockPanel Margin="{StaticResource Margin.Horizontal.Default}" Views:Margin.Top="{StaticResource Wide}">
+                    <TextBlock Text="Default scan interval (minutes)" DockPanel.Dock="Left" Margin="0" Views:Margin.Top="{StaticResource Tiny}" VerticalAlignment="Center" />
+                    <Controls:NumericUpDown Value="{Binding Path=ScanInterval, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Right" />
+                </DockPanel>
+                <DockPanel Margin="{StaticResource Margin.Horizontal.Default}" Views:Margin.Top="{StaticResource Wide}">
+                    <TextBlock Text="Default total repetitions" DockPanel.Dock="Left" Margin="0" Views:Margin.Top="{StaticResource Tiny}" VerticalAlignment="Center" />
+                    <Controls:NumericUpDown Value="{Binding Path=ScanRepetitions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Right" />
+                </DockPanel>
+                <Controls:ToggleSwitch OnContent="Enable scanners when connected" OffContent="{Binding RelativeSource={RelativeSource Self}, Path=OnContent}" IsOn="{Binding Path=ScannersEnableOnConnect, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Controls:ToggleSwitch OnContent="Enable new scanners during scanning" OffContent="{Binding RelativeSource={RelativeSource Self}, Path=OnContent}" IsOn="{Binding Path=ScannersEnableWhenScanning, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Controls:ToggleSwitch OnContent="Scan using highest available resolution" OffContent="Scan with selected resolution" IsOn="{Binding Path=ScanHighestResolution, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="True" />
+                <ComboBox Text="Select resolution" ItemsSource="{Binding StandardResolutions}" SelectedValue="{Binding DefaultResolution, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Path=ScanHighestResolution, Converter={Converters:BoolToInvertedBoolConverter}}" IsSynchronizedWithCurrentItem="True" IsEditable="False" HorizontalAlignment="Right" />
+            </StackPanel>
+            <Label DockPanel.Dock="Bottom" Content="{Binding Version}" ContentStringFormat="Version {0}" HorizontalAlignment="Center" FontSize="{StaticResource FontSize.Small}" />
+            <Button Command="{Binding ResetOptionsCommand}" DockPanel.Dock="Bottom" Style="{StaticResource ButtonHorizontal}" Views:Margin.Top="{StaticResource XXL}" VerticalAlignment="Bottom" Content="Reset all to default" Foreground="{StaticResource Color.Error}" />
+        </DockPanel>
+    </ScrollViewer>
+</UserControl>
