@@ -26,11 +26,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Configuration\appsettings.json">
+    <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Generator>MSBuild:Compile</Generator>
     </None>
-    <None Update="Configuration\usersettings.json">
+    <None Update="usersettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Generator>MSBuild:Compile</Generator>
     </None>
