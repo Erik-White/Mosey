@@ -96,7 +96,7 @@ namespace Mosey.Gui.ViewModels
                 _context,
                 "Disk space low",
                 $"The images generated from scanning will require approximately {StringFormat.ByteSize(requiredSpace)} of disk space." +
-                $"Only {StringFormat.ByteSize(availableSpace)} is available, are you sure you want to continue?",
+                $" Only {StringFormat.ByteSize(availableSpace)} is available, are you sure you want to continue?",
                 DialogStyle.AffirmativeAndNegative,
                 dialogSettings,
                 timeout);

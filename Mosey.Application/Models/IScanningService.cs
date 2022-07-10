@@ -8,6 +8,8 @@ namespace Mosey.Application
         IImagingDevices<IImagingDevice> Scanners { get; }
         bool IsScanRunning { get; }
 
+        long GetRequiredDiskSpace(int repetitions);
+        TimeSpan GetRequiredScanningTime();
         Task<IEnumerable<string>> ScanAndSaveImages();
 
         void UpdateConfig(ScanningConfig config);

@@ -52,14 +52,6 @@ namespace Mosey.Gui.ViewModels
             }
         }
 
-        /// <summary>
-        /// The estimated amount of disk space required for a full run of images, in bytes.
-        /// </summary>
-        public long ImagesRequiredDiskSpace
-            => ScanRepetitions
-                * ScanningDevices.Devices.Count(d => d.IsEnabled)
-                * _appSettings.CurrentValue.Device.GetResolutionMetadata(_appSettings.CurrentValue.Image.Resolution).FileSize;
-
         private bool _isWaiting;
         public bool IsWaiting
         {
@@ -321,9 +313,8 @@ namespace Mosey.Gui.ViewModels
         /// </summary>
         public async Task StartScanningWithDialog()
         {
-            // TODO: Move time and space estimates to ScanningService
             // Check that interval time is sufficient for selected resolution
-            var imagingTime = ScanningDevices.Devices.Count(d => d.IsEnabled) * _appSettings.CurrentValue.Device.GetResolutionMetadata(_appSettings.CurrentValue.Image.Resolution).ImagingTime;
+            var imagingTime = _scanningService.GetRequiredScanningTime();
             if (imagingTime * 1.5 > TimeSpan.FromMinutes(ScanInterval) && !await _dialog.ImagingTimeDialog(TimeSpan.FromMinutes(ScanInterval), imagingTime))
             {
                 _log.LogDebug($"Scanning not started due to low interval time: {imagingTime.TotalMinutes} minutes required, {ScanInterval} minutes selected.");
@@ -336,9 +327,10 @@ namespace Mosey.Gui.ViewModels
                 var availableDiskSpace = FileSystemExtensions.AvailableFreeSpace(
                     _fileSystem.Path.GetPathRoot(_appSettings.CurrentValue.ImageFile.Directory),
                     _fileSystem);
-                if (ImagesRequiredDiskSpace * 1.5 > availableDiskSpace && !await _dialog.DiskSpaceDialog(ImagesRequiredDiskSpace, availableDiskSpace))
+                var imagesRequiredDiskSpace = _scanningService.GetRequiredDiskSpace(ScanRepetitions);
+                if (imagesRequiredDiskSpace * 1.5 > availableDiskSpace && !await _dialog.DiskSpaceDialog(imagesRequiredDiskSpace, availableDiskSpace))
                 {
-                    _log.LogDebug($"Scanning not started due to low disk space: {StringFormat.ByteSize(ImagesRequiredDiskSpace)} required, {StringFormat.ByteSize(availableDiskSpace)} available.");
+                    _log.LogDebug($"Scanning not started due to low disk space: {StringFormat.ByteSize(imagesRequiredDiskSpace)} required, {StringFormat.ByteSize(availableDiskSpace)} available.");
                     return;
                 }
             }

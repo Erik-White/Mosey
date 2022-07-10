@@ -72,6 +72,21 @@ namespace Mosey.Application
         }
 
         /// <summary>
+        /// The estimated amount of disk space required for a full run of images, in bytes.
+        /// </summary>
+        public long GetRequiredDiskSpace(int repetitions)
+            => repetitions
+                * Scanners.Devices.Count(d => d.IsEnabled)
+                * _config.DeviceConfig.GetResolutionMetadata(_config.ImagingDeviceConfig.Resolution).FileSize;
+
+        /// <summary>
+        /// The estimated time taken for all the currently active scanners to complete a single image capture.
+        /// </summary>
+        /// <returns></returns>
+        public TimeSpan GetRequiredScanningTime()
+            => Scanners.Devices.Count(d => d.IsEnabled) * _config.DeviceConfig.GetResolutionMetadata(_config.ImagingDeviceConfig.Resolution).ImagingTime;
+
+        /// <summary>
         /// Initiate scanning with all available <see cref="ScanningDevice"/>s and save any captured images to disk
         /// </summary>
         /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
