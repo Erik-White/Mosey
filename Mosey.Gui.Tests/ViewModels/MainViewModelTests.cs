@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using AutoFixture.NUnit3;
 using FluentAssertions;
 using Mosey.Core.Imaging;
@@ -48,51 +45,8 @@ namespace Mosey.Gui.ViewModels.Tests
 
         public class ScanningServiceDevicesRefreshedShould
         {
-            //[Theory, MainViewModelAutoData]
-            //public async Task RepeatRefreshDevices([Frozen] IImagingHost scanningHost, MainViewModel sut)
-            //{
-            //    using var cts = new CancellationTokenSource();
-            //    cts.CancelAfter(1000);
-
-            //    await sut.BeginRefreshDevicesAsync(TimeSpan.FromMilliseconds(100), cts.Token);
-
-            //    scanningHost
-            //        .ReceivedCalls()
-            //        .Count(x => x.GetMethodInfo().Name == nameof(scanningHost.RefreshDevicesAsync))
-            //        .Should().BeInRange(5, 15);
-            //}
-
-            //[Theory, MainViewModelAutoData]
-            //public async Task CancelTask([Frozen] IImagingHost scanningHost, MainViewModel sut)
-            //{
-            //    using var cts = new CancellationTokenSource();
-            //    cts.Cancel();
-
-            //    await sut.BeginRefreshDevicesAsync(TimeSpan.FromSeconds(1), cts.Token);
-
-            //    await scanningHost
-            //        .DidNotReceiveWithAnyArgs()
-            //        .RefreshDevicesAsync(default, default);
-            //}
-
-            //[Theory, MainViewModelAutoData]
-            //public async Task RaisePropertyChanged(MainViewModel sut)
-            //{
-            //    using var cts = new CancellationTokenSource();
-            //    cts.CancelAfter(1000);
-
-            //    using (var monitoredSubject = sut.Monitor())
-            //    {
-            //        await sut.BeginRefreshDevicesAsync(TimeSpan.Zero, cts.Token);
-
-            //        monitoredSubject.Should().RaisePropertyChangeFor(x => x.ScanningDevices);
-            //        monitoredSubject.Should().RaisePropertyChangeFor(x => x.StartScanCommand);
-            //        monitoredSubject.Should().RaisePropertyChangeFor(x => x.StartStopScanCommand);
-            //    }
-            //}
-
             [Theory, MainViewModelAutoData]
-            public async Task RaisePropertyChanged([Frozen] IIntervalScanningService scanningService, MainViewModel sut)
+            public void RaisePropertyChanged([Frozen] IIntervalScanningService scanningService, MainViewModel sut)
             {
                 using (var monitoredSubject = sut.Monitor())
                 {
