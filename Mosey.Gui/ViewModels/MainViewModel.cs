@@ -302,7 +302,7 @@ namespace Mosey.Gui.ViewModels
         }
 
         /// <summary>
-        /// Begin repeated scanning with an <see cref="IIntervalTimer"/>.
+        /// Begin scanning at set intervals
         /// </summary>
         public void StartScanning()
         {

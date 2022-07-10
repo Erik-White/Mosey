@@ -100,7 +100,7 @@ namespace Mosey.Application
             finally
             {
                 _log.LogTrace($"Scan completed with {nameof(ScanAndSaveImages)} method.");
-                ScanRepetitionCompleted.Invoke(this, args);
+                ScanRepetitionCompleted?.Invoke(this, args);
                 _semaphore.Release();
             }
 
@@ -160,7 +160,7 @@ namespace Mosey.Application
                 finally
                 {
                     _log.LogTrace($"Device refresh completed in {nameof(BeginRefreshDevices)}");
-                    DevicesRefreshed.Invoke(this, args);
+                    DevicesRefreshed?.Invoke(this, args);
                 }
             }
         }
@@ -184,7 +184,7 @@ namespace Mosey.Application
             {
                 await _semaphore.WaitAsync(_scanningCancellationSource.Token);
                 await _imagingHost.WaitForImagingToComplete(_scanningCancellationSource.Token).ConfigureAwait(false);
-                ScanningCompleted.Invoke(this, EventArgs.Empty);
+                ScanningCompleted?.Invoke(this, EventArgs.Empty);
             }
             finally
             {

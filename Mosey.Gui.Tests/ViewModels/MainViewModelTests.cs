@@ -33,16 +33,6 @@ namespace Mosey.Gui.ViewModels.Tests
         public class StartScanShould
         {
             [Theory, MainViewModelAutoData]
-            public void SetScanningProperties(MainViewModel sut)
-            {
-                sut.StartScanning();
-
-                sut.IsScanRunning.Should().BeTrue();
-                sut.ScanRepetitionsCount.Should().Be(0);
-                sut.ScanNextTime.Should().Be(TimeSpan.Zero);
-            }
-
-            [Theory, MainViewModelAutoData]
             public void RaisePropertyChanged(MainViewModel sut)
             {
                 using (var monitoredSubject = sut.Monitor())
