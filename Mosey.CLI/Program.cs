@@ -7,9 +7,9 @@ using static Mosey.Cli.CliScanningHost;
 
 namespace Mosey.Cli;
 
-public class Program
+public static class Program
 {
-    private static CliScanningHost _scanningHost;
+    public const int ErrorFatal = 1;
 
     public static int Main(string[] args)
     {
@@ -33,7 +33,15 @@ public class Program
         // Finalize
         var serviceProvider = serviceCollection.BuildServiceProvider();
 
-        _scanningHost = serviceProvider.GetRequiredService<CliScanningHost>();
+        var scanningHost = serviceProvider.GetRequiredService<CliScanningHost>();
+
+        if (scanningHost is null)
+        {
+            Console.WriteLine("An error occurred and the scanning service could not be initialized.");
+            Console.WriteLine("Please close the application and try again.");
+
+            return ErrorFatal;
+        }
 
         var nameOption = new Option<string>("--imagepath", description: "The location used to store scanned images")
         {
@@ -46,7 +54,7 @@ public class Program
             new Option<int>("--repetitions", description: "The number of scans to do in a run")
         };
         rootCommand.Description = "A timed interval scanning program";
-        rootCommand.Handler = CommandHandler.Create<ScanningArgs>(_scanningHost.StartScanning);
+        rootCommand.Handler = CommandHandler.Create<ScanningArgs>(scanningHost.StartScanning);
 
         return rootCommand.Invoke(args);
     }
