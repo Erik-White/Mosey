@@ -1,42 +1,53 @@
 ﻿using System.CommandLine;
 using System.CommandLine.NamingConventionBinder;
-using System.CommandLine.Invocation;
 using Mosey.Application;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using static Mosey.Cli.CliScanningHost;
 
 namespace Mosey.Cli;
 
 public class Program
 {
-    private static readonly IIntervalScanningService _scanningService;
+    private static CliScanningHost _scanningHost;
 
     public static int Main(string[] args)
     {
-        var nameOption = new Option<bool>("--name", description: "The person's name we are greeting")
+        var serviceCollection = new ServiceCollection()
+            .ConfigureApplicationSettings(ApplicationServices.ApplicationSettings, ApplicationServices.UserSettings)
+
+        .AddLogging(options =>
+        {
+            options.AddConfiguration(ApplicationServices.ApplicationSettings.GetSection("Logging"));
+            options.AddConsole();
+#if DEBUG
+            options.AddDebug();
+#endif
+            // Logging to file
+            //options.AddFile("mosey.log", append: true);
+        })
+
+        .RegisterApplicationServices()
+        .AddScoped<CliScanningHost>();
+
+        // Finalize
+        var serviceProvider = serviceCollection.BuildServiceProvider();
+
+        _scanningHost = serviceProvider.GetRequiredService<CliScanningHost>();
+
+        var nameOption = new Option<string>("--imagepath", description: "The location used to store scanned images")
         {
             IsRequired = true
         };
         var rootCommand = new RootCommand
         {
             nameOption,
-            new Option<string>("--title", description: "The official title of the person we are greeting"),
-            new Option<string>("--isevening", description: "Is it evening?")
+            new Option<int>("--interval", description: "The number of minutes between each set of scans"),
+            new Option<int>("--repetitions", description: "The number of scans to do in a run")
         };
-        rootCommand.Description = "A simple app to greet visitors";
-        rootCommand.Handler = CommandHandler.Create(StartScanning);
-        //rootCommand.Handler = CommandHandler.Create<string, string, bool>((name, title, isEvening) =>
-        //{
-        //    var greeting = isEvening ? "Good evening " : "Good day ";
-        //    greeting += string.IsNullOrEmpty(title) ? string.Empty : title + " ";
-        //    greeting += name;
-        //    Console.WriteLine(greeting);
-        //});
+        rootCommand.Description = "A timed interval scanning program";
+        rootCommand.Handler = CommandHandler.Create<ScanningArgs>(_scanningHost.StartScanning);
+
         return rootCommand.Invoke(args);
     }
-
-    private static void StartScanning(ScanningArgs args)
-    {
-        //_scanningService.StartScanning(args.Test, args.Test2, args.Test3);
-    }
-
-    internal record struct ScanningArgs(string Test, string Test2, bool Test3);
 }

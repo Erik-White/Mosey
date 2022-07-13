@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using System.IO.Abstractions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Mosey.Application.Configuration;
 using Mosey.Application.Imaging;
@@ -22,6 +23,7 @@ namespace Mosey.Application
 
         public static IServiceCollection RegisterApplicationServices(this IServiceCollection service)
         {
+            service.AddSingleton<IFileSystem, FileSystem>();
             service.AddTransient<IIntervalTimer, IntervalTimer>();
             service.AddTransient<IImagingDevice, ScanningDevice>();
             service.AddSingleton<IImagingDevices<IImagingDevice>, ScanningDevices>();

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO.Abstractions;
 using System.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,10 +10,7 @@ using Mosey.Gui.Services.Dialog;
 using Mosey.Gui.ViewModels;
 using Mosey.Application;
 using Mosey.Application.Configuration;
-using Mosey.Application.Imaging;
 using System.IO;
-using Mosey.Core;
-using Mosey.Core.Imaging;
 
 namespace Mosey.Gui
 {
@@ -46,7 +42,6 @@ namespace Mosey.Gui
 
                 .RegisterApplicationServices()
 
-                .AddSingleton<IFileSystem, FileSystem>()
                 .AddTransient<IFolderBrowserDialog, FolderBrowserDialog>()
                 .AddScoped<IDialogManager, DialogManager>()
 
