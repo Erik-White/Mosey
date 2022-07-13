@@ -24,7 +24,7 @@ public class Program
             options.AddDebug();
 #endif
             // Logging to file
-            //options.AddFile("mosey.log", append: true);
+            options.AddFile("mosey.log", append: true);
         })
 
         .RegisterApplicationServices()
