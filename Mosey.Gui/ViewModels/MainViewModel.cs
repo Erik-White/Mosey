@@ -119,14 +119,13 @@ namespace Mosey.Gui.ViewModels
         public bool IsScanRunning
             => _scanningService.IsScanRunning;
 
-        public int ScanRepetitionsCount
-            => _scanningService.ScanRepetitionsCount;
+        public int ScanRepetitionsCount { get; private set; }
 
         public TimeSpan ScanNextTime
         {
             get
             {
-                if (IsScanRunning && ScanRepetitionsCount != 0)
+                if (IsScanRunning && ScanRepetitionsCount != 0 && ScanRepetitionsCount < ScanRepetitions)
                 {
                     var scanNext = _scanningService.StartTime.Add(ScanRepetitionsCount * _scanInterval);
                     return scanNext.Subtract(DateTime.Now);
@@ -139,7 +138,9 @@ namespace Mosey.Gui.ViewModels
         }
 
         public DateTime ScanFinishTime
-            => IsScanRunning ? _scanningService.FinishTime : DateTime.MinValue;
+            => IsScanRunning
+                ? _scanningService.FinishTime
+                : DateTime.MinValue;
 
         /// <inheritdoc cref="IImagingDevices{T}"/>
         public IImagingDevices<IImagingDevice> ScanningDevices { get; private set; }
@@ -187,8 +188,6 @@ namespace Mosey.Gui.ViewModels
 
         public void Dispose()
         {
-            _scanningService.ScanRepetitionCompleted -= ScanRepetition_Completed;
-            _scanningService.ScanningCompleted -= Scanning_Complete;
             _scanningService.DevicesRefreshed -= ScanningDevices_Refreshed;
 
             _cancelScanTokenSource?.Cancel();
@@ -296,16 +295,42 @@ namespace Mosey.Gui.ViewModels
         /// <summary>
         /// Begin scanning at set intervals
         /// </summary>
-        public void StartScanning()
+        public async Task StartScanning()
         {
             _cancelScanTokenSource = new CancellationTokenSource();
-            _scanningService.StartScanning(_scanDelay, _scanInterval, ScanRepetitions);
-            _log.LogDebug("IntervalTimer started. Delay: {Delay} Interval: {Interval} Repetitions: {Repetitions}", _scanDelay, _scanInterval, ScanRepetitions);
+            var progress = new Progress<ScanningProgress>(async (report) =>
+            {
+                if (report.Result == ScanningProgress.ProgressResult.Success)
+                {
+                    ScanRepetitionsCount = report.RepetitionCount;
+                    RaisePropertyChanged(nameof(ScanRepetitionsCount));
 
-            RaisePropertyChanged(nameof(IsScanRunning));
-            RaisePropertyChanged(nameof(ScanFinishTime));
-            RaisePropertyChanged(nameof(StartStopScanCommand));
-            _log.LogInformation("Scanning started with {ScanRepetitions} repetitions to complete.", ScanRepetitions);
+                    if (report.RepetitionCount >= ScanRepetitions)
+                    {
+                        // Apply any changes to settings that were made during scanning
+                        UpdateConfig(_appSettings.Get(AppSettings.UserSettingsKey));
+
+                        // Update properties, scanning finished
+                        RaisePropertyChanged(nameof(IsScanRunning));
+                        RaisePropertyChanged(nameof(ScanFinishTime));
+                        RaisePropertyChanged(nameof(StartStopScanCommand));
+                    }
+                }
+                else
+                {
+                    // An unhandled error occurred
+                    _log.LogError(report.Exception, "{message}", report.Exception.Message);
+                    await _dialog.ExceptionDialog(report.Exception);
+                    StopScanning(false);
+                }
+            });
+
+            await _scanningService
+                .StartScanning(new IntervalTimerConfig(_scanDelay, _scanInterval, ScanRepetitions), progress)
+                .ConfigureAwait(false);
+
+            // Finsihed scanning
+            ScanRepetitionsCount = 0;
         }
 
         /// <summary>
@@ -339,7 +364,7 @@ namespace Mosey.Gui.ViewModels
                 _log.LogWarning(ex, $"Unable to show {nameof(DialogViewModel.DiskSpaceDialog)} on path {_appSettings.CurrentValue.ImageFile.Directory} due to {ex.GetType()}");
             }
 
-            StartScanning();
+            await StartScanning().ConfigureAwait(false);
         }
 
         /// <summary>
@@ -391,52 +416,9 @@ namespace Mosey.Gui.ViewModels
             _log.LogTrace($"Configuration updated with {nameof(UpdateConfig)}.");
         }
 
-        /// <summary>
-        /// Tidy up after scanning is completed
-        /// </summary>
-        private void Scanning_Complete(object sender, EventArgs e)
+        private void ScanningDevices_Refreshed(object sender, EventArgs e)
         {
-            _log.LogTrace($"{nameof(Scanning_Complete)} event.");
-
-            // Apply any changes to settings that were made during scanning
-            UpdateConfig(_appSettings.Get(AppSettings.UserSettingsKey));
-
-            // Update properties
-            RaisePropertyChanged(nameof(ScanRepetitionsCount));
-            RaisePropertyChanged(nameof(IsScanRunning));
-            RaisePropertyChanged(nameof(ScanFinishTime));
-            RaisePropertyChanged(nameof(StartStopScanCommand));
-
-            _log.LogInformation("Scanning complete.");
-        }
-
-        private async void ScanRepetition_Completed(object sender, EventArgs e)
-        {
-            _log.LogTrace($"{nameof(ScanRepetition_Completed)} event.");
-
-            if (e is ExceptionEventArgs exceptionEventArgs)
-            {
-                // An unhandled error occurred, notify the user and cancel scanning
-                _log.LogError(exceptionEventArgs.Exception, exceptionEventArgs.Exception.Message);
-                await _dialog.ExceptionDialog(exceptionEventArgs.Exception);
-                StopScanning(false);
-            }
-
-            // Update progress
-            RaisePropertyChanged(nameof(ScanNextTime));
-            RaisePropertyChanged(nameof(ScanRepetitionsCount));
-        }
-
-        private async void ScanningDevices_Refreshed(object sender, EventArgs e)
-        {
-            if (e is ExceptionEventArgs exceptionEventArgs)
-            {
-                await _dialog.ExceptionDialog(exceptionEventArgs.Exception, 5000, CancellationToken.None).ConfigureAwait(false);
-            }
-
             RaisePropertyChanged(nameof(ScanningDevices));
-            RaisePropertyChanged(nameof(StartScanCommand));
-            RaisePropertyChanged(nameof(StartStopScanCommand));
         }
 
         /// <summary>
@@ -449,7 +431,11 @@ namespace Mosey.Gui.ViewModels
             while (!System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted ?? true)
             {
                 await Task.Delay(interval);
+                RaisePropertyChanged(nameof(IsScanRunning));
                 RaisePropertyChanged(nameof(ScanNextTime));
+                RaisePropertyChanged(nameof(ScanFinishTime));
+                RaisePropertyChanged(nameof(ScanRepetitionsCount));
+                RaisePropertyChanged(nameof(StartStopScanCommand));
             }
         }
 
@@ -491,8 +477,6 @@ namespace Mosey.Gui.ViewModels
 
             // Register event callbacks
             _appSettings.OnChange(UpdateConfig);
-            _scanningService.ScanRepetitionCompleted += ScanRepetition_Completed;
-            _scanningService.ScanningCompleted += Scanning_Complete;
             _scanningService.DevicesRefreshed += ScanningDevices_Refreshed;
 
             // Start a task loop to update UI

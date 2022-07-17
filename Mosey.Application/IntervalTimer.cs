@@ -42,7 +42,8 @@ namespace Mosey.Application
         /// <summary>
         /// Starts a timer using the current properties
         /// </summary>
-        public void Start() => Start(Delay, Interval, Repetitions);
+        public void Start()
+            => Start(Delay, Interval, Repetitions);
 
         /// <summary>
         /// Starts a timer with no repetition limit
@@ -50,7 +51,8 @@ namespace Mosey.Application
         /// </summary>
         /// <param name="delay">The delay before starting the first interval</param>
         /// <param name="interval">The time between each callback</param>
-        public void Start(TimeSpan delay, TimeSpan interval) => Start(delay, interval, -1);
+        public void Start(TimeSpan delay, TimeSpan interval)
+            => Start(delay, interval, -1);
 
         /// <summary>
         /// Start a new timer. If delay is zero then the first callback will begin immediately
@@ -94,7 +96,7 @@ namespace Mosey.Application
         /// <param name="state"></param>
         private void TimerInterval(object? state)
         {
-            if (RepetitionsCount++ <= Repetitions || Repetitions == -1)
+            if (++RepetitionsCount <= Repetitions || Repetitions == -1)
             {
                 // Notify that a repetition was completed
                 OnTick(EventArgs.Empty);
@@ -177,11 +179,13 @@ namespace Mosey.Application
 
         public void Dispose()
         {
-            foreach (var del in Tick?.GetInvocationList().Select(i => i as EventHandler))
+            var tickInvocations = Tick?.GetInvocationList().Select(i => i as EventHandler);
+            foreach (var del in tickInvocations ?? Enumerable.Empty<EventHandler>())
             {
                 Tick -= del;
             }
-            foreach (var del in Complete?.GetInvocationList().Select(i => i as EventHandler))
+            var completeInvocations = Tick?.GetInvocationList().Select(i => i as EventHandler);
+            foreach (var del in completeInvocations ?? Enumerable.Empty<EventHandler>())
             {
                 Complete -= del;
             }
