@@ -1,11 +1,20 @@
-﻿namespace Mosey.Application
+﻿using static Mosey.Application.ScanningProgress;
+
+namespace Mosey.Application
 {
-    public record ScanningProgress(int RepetitionCount, Exception? Exception = null)
+    public record ScanningProgress(int RepetitionCount, ScanningStage Stage, Exception? Exception = null)
     {
         public enum ProgressResult
         {
             Success,
             Error
+        };
+
+        public enum ScanningStage
+        {
+            Start,
+            InProgress,
+            Finish
         };
 
         public ProgressResult Result

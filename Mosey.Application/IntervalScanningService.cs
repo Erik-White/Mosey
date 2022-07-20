@@ -94,6 +94,8 @@ namespace Mosey.Application
             // Store the value because the timer will be reset on the last interval
             var repetitionsCount = _intervalTimer.RepetitionsCount;
 
+            _progress?.Report(new ScanningProgress(repetitionsCount, ScanningProgress.ScanningStage.Start, exception));
+
             try
             {
                 results = await ScanAndSaveImages(CreateDirectoryPath, _scanningCancellationSource.Token).ConfigureAwait(false);
@@ -111,7 +113,7 @@ namespace Mosey.Application
             finally
             {
                 _log.LogTrace($"Scan completed with {nameof(ScanAndSaveImages)} method.");
-                _progress?.Report(new ScanningProgress(repetitionsCount, exception));
+                _progress?.Report(new ScanningProgress(repetitionsCount, ScanningProgress.ScanningStage.Finish, exception));
             }
 
             return results;
@@ -121,7 +123,7 @@ namespace Mosey.Application
         /// Begins scanning at set intervals.
         /// </summary>
         /// <param name="config">The interval scanning configuration</param>
-        /// <param name="progress">Progress is reported after each successful scan repetition</param>
+        /// <param name="progress">Progress is reported both before and after each successful scan repetition</param>
         public async Task StartScanning(IntervalTimerConfig config, IProgress<ScanningProgress>? progress = null)
         {
             var tcs = new TaskCompletionSource();

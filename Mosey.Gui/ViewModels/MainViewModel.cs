@@ -125,7 +125,7 @@ namespace Mosey.Gui.ViewModels
         {
             get
             {
-                if (IsScanRunning && ScanRepetitionsCount != 0 && ScanRepetitionsCount < ScanRepetitions)
+                if (IsScanRunning && 0 < ScanRepetitionsCount && ScanRepetitionsCount < ScanRepetitions)
                 {
                     var scanNext = _scanningService.StartTime.Add(ScanRepetitionsCount * _scanInterval);
                     return scanNext.Subtract(DateTime.Now);
@@ -305,7 +305,7 @@ namespace Mosey.Gui.ViewModels
                     ScanRepetitionsCount = report.RepetitionCount;
                     RaisePropertyChanged(nameof(ScanRepetitionsCount));
 
-                    if (report.RepetitionCount >= ScanRepetitions)
+                    if (report.Stage == ScanningProgress.ScanningStage.Finish && report.RepetitionCount >= ScanRepetitions)
                     {
                         // Apply any changes to settings that were made during scanning
                         UpdateConfig(_appSettings.Get(AppSettings.UserSettingsKey));
