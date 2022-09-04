@@ -1,4 +1,5 @@
-﻿using System.IO.Abstractions;
+﻿using System.Collections.Concurrent;
+using System.IO.Abstractions;
 using Microsoft.Extensions.Logging;
 using Mosey.Applicaton.Configuration;
 using Mosey.Core;
@@ -14,6 +15,7 @@ namespace Mosey.Application
         private readonly IIntervalTimer _intervalTimer;
         private readonly IFileSystem _fileSystem;
         private readonly ILogger<IntervalScanningService> _log;
+        private readonly ConcurrentQueue<int> _queuedScanRepetitions = new();
         private readonly CancellationTokenSource _refreshDevicesCancellationSource = new();
 
         private IProgress<ScanningProgress>? _progress;
@@ -54,7 +56,7 @@ namespace Mosey.Application
             _fileSystem = fileSystem;
             _log = logger;
 
-            _intervalTimer.Tick += async (_, _) => await ScanAndSaveImages();
+            _intervalTimer.Tick += (_, _) => _queuedScanRepetitions.Enqueue(_intervalTimer.RepetitionsCount);
 
             _ = BeginRefreshDevices(DeviceRefreshInterval, _refreshDevicesCancellationSource.Token).ConfigureAwait(false);
         }
@@ -85,19 +87,23 @@ namespace Mosey.Application
         /// <summary>
         /// Initiate scanning with all available <see cref="ScanningDevice"/>s and save any captured images to disk.
         /// </summary>
+        /// <param name="repetitionsCount">The current </param>
         /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
         public async Task<IEnumerable<string>> ScanAndSaveImages()
+            => await ScanAndSaveImages(0);
+
+        /// <inheritdoc cref="ScanAndSaveImages"/>
+        /// <param name="repetitionsCount">The current </param>
+        public async Task<IEnumerable<string>> ScanAndSaveImages(int repetitionsCount)
         {
             _log.LogTrace($"Scan initiated with {nameof(ScanAndSaveImages)} method.");
             Exception? exception = null;
             var results = Enumerable.Empty<string>();
-            // Store the value because the timer will be reset on the last interval
-            var repetitionsCount = _intervalTimer.RepetitionsCount;
-
-            _progress?.Report(new ScanningProgress(repetitionsCount, ScanningProgress.ScanningStage.Start, exception));
 
             try
             {
+                _progress?.Report(new ScanningProgress(repetitionsCount, ScanningProgress.ScanningStage.Start, exception));
+
                 results = await ScanAndSaveImages(CreateDirectoryPath, _scanningCancellationSource.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException ex)
@@ -126,6 +132,7 @@ namespace Mosey.Application
         /// <param name="progress">Progress is reported both before and after each successful scan repetition</param>
         public async Task StartScanning(IntervalTimerConfig config, IProgress<ScanningProgress>? progress = null)
         {
+            _queuedScanRepetitions.Clear();
             var tcs = new TaskCompletionSource();
 
             _intervalTimer.Complete += onTimerCompleted;
@@ -136,6 +143,7 @@ namespace Mosey.Application
             _log.LogInformation("Scanning started with {ScanRepetitions} repetitions to complete.", config.Repetitions);
             _log.LogDebug("IntervalTimer started. Delay: {Delay} Interval: {Interval} Repetitions: {Repetitions}", config.Delay, config.Interval, config.Repetitions);
 
+            await ProcessScanRepetitions(config.Repetitions, _scanningCancellationSource.Token).ConfigureAwait(false);
             await tcs.Task.WaitAsync(_scanningCancellationSource.Token).ConfigureAwait(false);
             await _imagingHost.WaitForImagingToComplete(_scanningCancellationSource.Token).ConfigureAwait(false);
 
@@ -214,6 +222,26 @@ namespace Mosey.Application
             var fileName = string.Join("_", config.Prefix, dateTime, index);
 
             return Path.Combine(directory, Path.ChangeExtension(fileName, config.ImageFormat.ToString().ToLower()));
+        }
+
+        private async Task ProcessScanRepetitions(int maxRepetitions, CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {                
+                if (_queuedScanRepetitions.TryDequeue(out var scanRepetition))
+                {
+                    await ScanAndSaveImages(scanRepetition);
+
+                    if (scanRepetition >= maxRepetitions)
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    await Task.Delay(10, cancellationToken);
+                }
+            }
         }
 
         /// <inheritdoc cref="ScanAndSaveImages"/>
