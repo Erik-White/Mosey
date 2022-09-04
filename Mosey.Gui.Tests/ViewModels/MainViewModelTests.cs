@@ -36,9 +36,7 @@ namespace Mosey.Gui.ViewModels.Tests
             [Theory, MainViewModelAutoData]
             public async Task RaisePropertyChanged([Frozen] IntervalTimerConfig timerConfig, MainViewModel sut)
             {
-#pragma warning disable S1854 // Unused assignments should be removed
-                timerConfig = new IntervalTimerConfig(TimeSpan.Zero, TimeSpan.Zero, 1);
-#pragma warning restore S1854 // Unused assignments should be removed
+                timerConfig = timerConfig with { Delay = TimeSpan.Zero, Interval = TimeSpan.Zero, Repetitions = 1 };
 
                 using (var monitoredSubject = sut.Monitor())
                 using (new AssertionScope())
