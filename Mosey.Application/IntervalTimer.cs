@@ -16,8 +16,16 @@ namespace Mosey.Application
         public int RepetitionsCount { get; private set; }
         public bool Enabled => timer is not null;
         public bool Paused { get; private set; }
-        public event EventHandler? Tick;
-        public event EventHandler? Complete;
+
+        /// <summary>
+        /// Raised on every interval. Returns the current repetition number.
+        /// </summary>
+        public event EventHandler<int>? Tick;
+
+        /// <summary>
+        /// Raised when the timer is stopped. Returns the total number of repetitions completed.
+        /// </summary>
+        public event EventHandler<int>? Complete;
 
         private Timer? timer;
         private TimeSpan intervalRemaining;
@@ -42,7 +50,8 @@ namespace Mosey.Application
         /// <summary>
         /// Starts a timer using the current properties
         /// </summary>
-        public void Start() => Start(Delay, Interval, Repetitions);
+        public void Start()
+            => Start(Delay, Interval, Repetitions);
 
         /// <summary>
         /// Starts a timer with no repetition limit
@@ -50,7 +59,8 @@ namespace Mosey.Application
         /// </summary>
         /// <param name="delay">The delay before starting the first interval</param>
         /// <param name="interval">The time between each callback</param>
-        public void Start(TimeSpan delay, TimeSpan interval) => Start(delay, interval, -1);
+        public void Start(TimeSpan delay, TimeSpan interval)
+            => Start(delay, interval, -1);
 
         /// <summary>
         /// Start a new timer. If delay is zero then the first callback will begin immediately
@@ -75,29 +85,15 @@ namespace Mosey.Application
         }
 
         /// <summary>
-        /// Raises an event when an interval has elapsed
-        /// </summary>
-        /// <param name="e"></param>
-        public void OnTick(EventArgs args)
-            => Tick?.Invoke(this, args);
-
-        /// <summary>
-        /// Raises an event when the timer has run to completion
-        /// </summary>
-        /// <param name="e"></param>
-        public void OnComplete(EventArgs args)
-            => Complete?.Invoke(this, args);
-
-        /// <summary>
         /// Timer callback method. Continues the timer until the maximum repetition count is reached
         /// </summary>
         /// <param name="state"></param>
         private void TimerInterval(object? state)
         {
-            if (RepetitionsCount++ <= Repetitions || Repetitions == -1)
+            if (++RepetitionsCount <= Repetitions || Repetitions == -1)
             {
                 // Notify that a repetition was completed
-                OnTick(EventArgs.Empty);
+                Tick?.Invoke(this, RepetitionsCount);
                 Resume();
             }
 
@@ -113,6 +109,8 @@ namespace Mosey.Application
         /// </summary>
         public void Stop()
         {
+            var completedRepetitions = RepetitionsCount;
+
             Paused = false;
             StartTime = DateTime.MinValue;
             RepetitionsCount = 0;
@@ -124,7 +122,7 @@ namespace Mosey.Application
                 timer = null;
             }
 
-            OnComplete(EventArgs.Empty);
+            Complete?.Invoke(this, completedRepetitions);
         }
 
         /// <summary>
@@ -177,11 +175,13 @@ namespace Mosey.Application
 
         public void Dispose()
         {
-            foreach (var del in Tick?.GetInvocationList().Select(i => i as EventHandler))
+            var tickInvocations = Tick?.GetInvocationList().Select(i => i as EventHandler<int>);
+            foreach (var del in tickInvocations ?? Enumerable.Empty<EventHandler<int>>())
             {
                 Tick -= del;
             }
-            foreach (var del in Complete?.GetInvocationList().Select(i => i as EventHandler))
+            var completeInvocations = Tick?.GetInvocationList().Select(i => i as EventHandler<int>);
+            foreach (var del in completeInvocations ?? Enumerable.Empty<EventHandler<int>>())
             {
                 Complete -= del;
             }

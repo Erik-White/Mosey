@@ -37,7 +37,7 @@ namespace Mosey.Application.Imaging
                 using (var staQueue = new StaTaskScheduler(concurrencyLevel: 1, disableComObjectEagerCleanup: true))
                 {
                     results = await Task.Factory.StartNew(
-                        () => PerformImaging(useHighestResolution, cancellationToken),
+                        () => PerformImaging(useHighestResolution, cancellationToken).ToList(),
                         cancellationToken,
                         TaskCreationOptions.LongRunning,
                         staQueue)
