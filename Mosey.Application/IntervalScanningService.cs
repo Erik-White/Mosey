@@ -56,7 +56,7 @@ namespace Mosey.Application
             _fileSystem = fileSystem;
             _log = logger;
 
-            _intervalTimer.Tick += (_, _) => _queuedScanRepetitions.Enqueue(_intervalTimer.RepetitionsCount);
+            _intervalTimer.Tick += (_, repetitionsCount) => _queuedScanRepetitions.Enqueue(repetitionsCount);
 
             _ = BeginRefreshDevices(DeviceRefreshInterval, _refreshDevicesCancellationSource.Token).ConfigureAwait(false);
         }
@@ -133,7 +133,7 @@ namespace Mosey.Application
         public async Task StartScanning(IntervalTimerConfig config, IProgress<ScanningProgress>? progress = null)
         {
             _queuedScanRepetitions.Clear();
-            var tcs = new TaskCompletionSource();
+            var tcs = new TaskCompletionSource<int>();
 
             _intervalTimer.Complete += onTimerCompleted;
 
@@ -147,11 +147,11 @@ namespace Mosey.Application
             await tcs.Task.WaitAsync(_scanningCancellationSource.Token).ConfigureAwait(false);
             await _imagingHost.WaitForImagingToComplete(_scanningCancellationSource.Token).ConfigureAwait(false);
 
-            _log.LogInformation("Scanning completed.");
+            _log.LogInformation("Scanning finished, {reptitionsCount} repetitions completed.", tcs.Task.Result);
 
-            void onTimerCompleted(object? sender, EventArgs e)
+            void onTimerCompleted(object? sender, int repetitionsCount)
             {
-                tcs.SetResult();
+                tcs.SetResult(repetitionsCount);
                 _intervalTimer.Complete -= onTimerCompleted;
             }
         }

@@ -2,8 +2,8 @@
 {
     public interface IIntervalTimer : ITimer
     {
-        event EventHandler Tick;
-        event EventHandler Complete;
+        event EventHandler<int> Tick;
+        event EventHandler<int> Complete;
 
         DateTime StartTime { get; }
         DateTime FinishTime { get; }
