@@ -8,6 +8,10 @@ using Mosey.Tests.Extensions;
 using NSubstitute;
 using NUnit.Framework;
 using Mosey.Application;
+using Mosey.Core;
+using System;
+using FluentAssertions.Execution;
+using System.Threading.Tasks;
 
 namespace Mosey.Gui.ViewModels.Tests
 {
@@ -30,14 +34,19 @@ namespace Mosey.Gui.ViewModels.Tests
         public class StartScanShould
         {
             [Theory, MainViewModelAutoData]
-            public void RaisePropertyChanged(MainViewModel sut)
+            public async Task RaisePropertyChanged([Frozen] IntervalTimerConfig timerConfig, MainViewModel sut)
             {
+                timerConfig = timerConfig with { Delay = TimeSpan.Zero, Interval = TimeSpan.Zero, Repetitions = 1 };
+
                 using (var monitoredSubject = sut.Monitor())
+                using (new AssertionScope())
                 {
-                    monitoredSubject.Subject.StartScanning();
+                    await monitoredSubject.Subject.StartScanning();
+                    await Task.Delay(500);
 
                     monitoredSubject.Should().RaisePropertyChangeFor(x => x.IsScanRunning);
                     monitoredSubject.Should().RaisePropertyChangeFor(x => x.ScanFinishTime);
+                    monitoredSubject.Should().RaisePropertyChangeFor(x => x.ScanRepetitionsCount);
                     monitoredSubject.Should().RaisePropertyChangeFor(x => x.StartStopScanCommand);
                 }
             }
@@ -53,8 +62,6 @@ namespace Mosey.Gui.ViewModels.Tests
                     scanningService.DevicesRefreshed += Raise.Event();
 
                     monitoredSubject.Should().RaisePropertyChangeFor(x => x.ScanningDevices);
-                    monitoredSubject.Should().RaisePropertyChangeFor(x => x.StartScanCommand);
-                    monitoredSubject.Should().RaisePropertyChangeFor(x => x.StartStopScanCommand);
                 }
             }
         }

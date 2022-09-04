@@ -136,7 +136,7 @@ namespace Mosey.Application.Imaging
                         result = method.Invoke();
                         break;
                     }
-                    catch (Exception ex) when (ex is COMException || ex is NullReferenceException)
+                    catch (Exception ex) when (ex is COMException || ex is AccessViolationException || ex is NullReferenceException)
                     {
                         if (--connectRetries > 0)
                         {

@@ -1,4 +1,5 @@
-﻿using System.IO.Abstractions;
+﻿using System.Collections.Concurrent;
+using System.IO.Abstractions;
 using Microsoft.Extensions.Logging;
 using Mosey.Applicaton.Configuration;
 using Mosey.Core;
@@ -14,33 +15,33 @@ namespace Mosey.Application
         private readonly IIntervalTimer _intervalTimer;
         private readonly IFileSystem _fileSystem;
         private readonly ILogger<IntervalScanningService> _log;
+        private readonly ConcurrentQueue<int> _queuedScanRepetitions = new();
         private readonly CancellationTokenSource _refreshDevicesCancellationSource = new();
-        private readonly SemaphoreSlim _semaphore = new(1, 1);
 
+        private IProgress<ScanningProgress>? _progress;
         private ScanningConfig _config;
         private CancellationTokenSource _scanningCancellationSource = new();
 
         public event EventHandler? DevicesRefreshed;
-        public event EventHandler? ScanRepetitionCompleted;
-        public event EventHandler? ScanningCompleted;
 
         public bool CreateDirectoryPath { get; set; } = true;
 
         public TimeSpan DeviceRefreshInterval { get; set; } = TimeSpan.FromSeconds(1);
 
-        public IImagingDevices<IImagingDevice> Scanners => _imagingHost.ImagingDevices;
+        public IImagingDevices<IImagingDevice> Scanners
+            => _imagingHost.ImagingDevices;
 
         public bool IsScanRunning
-            => (_intervalTimer?.Enabled ?? false) || _imagingHost.ImagingDevices.IsImagingInProgress;
-
-        public int ScanRepetitionsCount
-            => _intervalTimer?.RepetitionsCount ?? 0;
+            => (_intervalTimer?.Enabled ?? false)
+            || _imagingHost.ImagingDevices.IsImagingInProgress;
 
         public DateTime StartTime
             => _intervalTimer.StartTime;
 
         public DateTime FinishTime
-            => _intervalTimer.FinishTime;
+            => _intervalTimer?.Enabled ?? false
+                ? _intervalTimer.FinishTime
+                : DateTime.Now;
 
         public IntervalScanningService(IImagingHost imagingHost, IIntervalTimer intervalTimer, IFileSystem fileSystem, ILogger<IntervalScanningService> logger)
              : this(imagingHost, intervalTimer, new ScanningConfig(new DeviceConfig(), new ImagingDeviceConfig(), new ImageFileConfig()), fileSystem, logger)
@@ -55,15 +56,13 @@ namespace Mosey.Application
             _fileSystem = fileSystem;
             _log = logger;
 
-            _intervalTimer.Tick += async (_, _) => await ScanAndSaveImages();
-            _intervalTimer.Complete += OnScanningCompleted;
+            _intervalTimer.Tick += (_, repetitionsCount) => _queuedScanRepetitions.Enqueue(repetitionsCount);
 
             _ = BeginRefreshDevices(DeviceRefreshInterval, _refreshDevicesCancellationSource.Token).ConfigureAwait(false);
         }
 
         public void Dispose()
         {
-            _intervalTimer.Complete -= OnScanningCompleted;
             _refreshDevicesCancellationSource?.Cancel();
             _refreshDevicesCancellationSource?.Dispose();
             _scanningCancellationSource?.Cancel();
@@ -82,49 +81,85 @@ namespace Mosey.Application
         /// <summary>
         /// The estimated time taken for all the currently active scanners to complete a single image capture.
         /// </summary>
-        /// <returns></returns>
         public TimeSpan GetRequiredScanningTime()
             => Scanners.Devices.Count(d => d.IsEnabled) * _config.DeviceConfig.GetResolutionMetadata(_config.ImagingDeviceConfig.Resolution).ImagingTime;
 
         /// <summary>
-        /// Initiate scanning with all available <see cref="ScanningDevice"/>s and save any captured images to disk
+        /// Initiate scanning with all available <see cref="ScanningDevice"/>s and save any captured images to disk.
         /// </summary>
+        /// <param name="repetitionsCount">The current </param>
         /// <returns><see cref="string"/>s representing file paths for scanned images</returns>
         public async Task<IEnumerable<string>> ScanAndSaveImages()
+            => await ScanAndSaveImages(0);
+
+        /// <inheritdoc cref="ScanAndSaveImages"/>
+        /// <param name="repetitionsCount">The current </param>
+        public async Task<IEnumerable<string>> ScanAndSaveImages(int repetitionsCount)
         {
             _log.LogTrace($"Scan initiated with {nameof(ScanAndSaveImages)} method.");
+            Exception? exception = null;
             var results = Enumerable.Empty<string>();
-            var args = EventArgs.Empty;
 
             try
             {
-                await _semaphore.WaitAsync(_scanningCancellationSource.Token);
+                _progress?.Report(new ScanningProgress(repetitionsCount, ScanningProgress.ScanningStage.Start, exception));
+
                 results = await ScanAndSaveImages(CreateDirectoryPath, _scanningCancellationSource.Token).ConfigureAwait(false);
-                args = new StringCollectionEventArgs(results);
             }
             catch (OperationCanceledException ex)
             {
-
                 _log.LogInformation(ex, "Scanning cancelled before it could be completed");
+                exception = ex;
             }
             catch (Exception ex)
             {
                 _log.LogError("An error occured when attempting to aquire images, or when saving them to disk", ex);
-                args = new ExceptionEventArgs(ex);
+                exception = ex;
             }
             finally
             {
                 _log.LogTrace($"Scan completed with {nameof(ScanAndSaveImages)} method.");
-                ScanRepetitionCompleted?.Invoke(this, args);
-                _semaphore.Release();
+                _progress?.Report(new ScanningProgress(repetitionsCount, ScanningProgress.ScanningStage.Finish, exception));
             }
 
             return results;
         }
 
-        public void StartScanning(TimeSpan delay, TimeSpan interval, int repetitions)
-            => _intervalTimer.Start(delay, interval, repetitions);
+        /// <summary>
+        /// Begins scanning at set intervals.
+        /// </summary>
+        /// <param name="config">The interval scanning configuration</param>
+        /// <param name="progress">Progress is reported both before and after each successful scan repetition</param>
+        public async Task StartScanning(IntervalTimerConfig config, IProgress<ScanningProgress>? progress = null)
+        {
+            _queuedScanRepetitions.Clear();
+            var tcs = new TaskCompletionSource<int>();
 
+            _intervalTimer.Complete += onTimerCompleted;
+
+            _progress = progress;
+            _intervalTimer.Start(config.Delay, config.Interval, config.Repetitions);
+
+            _log.LogInformation("Scanning started with {ScanRepetitions} repetitions to complete.", config.Repetitions);
+            _log.LogDebug("IntervalTimer started. Delay: {Delay} Interval: {Interval} Repetitions: {Repetitions}", config.Delay, config.Interval, config.Repetitions);
+
+            await ProcessScanRepetitions(config.Repetitions, _scanningCancellationSource.Token).ConfigureAwait(false);
+            await tcs.Task.WaitAsync(_scanningCancellationSource.Token).ConfigureAwait(false);
+            await _imagingHost.WaitForImagingToComplete(_scanningCancellationSource.Token).ConfigureAwait(false);
+
+            _log.LogInformation("Scanning finished, {reptitionsCount} repetitions completed.", tcs.Task.Result);
+
+            void onTimerCompleted(object? sender, int repetitionsCount)
+            {
+                tcs.SetResult(repetitionsCount);
+                _intervalTimer.Complete -= onTimerCompleted;
+            }
+        }
+
+        /// <summary>
+        /// Stop any ongoing scanning run that has been started with <see cref="StartScanning(IntervalTimerConfig, IProgress{ScanningProgress}?)"/>.
+        /// </summary>
+        /// <param name="waitForCompletion">If any currently incomplete scanning iterations should be allowed to finish</param>
         public void StopScanning(bool waitForCompletion = true)
         {
             try
@@ -148,13 +183,12 @@ namespace Mosey.Application
         }
 
         /// <summary>
-        /// Starts a loop that continually refreshes the list of available scanners
+        /// Starts a loop that continually refreshes the list of available scanners.
         /// </summary>
         /// <param name="interval">The duration between refreshes</param>
         /// <param name="cancellationToken">Used to stop the refresh loop</param>
         internal async Task BeginRefreshDevices(TimeSpan interval, CancellationToken cancellationToken)
         {
-            var args = EventArgs.Empty;
             _log.LogTrace($"Device refresh initiated with {nameof(BeginRefreshDevices)}");
 
             while (!cancellationToken.IsCancellationRequested)
@@ -166,22 +200,19 @@ namespace Mosey.Application
 
                     await Task.Delay(interval, cancellationToken).ConfigureAwait(false);
                     await _imagingHost.RefreshDevicesAsync(enableDevices, cancellationToken).ConfigureAwait(false);
+
+                    DevicesRefreshed?.Invoke(this, EventArgs.Empty);
                 }
                 catch (Exception ex)
                 {
                     _log.LogWarning(ex, "Error while attempting to refresh devices.");
-                    args = new ExceptionEventArgs(ex);
                 }
                 finally
                 {
                     _log.LogTrace($"Device refresh completed in {nameof(BeginRefreshDevices)}");
-                    DevicesRefreshed?.Invoke(this, args);
                 }
             }
         }
-
-        internal async Task<IEnumerable<CapturedImage>> PerformImaging(bool useHighestResolution = false, CancellationToken cancellationToken = default)
-            => await _imagingHost.PerformImagingAsync(useHighestResolution, cancellationToken);
 
         internal static string GetImageFilePath(CapturedImage image, ImageFileConfig config, bool appendIndex, DateTime saveDateTime)
         {
@@ -193,17 +224,23 @@ namespace Mosey.Application
             return Path.Combine(directory, Path.ChangeExtension(fileName, config.ImageFormat.ToString().ToLower()));
         }
 
-        private async void OnScanningCompleted(object? sender, EventArgs e)
+        private async Task ProcessScanRepetitions(int maxRepetitions, CancellationToken cancellationToken)
         {
-            try
-            {
-                await _semaphore.WaitAsync(_scanningCancellationSource.Token);
-                await _imagingHost.WaitForImagingToComplete(_scanningCancellationSource.Token).ConfigureAwait(false);
-                ScanningCompleted?.Invoke(this, EventArgs.Empty);
-            }
-            finally
-            {
-                _semaphore.Release();
+            while (!cancellationToken.IsCancellationRequested)
+            {                
+                if (_queuedScanRepetitions.TryDequeue(out var scanRepetition))
+                {
+                    await ScanAndSaveImages(scanRepetition);
+
+                    if (scanRepetition >= maxRepetitions)
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    await Task.Delay(10, cancellationToken);
+                }
             }
         }
 
@@ -213,7 +250,7 @@ namespace Mosey.Application
             var results = new List<string>();
             var saveDateTime = DateTime.Now;
 
-            var images = (await PerformImaging(_config.DeviceConfig.UseHighestResolution, cancellationToken).ConfigureAwait(false)).ToList();
+            var images = (await _imagingHost.PerformImagingAsync(_config.DeviceConfig.UseHighestResolution, cancellationToken).ConfigureAwait(false)).ToList();
 
             if (!cancellationToken.IsCancellationRequested)
             {

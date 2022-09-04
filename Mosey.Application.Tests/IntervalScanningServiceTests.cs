@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AutoFixture.NUnit3;
 using FluentAssertions;
 using Mosey.Application.Tests.AutoData;
+using Mosey.Core;
 using Mosey.Core.Imaging;
 using Mosey.Tests.AutoData;
 using Mosey.Tests.Extensions;
@@ -50,19 +51,6 @@ namespace Mosey.Application.Tests
             }
 
             [Theory, AutoNSubstituteData]
-            public async Task CancelTask([Frozen] IImagingHost scanningHost, IntervalScanningService sut)
-            {
-                using var cts = new CancellationTokenSource();
-                cts.Cancel();
-
-                await sut.BeginRefreshDevices(TimeSpan.FromSeconds(1), cts.Token);
-
-                await scanningHost
-                    .DidNotReceiveWithAnyArgs()
-                    .RefreshDevicesAsync(default, default);
-            }
-
-            [Theory, AutoNSubstituteData]
             public async Task Raise_DevicesRefreshedEvent(IntervalScanningService sut)
             {
                 using var cts = new CancellationTokenSource();
@@ -94,38 +82,75 @@ namespace Mosey.Application.Tests
             [Theory, IntervalScanningServiceAutoData]
             public void SetScanningProperties(IntervalScanningService sut)
             {
-                sut.StartScanning(TimeSpan.FromDays(1), TimeSpan.Zero, 1);
+                _ = sut.StartScanning(new IntervalTimerConfig(TimeSpan.FromDays(1), TimeSpan.Zero, 1));
 
                 sut.IsScanRunning.Should().BeTrue();
-                sut.ScanRepetitionsCount.Should().Be(0);
+                sut.StartTime.Should().BeBefore(sut.FinishTime);
+                sut.FinishTime.Should().BeAfter(sut.StartTime);
             }
 
             [Theory, IntervalScanningServiceAutoData]
-            public async Task Raise_ScanRepetitionCompletedEvent([Greedy] IntervalScanningService sut)
+            public async Task Cancel_BeforeScanning([Greedy] IntervalScanningService sut)
             {
-                using (var monitoredSubject = sut.Monitor())
+                ScanningProgress? finalProgress = null;
+                var progress = new Progress<ScanningProgress>((report) =>
                 {
-                    sut.StartScanning(TimeSpan.Zero, TimeSpan.Zero, 1);
+                    finalProgress = report;
+                });
 
-                    await Task.Delay(1000);
+                var scanningTask = sut.StartScanning(new IntervalTimerConfig(TimeSpan.FromDays(1), TimeSpan.Zero, 100), progress);
+                await Task.WhenAny(scanningTask, Task.Delay(100));
+                sut.StopScanning(waitForCompletion: false);
 
-                    monitoredSubject.Should().Raise(nameof(IntervalScanningService.ScanRepetitionCompleted));
-                }
+                finalProgress.Should().BeNull();
             }
-        }
 
-        public class StopScanningShould
-        {
             [Theory, IntervalScanningServiceAutoData]
-            public void Raise_ScanningCompletedEvent(IntervalScanningService sut)
+            public void Cancel_DuringScanning([Greedy] IntervalScanningService sut)
             {
-
-                using (var monitoredSubject = sut.Monitor())
+                ScanningProgress? finalProgress = null;
+                var progress = new Progress<ScanningProgress>((report) =>
                 {
-                    sut.StopScanning();
+                    finalProgress = report;
+                });
 
-                    monitoredSubject.Should().Raise(nameof(IntervalScanningService.ScanningCompleted));
-                }
+                _ = sut.StartScanning(new IntervalTimerConfig(TimeSpan.Zero, TimeSpan.FromSeconds(10), 100), progress);
+                sut.StopScanning();
+
+                finalProgress?.Should().NotBeNull();
+                finalProgress?.RepetitionCount.Should().Be(1);
+                finalProgress?.Stage.Should().Be(ScanningProgress.ScanningStage.Finish);
+            }
+
+            [Theory, IntervalScanningServiceAutoData]
+            public async Task Report_IterationCount(int iterations, [Greedy] IntervalScanningService sut)
+            {
+                var iterationCount = 0;
+                var progress = new Progress<ScanningProgress>((report) =>
+                {
+                    iterationCount = report.RepetitionCount;
+                });
+
+                await sut.StartScanning(new IntervalTimerConfig(TimeSpan.Zero, TimeSpan.Zero, iterations), progress);
+                
+                iterationCount.Should().Be(iterations);
+            }
+
+            [Theory, IntervalScanningServiceAutoData, Repeat(5)]
+            public async Task Report_RepetitionsInAscendingOrder(int iterations, [Greedy] IntervalScanningService sut)
+            {
+                var repetitions = new List<int>();
+                var progress = new Progress<ScanningProgress>((report) =>
+                {
+                    if (report.Stage == ScanningProgress.ScanningStage.Finish)
+                    {
+                        repetitions.Add(report.RepetitionCount);
+                    }
+                });
+
+                await sut.StartScanning(new IntervalTimerConfig(TimeSpan.Zero, TimeSpan.Zero, iterations), progress);
+
+                repetitions.Should().BeInAscendingOrder();
             }
         }
     }
