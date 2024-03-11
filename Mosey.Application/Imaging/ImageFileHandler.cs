@@ -23,7 +23,6 @@ namespace Mosey.Application.Imaging
         public void SaveImage(Image image, IImagingDevice.ImageFormat imageFormat, string filePath)
         {
             var encoder = _imageHandler.GetImageEncoder(imageFormat);
-            _imageHandler.ApplyEncoderDefaults(encoder);
 
             SaveImage(image, encoder, filePath);
         }

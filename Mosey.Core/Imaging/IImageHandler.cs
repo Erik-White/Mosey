@@ -7,12 +7,6 @@ namespace Mosey.Core.Imaging
     public interface IImageHandler<TPixel> where TPixel : unmanaged, IPixel<TPixel>
     {
         /// <summary>
-        /// Apply default encoder settings
-        /// </summary>
-        /// <exception cref="NotSupportedException"></exception>
-        void ApplyEncoderDefaults(IImageEncoder encoder);
-
-        /// <summary>
         /// Convert an image to the specified encoding format,
         /// using the default encoder properties from <see cref="ApplyEncoderDefaults(IImageEncoder)"/>.
         /// </summary>
