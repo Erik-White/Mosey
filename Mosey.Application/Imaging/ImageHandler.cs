@@ -1,6 +1,5 @@
 ﻿using Mosey.Core.Imaging;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Bmp;
 using SixLabors.ImageSharp.Formats.Gif;
@@ -13,41 +12,6 @@ namespace Mosey.Application.Imaging
 {
     public class ImageHandler : IImageHandler<Rgba32>
     {
-        public void ApplyEncoderDefaults(IImageEncoder encoder)
-        {
-            switch (encoder)
-            {
-                case BmpEncoder bmpEncoder:
-                    bmpEncoder.BitsPerPixel = BmpBitsPerPixel.Pixel32;
-                    bmpEncoder.SupportTransparency = false;
-                    break;
-
-                case GifEncoder:
-                    // Use the ImageSharp defaults
-                    break;
-
-                case JpegEncoder jpegEncoder:
-                    jpegEncoder.ColorType = JpegColorType.Rgb;
-                    jpegEncoder.Quality = 100;
-                    break;
-
-                case PngEncoder pngEncoder:
-                    pngEncoder.BitDepth = PngBitDepth.Bit16;
-                    pngEncoder.ColorType = PngColorType.Rgb;
-                    pngEncoder.CompressionLevel = PngCompressionLevel.NoCompression;
-                    pngEncoder.TransparentColorMode = PngTransparentColorMode.Clear;
-                    break;
-
-                case TiffEncoder tiffEncoder:
-                    tiffEncoder.CompressionLevel = SixLabors.ImageSharp.Compression.Zlib.DeflateCompressionLevel.NoCompression;
-                    tiffEncoder.BitsPerPixel = TiffBitsPerPixel.Bit24;
-                    break;
-
-                default:
-                    throw new NotSupportedException("Unable to provide any default values for this encoder.");
-            }
-        }
-
         public Image<Rgba32> ConvertToFormat(byte[] imageContent, IImagingDevice.ImageFormat imageFormat)
         {
             using (var image = Image.Load<Rgba32>(imageContent))
@@ -61,7 +25,6 @@ namespace Mosey.Application.Imaging
             using (var stream = new MemoryStream())
             {
                 var encoder = GetImageEncoder(imageFormat);
-                ApplyEncoderDefaults(encoder);
 
                 image.Save(stream, encoder);
                 stream.Seek(0,SeekOrigin.Begin);
@@ -75,7 +38,7 @@ namespace Mosey.Application.Imaging
 
         public byte[] GetImageBytes(Image<Rgba32> image)
         {
-            var format = image.GetConfiguration().ImageFormats.FirstOrDefault();
+            var format = image.Configuration.ImageFormats.FirstOrDefault();
             if (format is null)
             {
                 throw new InvalidOperationException("Unable to detect image format.");
@@ -90,11 +53,29 @@ namespace Mosey.Application.Imaging
         public IImageEncoder GetImageEncoder(IImagingDevice.ImageFormat imageFormat)
             => imageFormat switch
             {
-                IImagingDevice.ImageFormat.Bmp => new BmpEncoder(),
+                IImagingDevice.ImageFormat.Bmp => new BmpEncoder
+                {
+                    BitsPerPixel = BmpBitsPerPixel.Pixel32,
+                    SupportTransparency = false
+                },
                 IImagingDevice.ImageFormat.Gif => new GifEncoder(),
-                IImagingDevice.ImageFormat.Jpeg => new JpegEncoder(),
-                IImagingDevice.ImageFormat.Png => new PngEncoder(),
-                IImagingDevice.ImageFormat.Tiff => new TiffEncoder(),
+                IImagingDevice.ImageFormat.Jpeg => new JpegEncoder
+                {
+                    ColorType = JpegEncodingColor.Rgb,
+                    Quality = 100
+                },
+                IImagingDevice.ImageFormat.Png => new PngEncoder
+                {
+                    BitDepth  = PngBitDepth.Bit16,
+                    ColorType = PngColorType.Rgb,
+                    CompressionLevel = PngCompressionLevel.NoCompression,
+                    TransparentColorMode = PngTransparentColorMode.Clear
+                },
+                IImagingDevice.ImageFormat.Tiff => new TiffEncoder
+                {
+                    CompressionLevel = SixLabors.ImageSharp.Compression.Zlib.DeflateCompressionLevel.NoCompression,
+                    BitsPerPixel = TiffBitsPerPixel.Bit24
+                },
                 _ => throw new NotSupportedException()
             };
     }
