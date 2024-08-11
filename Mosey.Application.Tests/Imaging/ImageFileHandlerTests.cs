@@ -68,12 +68,12 @@ namespace Mosey.Application.Imaging.Tests
 
                     using (new AssertionScope())
                     using (var fileStream = fileSystem.File.OpenRead((fileSystem as MockFileSystem).AllFiles.First()))
-                    using (var savedImage = Image.Load(fileStream, out var format))
+                    using (var savedImage = Image.Load(fileStream))
                     {
                         savedImage.Should().NotBeSameAs(image);
                         savedImage.Width.Should().Be(image.Width);
                         savedImage.Height.Should().Be(image.Height);
-                        format.Should().BeOfType(typeof(PngFormat));
+                        Image.DetectFormat(fileStream).Should().BeOfType(typeof(PngFormat));
                     }
                 }
                 finally

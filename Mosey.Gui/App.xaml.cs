@@ -12,9 +12,9 @@ using Mosey.Gui.ViewModels;
 using Mosey.Application;
 using Mosey.Application.Configuration;
 using Mosey.Application.Imaging;
-using System.IO;
 using Mosey.Core;
 using Mosey.Core.Imaging;
+using NReco.Logging.File;
 
 namespace Mosey.Gui
 {
@@ -90,9 +90,9 @@ namespace Mosey.Gui
                 {
                     config.ImageFile = config.ImageFile with
                     {
-                        Directory = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
-                        "Mosey")
+                        Directory = System.IO.Path.Combine(
+                            Environment.GetFolderPath(Environment.SpecialFolder.MyPictures).ToString(),
+                            "Mosey")
                     };
                 }
             });
