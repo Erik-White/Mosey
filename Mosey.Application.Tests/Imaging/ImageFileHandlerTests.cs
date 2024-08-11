@@ -34,12 +34,13 @@ namespace Mosey.Application.Imaging.Tests
                 try
                 {
                     var pngImage = imageHandler.ConvertToFormat(image, IImagingDevice.ImageFormat.Png);
+                    var mockFileSystem = fileSystem as MockFileSystem ?? throw new InvalidCastException();
                     var sut = new ImageFileHandler(imageHandler, fileSystem);
 
                     sut.SaveImage(image, IImagingDevice.ImageFormat.Png, filePath.Path);
 
                     using (new AssertionScope())
-                    using (var fileStream = fileSystem.File.OpenRead((fileSystem as MockFileSystem).AllFiles.First()))
+                    using (var fileStream = fileSystem.File.OpenRead(mockFileSystem.AllFiles.First()))
                     using (var savedImage = Image.Load<Rgba32>(fileStream))
                     {
                         savedImage.Should().NotBeSameAs(image);
@@ -58,22 +59,24 @@ namespace Mosey.Application.Imaging.Tests
             }
 
             [Theory, AutoNSubstituteData]
-            public void WriteExpectedFormat([Frozen] IFileSystem fileSystem, [Frozen] IImageHandler<Rgba32> imageHandler, [Frozen] Image<Rgba32> image, ImageFileHandler sut, MockFilePath filePath)
+            public void WriteExpectedFormat([Frozen] IFileSystem fileSystem, [Frozen] Image<Rgba32> image, MockFilePath filePath)
             {
                 try
                 {
-                    imageHandler.GetImageEncoder(default).ReturnsForAnyArgs(new PngEncoder());
+                    var mockFileSystem = fileSystem as MockFileSystem ?? throw new InvalidCastException();
+                    var sut = new ImageFileHandler(new ImageHandler(), fileSystem);
 
-                    sut.SaveImage(Array.Empty<byte>(), default, filePath.Path);
+                    sut.SaveImage(image, IImagingDevice.ImageFormat.Png, filePath.Path);
 
                     using (new AssertionScope())
-                    using (var fileStream = fileSystem.File.OpenRead((fileSystem as MockFileSystem).AllFiles.First()))
-                    using (var savedImage = Image.Load(fileStream, out var format))
+                    using (var fileStream = fileSystem.File.OpenRead(mockFileSystem.AllFiles.First()))
+                    using (var savedImage = Image.Load(fileStream))
                     {
                         savedImage.Should().NotBeSameAs(image);
                         savedImage.Width.Should().Be(image.Width);
                         savedImage.Height.Should().Be(image.Height);
-                        format.Should().BeOfType(typeof(PngFormat));
+                        fileStream.Seek(0, System.IO.SeekOrigin.Begin);
+                        Image.DetectFormat(fileStream).Should().BeOfType(typeof(PngFormat));
                     }
                 }
                 finally
@@ -85,9 +88,11 @@ namespace Mosey.Application.Imaging.Tests
             [Theory, AutoNSubstituteData]
             public void WriteExpectedPath([Frozen] IFileSystem fileSystem, ImageFileHandler sut, MockFilePath filePath)
             {
+                var mockFileSystem = fileSystem as MockFileSystem ?? throw new InvalidCastException();
+
                 sut.SaveImage(Array.Empty<byte>(), default, filePath.Path);
 
-                (fileSystem as MockFileSystem).AllFiles
+                mockFileSystem.AllFiles
                     .Should().HaveCount(1)
                     .And.ContainSingle(x => x == filePath.Path);
             }

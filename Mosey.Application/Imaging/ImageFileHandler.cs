@@ -22,8 +22,7 @@ namespace Mosey.Application.Imaging
         /// <inheritdoc cref="SaveImage(byte[], IImagingDevice.ImageFormat, string)"/>
         public void SaveImage(Image image, IImagingDevice.ImageFormat imageFormat, string filePath)
         {
-            var encoder = _imageHandler.GetImageEncoder(imageFormat);
-            _imageHandler.ApplyEncoderDefaults(encoder);
+            var encoder = _imageHandler.GetImageEncoderWithDefaults(imageFormat);
 
             SaveImage(image, encoder, filePath);
         }
@@ -39,7 +38,7 @@ namespace Mosey.Application.Imaging
                 throw new ArgumentException("File path must not be empty");
             }
 
-            using (var fileStream = _fileSystem.FileStream.Create(filePath, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.Write))
+            using (var fileStream = _fileSystem.FileStream.New(filePath, FileMode.Create, FileAccess.Write, FileShare.Write))
             {
                 image.Save(fileStream, encoder);
             }

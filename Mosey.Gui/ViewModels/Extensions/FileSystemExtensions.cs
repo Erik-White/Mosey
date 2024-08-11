@@ -37,7 +37,7 @@ namespace Mosey.Gui.ViewModels.Extensions
             {
                 // Path may not start with a slash, but could be a network drive
                 var rootPath = fileSystem.Path.GetPathRoot(path);
-                var driveInfo = fileSystem.DriveInfo.FromDriveName(rootPath);
+                var driveInfo = fileSystem.DriveInfo.New(rootPath);
 
                 return driveInfo.DriveType == System.IO.DriveType.Network;
             }
