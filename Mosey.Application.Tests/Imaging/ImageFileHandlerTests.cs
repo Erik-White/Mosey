@@ -58,13 +58,13 @@ namespace Mosey.Application.Imaging.Tests
             }
 
             [Theory, AutoNSubstituteData]
-            public void WriteExpectedFormat([Frozen] IFileSystem fileSystem, [Frozen] IImageHandler<Rgba32> imageHandler, [Frozen] Image<Rgba32> image, ImageFileHandler sut, MockFilePath filePath)
+            public void WriteExpectedFormat([Frozen] IFileSystem fileSystem, [Frozen] Image<Rgba32> image, MockFilePath filePath)
             {
                 try
                 {
-                    imageHandler.GetImageEncoder(default).ReturnsForAnyArgs(new PngEncoder());
+                    var sut = new ImageFileHandler(new ImageHandler(), fileSystem);
 
-                    sut.SaveImage(Array.Empty<byte>(), default, filePath.Path);
+                    sut.SaveImage(image, IImagingDevice.ImageFormat.Png, filePath.Path);
 
                     using (new AssertionScope())
                     using (var fileStream = fileSystem.File.OpenRead((fileSystem as MockFileSystem).AllFiles.First()))
