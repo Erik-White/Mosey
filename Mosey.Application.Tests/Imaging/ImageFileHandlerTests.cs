@@ -73,6 +73,7 @@ namespace Mosey.Application.Imaging.Tests
                         savedImage.Should().NotBeSameAs(image);
                         savedImage.Width.Should().Be(image.Width);
                         savedImage.Height.Should().Be(image.Height);
+                        fileStream.Seek(0, System.IO.SeekOrigin.Begin);
                         Image.DetectFormat(fileStream).Should().BeOfType(typeof(PngFormat));
                     }
                 }
